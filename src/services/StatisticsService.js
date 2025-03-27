@@ -103,19 +103,79 @@ export class StatisticsService {
     }
   }
   
+  // Обновление статистических данных с указанной датой
+  static async updateStatisticsData(dateStr, data) {
+    try {
+      const stats = await this.getDailyStatistics(new Date(dateStr));
+      
+      // Обновляем запланированные задачи
+      if (data.plannedTasks !== undefined) {
+        stats.dailyStats.tasksPlanned = data.plannedTasks;
+      }
+      
+      // Обновляем просроченные задачи
+      if (data.overdueTasks !== undefined) {
+        stats.dailyStats.tasksOverdue = data.overdueTasks;
+      }
+      
+      // Пересчитываем коэффициент завершения
+      stats.dailyStats.completionRate = stats.calculateCompletionRate();
+      
+      // Сохраняем обновленную статистику
+      await this.saveStatistics(stats);
+      return stats;
+    } catch (error) {
+      console.error('Ошибка при обновлении статистических данных:', error);
+      return null;
+    }
+  }
+  
   // Расчет эффективности за период (неделя или месяц)
   static calculateEfficiency(statisticsArray) {
     if (!statisticsArray || statisticsArray.length === 0) return 0;
     
+    // Минимальное количество дней для точного расчета
+    const MIN_DAYS_REQUIRED = 3;
+    const daysCount = statisticsArray.length;
+    
+    // Если дней меньше минимума, снижаем максимально возможную эффективность
+    const daysFactor = Math.min(1, daysCount / MIN_DAYS_REQUIRED);
+    
     let totalCompleted = 0;
     let totalCreated = 0;
+    let totalPlanned = 0;
+    let totalOverdue = 0;
     
     statisticsArray.forEach(stats => {
-      totalCompleted += stats.dailyStats.tasksCompleted;
-      totalCreated += stats.dailyStats.tasksCreated;
+      totalCompleted += stats.dailyStats.tasksCompleted || 0;
+      totalCreated += stats.dailyStats.tasksCreated || 0;
+      totalPlanned += stats.dailyStats.tasksPlanned || 0;
+      totalOverdue += stats.dailyStats.tasksOverdue || 0;
     });
     
-    if (totalCreated === 0) return 0;
-    return Math.round((totalCompleted / totalCreated) * 100);
+    // Общее число задач для расчета
+    const totalTasksForEfficiency = Math.max(
+      totalCompleted, 
+      totalCreated + totalPlanned
+    ) + totalOverdue;
+    
+    // Если нет задач, эффективность равна 0
+    if (totalTasksForEfficiency === 0) return 0;
+    
+    // Минимальное количество задач для корректного расчета
+    const MIN_TASKS_FOR_ACCURACY = 5;
+    
+    // Коэффициент снижения эффективности при малом количестве задач
+    const tasksFactor = Math.min(1, totalTasksForEfficiency / MIN_TASKS_FOR_ACCURACY);
+    
+    // Базовый расчет эффективности
+    let rawEfficiency = Math.round((totalCompleted / totalTasksForEfficiency) * 100);
+    
+    // Применяем коэффициенты для учета количества дней и задач
+    const adjustedEfficiency = Math.round(rawEfficiency * daysFactor * tasksFactor);
+    
+    console.log(`Расчет эффективности: ${rawEfficiency}% * ${daysFactor} (дни) * ${tasksFactor} (задачи) = ${adjustedEfficiency}%`);
+    
+    return adjustedEfficiency;
   }
 }

@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Alert } from 'react-native';
 import Button from '../components/Button';
 import Header from '../components/Header';
 import { StatisticsService } from '../services/StatisticsService';
+import { AchievementService } from '../services/AchievementService';
+import TaskService from '../services/TaskService';
 import { LineChart, BarChart, PieChart } from 'react-native-chart-kit';
 import { Dimensions } from 'react-native';
 import { useIsFocused } from '@react-navigation/native';
@@ -40,6 +42,74 @@ export default function StatisticsScreen({ navigation }) {
       loadStatistics();
     }
   }, [isFocused]);
+
+  useEffect(() => {
+    // Получаем все активные задачи и обновляем статистику
+    const updateStatistics = async () => {
+      try {
+        const tasks = await TaskService.getAllTasks();
+        const today = new Date().toISOString().split('T')[0];
+        
+        // Считаем количество просроченных и запланированных задач
+        const overdueTasks = tasks.filter(task => 
+          !task.isCompleted && 
+          task.dueDate && 
+          new Date(task.dueDate) < new Date() && 
+          task.dueDate.split('T')[0] !== today);
+        
+        const plannedTasks = tasks.filter(task => 
+          !task.isCompleted && 
+          task.dueDate && 
+          task.dueDate.split('T')[0] === today);
+        
+        // Обновляем статистику
+        await StatisticsService.updateStatisticsData(today, {
+          plannedTasks: plannedTasks.length,
+          overdueTasks: overdueTasks.length
+        });
+        
+        // Проверка достижений эффективности только в конце недели (воскресенье)
+        const currentDay = new Date().getDay();
+        const isEndOfWeek = currentDay === 0; // 0 = воскресенье
+        
+        if (isEndOfWeek) {
+          try {
+            const weeklyStats = await StatisticsService.getWeeklyStatistics();
+            
+            // Проверяем, достаточно ли дней для расчета
+            if (weeklyStats && weeklyStats.length >= 3) {
+              console.log("Проверка достижений по эффективности в конце недели");
+              const result = await AchievementService.updateAchievementsForEfficiency();
+              
+              // Если получены новые достижения, показать уведомление
+              if (result && result.achievementsUnlocked && result.achievementsUnlocked.length > 0) {
+                Alert.alert(
+                  "Новые достижения!",
+                  `Получено ${result.achievementsUnlocked.length} новых достижений за эффективность. Проверьте их в разделе Достижения.`,
+                  [
+                    { text: "OK" },
+                    { 
+                      text: "Посмотреть", 
+                      onPress: () => navigation.navigate('Achievements') 
+                    }
+                  ]
+                );
+              }
+            }
+          } catch (error) {
+            console.error("Ошибка при проверке достижений эффективности:", error);
+          }
+        }
+        
+        // Теперь загружаем обновленную статистику
+        loadStatistics();
+      } catch (error) {
+        console.error('Ошибка при обновлении статистики:', error);
+      }
+    };
+
+    updateStatistics();
+  }, [navigation, isFocused]);
 
   const renderPeriodSelector = () => (
     <View style={styles.periodSelector}>

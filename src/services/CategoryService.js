@@ -63,6 +63,44 @@ class CategoryService {
     
     return await StorageService.setCategories(updatedCategories);
   }
+
+  // Добавить метод инициализации базовых категорий
+  static async initDefaultCategories() {
+    try {
+      const defaultCategories = [
+        {
+          id: '1',
+          name: 'Работа',
+          color: '#4E66F1',
+          icon: 'briefcase'
+        },
+        {
+          id: '2',
+          name: 'Личное',
+          color: '#FF9500',
+          icon: 'person'
+        },
+        {
+          id: '3',
+          name: 'Здоровье',
+          color: '#4CD964',
+          icon: 'heart'
+        },
+        {
+          id: '4',
+          name: 'Образование',
+          color: '#AF52DE',
+          icon: 'book'
+        }
+      ];
+      
+      await StorageService.setCategories(defaultCategories);
+      return defaultCategories;
+    } catch (error) {
+      console.error('Ошибка при инициализации категорий:', error);
+      return [];
+    }
+  }
 }
 
 export default CategoryService;

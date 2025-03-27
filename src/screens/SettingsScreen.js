@@ -1,9 +1,21 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Header from '../components/Header';
+import ResetService from '../services/ResetService';
+import Modal from '../components/Modal';
 
 export default function SettingsScreen({ navigation }) {
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [resetOptions, setResetOptions] = useState({
+    resetProfile: true,
+    resetTasks: true,
+    resetAchievements: true,
+    resetStatistics: true,
+    resetCategories: true
+  });
+  const [isResetting, setIsResetting] = useState(false);
+
   const menuItems = [
     {
       id: 'statistics',
@@ -11,6 +23,13 @@ export default function SettingsScreen({ navigation }) {
       icon: 'bar-chart-outline',
       description: 'Просмотр статистики выполнения задач',
       onPress: () => navigation.navigate('Statistics')
+    },
+    {
+      id: 'achievements',
+      title: 'Достижения',
+      icon: 'trophy-outline',
+      description: 'Ваши полученные и доступные достижения',
+      onPress: () => navigation.navigate('Achievements')
     },
     {
       id: 'categories',
@@ -59,6 +78,170 @@ export default function SettingsScreen({ navigation }) {
     </TouchableOpacity>
   );
 
+  const handleResetData = async () => {
+    setIsResetting(true);
+    try {
+      const result = await ResetService.resetAllData(resetOptions);
+      setIsResetting(false);
+      setShowResetModal(false);
+      
+      if (result) {
+        Alert.alert(
+          'Данные сброшены',
+          'Все выбранные данные успешно сброшены',
+          [
+            { 
+              text: 'OK', 
+              onPress: () => navigation.reset({
+                index: 0,
+                routes: [{ name: 'Home' }],
+              }) 
+            }
+          ]
+        );
+      } else {
+        Alert.alert(
+          'Ошибка',
+          'Произошла ошибка при сбросе данных'
+        );
+      }
+    } catch (error) {
+      setIsResetting(false);
+      Alert.alert(
+        'Ошибка',
+        'Произошла ошибка при сбросе данных: ' + error.message
+      );
+    }
+  };
+
+  const toggleOption = (option) => {
+    setResetOptions(prev => ({
+      ...prev,
+      [option]: !prev[option]
+    }));
+  };
+
+  const renderResetModal = () => (
+    <Modal
+      visible={showResetModal}
+      onClose={() => setShowResetModal(false)}
+      title="Сброс данных"
+    >
+      <View style={styles.modalContent}>
+        <View style={styles.warningContainer}>
+          <Ionicons name="warning" size={36} color="#FF3B30" />
+          <Text style={styles.warningText}>
+            Вы собираетесь сбросить данные приложения. Это действие необратимо!
+          </Text>
+        </View>
+        
+        <Text style={styles.optionsTitle}>Выберите данные для сброса:</Text>
+        
+        <View style={styles.optionsList}>
+          <TouchableOpacity 
+            style={styles.optionItem} 
+            onPress={() => toggleOption('resetProfile')}
+          >
+            <View style={[
+              styles.optionCheckbox, 
+              { backgroundColor: resetOptions.resetProfile ? '#4E66F1' : 'transparent' }
+            ]}>
+              {resetOptions.resetProfile && (
+                <Ionicons name="checkmark" size={18} color="#FFFFFF" />
+              )}
+            </View>
+            <Text style={styles.optionText}>Профиль пользователя</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={styles.optionItem} 
+            onPress={() => toggleOption('resetTasks')}
+          >
+            <View style={[
+              styles.optionCheckbox, 
+              { backgroundColor: resetOptions.resetTasks ? '#4E66F1' : 'transparent' }
+            ]}>
+              {resetOptions.resetTasks && (
+                <Ionicons name="checkmark" size={18} color="#FFFFFF" />
+              )}
+            </View>
+            <Text style={styles.optionText}>Все задачи</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={styles.optionItem} 
+            onPress={() => toggleOption('resetAchievements')}
+          >
+            <View style={[
+              styles.optionCheckbox, 
+              { backgroundColor: resetOptions.resetAchievements ? '#4E66F1' : 'transparent' }
+            ]}>
+              {resetOptions.resetAchievements && (
+                <Ionicons name="checkmark" size={18} color="#FFFFFF" />
+              )}
+            </View>
+            <Text style={styles.optionText}>Достижения</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={styles.optionItem} 
+            onPress={() => toggleOption('resetStatistics')}
+          >
+            <View style={[
+              styles.optionCheckbox, 
+              { backgroundColor: resetOptions.resetStatistics ? '#4E66F1' : 'transparent' }
+            ]}>
+              {resetOptions.resetStatistics && (
+                <Ionicons name="checkmark" size={18} color="#FFFFFF" />
+              )}
+            </View>
+            <Text style={styles.optionText}>Статистика</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={styles.optionItem} 
+            onPress={() => toggleOption('resetCategories')}
+          >
+            <View style={[
+              styles.optionCheckbox, 
+              { backgroundColor: resetOptions.resetCategories ? '#4E66F1' : 'transparent' }
+            ]}>
+              {resetOptions.resetCategories && (
+                <Ionicons name="checkmark" size={18} color="#FFFFFF" />
+              )}
+            </View>
+            <Text style={styles.optionText}>Категории</Text>
+          </TouchableOpacity>
+        </View>
+        
+        <View style={styles.buttonContainer}>
+          <TouchableOpacity 
+            style={styles.cancelButton}
+            onPress={() => setShowResetModal(false)}
+            disabled={isResetting}
+          >
+            <Text style={styles.cancelButtonText}>Отмена</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={styles.resetButton}
+            onPress={handleResetData}
+            disabled={isResetting || 
+              !(resetOptions.resetProfile || 
+                resetOptions.resetTasks || 
+                resetOptions.resetAchievements || 
+                resetOptions.resetStatistics || 
+                resetOptions.resetCategories)}
+          >
+            <Text style={styles.resetButtonText}>
+              {isResetting ? 'Сброс...' : 'Сбросить данные'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+  );
+
   return (
     <View style={styles.container}>
       <Header 
@@ -73,10 +256,27 @@ export default function SettingsScreen({ navigation }) {
           {menuItems.map(renderMenuItem)}
         </View>
         
+        <View style={styles.dangerSection}>
+          <Text style={styles.dangerTitle}>Опасная зона</Text>
+          <TouchableOpacity 
+            style={styles.dangerButton}
+            onPress={() => setShowResetModal(true)}
+          >
+            <Ionicons name="trash-outline" size={24} color="#FFFFFF" />
+            <Text style={styles.dangerButtonText}>Сбросить все данные</Text>
+          </TouchableOpacity>
+          <Text style={styles.dangerDescription}>
+            При сбросе данных будут удалены все ваши задачи, достижения, статистика и настройки. 
+            Это действие необратимо.
+          </Text>
+        </View>
+        
         <View style={styles.versionContainer}>
           <Text style={styles.versionText}>Версия: 1.0.0</Text>
         </View>
       </ScrollView>
+      
+      {renderResetModal()}
     </View>
   );
 }
@@ -143,5 +343,114 @@ const styles = StyleSheet.create({
   versionText: {
     fontSize: 14,
     color: '#888888',
+  },
+  dangerSection: {
+    marginTop: 24,
+    marginBottom: 16,
+    paddingHorizontal: 16,
+  },
+  dangerTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#FF3B30',
+    marginBottom: 12,
+  },
+  dangerButton: {
+    backgroundColor: '#FF3B30',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    borderRadius: 8,
+    marginBottom: 12,
+  },
+  dangerButtonText: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+    fontSize: 16,
+    marginLeft: 8,
+  },
+  dangerDescription: {
+    fontSize: 14,
+    color: '#666666',
+    lineHeight: 20,
+  },
+  modalContent: {
+    padding: 16,
+  },
+  warningContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#FFEEEE',
+    padding: 16,
+    borderRadius: 8,
+    marginBottom: 24,
+    alignItems: 'center',
+  },
+  warningText: {
+    flex: 1,
+    marginLeft: 16,
+    color: '#FF3B30',
+    fontWeight: '500',
+    lineHeight: 20,
+  },
+  optionsTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 16,
+    color: '#333333',
+  },
+  optionsList: {
+    marginBottom: 24,
+  },
+  optionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
+  optionCheckbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 4,
+    borderWidth: 2,
+    borderColor: '#4E66F1',
+    marginRight: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  optionText: {
+    fontSize: 16,
+    color: '#333333',
+  },
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  cancelButton: {
+    flex: 1,
+    paddingVertical: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 8,
+    borderWidth: 1,
+    borderColor: '#CCCCCC',
+    borderRadius: 8,
+  },
+  cancelButtonText: {
+    color: '#666666',
+    fontWeight: '500',
+  },
+  resetButton: {
+    flex: 1,
+    paddingVertical: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FF3B30',
+    borderRadius: 8,
+  },
+  resetButtonText: {
+    color: '#FFFFFF',
+    fontWeight: '600',
   },
 });

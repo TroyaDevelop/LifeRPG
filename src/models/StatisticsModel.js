@@ -5,11 +5,13 @@ export class StatisticsModel {
     this.date = data.date || new Date().toISOString().split('T')[0]; // формат YYYY-MM-DD
     
     // Ежедневная статистика
-    this.dailyStats = data.dailyStats || {
-      tasksCompleted: 0,
-      tasksCreated: 0,
-      totalExperienceGained: 0,
-      completionRate: 0, // процент выполнения
+    this.dailyStats = {
+      tasksCompleted: data.dailyStats?.tasksCompleted || 0,
+      tasksCreated: data.dailyStats?.tasksCreated || 0,
+      tasksPlanned: data.dailyStats?.tasksPlanned || 0, // добавляем запланированные
+      tasksOverdue: data.dailyStats?.tasksOverdue || 0,  // добавляем просроченные
+      completionRate: data.dailyStats?.completionRate || 0,
+      totalExperienceGained: data.dailyStats?.totalExperienceGained || 0
     };
     
     // Хранение данных по категориям
@@ -33,10 +35,28 @@ export class StatisticsModel {
   
   // Вспомогательные методы для анализа данных
   
-  // Расчет процента выполнения
+  // Расчет процента выполнения для текущего дня
   calculateCompletionRate() {
-    if (this.dailyStats.tasksCreated === 0) return 0;
-    return Math.round((this.dailyStats.tasksCompleted / this.dailyStats.tasksCreated) * 100);
+    const completed = this.dailyStats.tasksCompleted;
+    const created = this.dailyStats.tasksCreated;
+    const planned = this.dailyStats.tasksPlanned || 0;
+    const overdue = this.dailyStats.tasksOverdue || 0;
+    
+    // Общее число задач на день (включая перенесенные и просроченные)
+    const total = Math.max(completed, created + planned + overdue);
+    
+    // Минимальное количество задач для точного расчета
+    const MIN_TASKS_FOR_ACCURACY = 2;
+    
+    if (total < MIN_TASKS_FOR_ACCURACY) {
+      // Если задач недостаточно, учитываем это в расчете
+      const penaltyFactor = total / MIN_TASKS_FOR_ACCURACY;
+      const rawEfficiency = (completed / Math.max(1, total)) * 100;
+      return Math.round(rawEfficiency * penaltyFactor);
+    }
+    
+    if (total === 0) return 0;
+    return Math.round((completed / total) * 100);
   }
   
   // Получение статистики по категории
@@ -65,7 +85,7 @@ export class StatisticsModel {
     this.dailyStats.totalExperienceGained += experienceGained;
     this.dailyStats.completionRate = this.calculateCompletionRate();
     
-    // Обновление категории
+    // Проверка поля category в задаче
     if (task.categoryId) {
       if (!this.categoryStats[task.categoryId]) {
         this.categoryStats[task.categoryId] = { completed: 0, total: 0 };
@@ -108,5 +128,15 @@ export class StatisticsModel {
     if (task.priority) {
       this.priorityStats[task.priority].total += 1;
     }
+  }
+
+  // Обновление для учета запланированных задач
+  updatePlannedTasks(count) {
+    this.dailyStats.tasksPlanned += count;
+  }
+
+  // Обновление для учета просроченных задач
+  updateOverdueTasks(count) {
+    this.dailyStats.tasksOverdue += count;
   }
 }

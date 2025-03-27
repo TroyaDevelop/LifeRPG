@@ -12,16 +12,16 @@ import {
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import { TaskService } from '../../services';
+import { TaskService } from '../services';
 // Добавляем новые импорты
-import { ProfileService } from '../../services/ProfileService';
-import LevelProgressBar from '../../components/LevelProgressBar';
-import LevelUpModal from '../../components/LevelUpModal';
+import { ProfileService } from '../services/ProfileService';
+import LevelProgressBar from '../components/LevelProgressBar';
+import LevelUpModal from '../components/LevelUpModal';
 // Исправляем путь к компонентам
-import { TaskCard, Modal, Button } from '../../components/index';
-import Header from '../../components/Header';
-import { formatDate } from '../../utils/helpers';
-import { TASK_PRIORITIES, PRIORITY_COLORS } from '../../utils/constants';
+import { TaskCard, Modal, Button } from '../components/index';
+import Header from '../components/Header';
+import { formatDate } from '../utils/helpers';
+import { TASK_PRIORITIES, PRIORITY_COLORS } from '../utils/constants';
 
 const HomeScreen = ({ navigation }) => {
   const [tasks, setTasks] = useState([]);
@@ -171,8 +171,7 @@ const HomeScreen = ({ navigation }) => {
       }
       
       // Если задача не выполнена, выполняем ее и начисляем опыт
-      const taskService = new TaskService();
-      const result = await taskService.completeTask(taskId);
+      const result = await TaskService.completeTask(taskId);
       
       // Обновляем список задач
       await loadTasks();
@@ -192,7 +191,7 @@ const HomeScreen = ({ navigation }) => {
       // Сообщаем пользователю о полученном опыте
       Alert.alert(
         'Задача выполнена!',
-        `Вы получили +${result.experience} XP`,
+        `Вы получили +${result.experienceGained} XP`,
         [{ text: 'OK' }]
       );
     } catch (error) {

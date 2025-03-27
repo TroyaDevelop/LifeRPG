@@ -3,7 +3,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 // Импорт экранов
-import HomeScreen from '../screens/HomeScreen/HomeScreen';
+import HomeScreen from '../screens/HomeScreen';
 import AddTaskScreen from '../screens/AddTaskScreen/AddTaskScreen';
 import EditTaskScreen from '../screens/EditTaskScreen/EditTaskScreen';
 import NotificationSettingsScreen from '../screens/NotificationSettingsScreen';
@@ -12,6 +12,7 @@ import AddCategoryScreen from '../screens/AddCategoryScreen';
 import EditCategoryScreen from '../screens/EditCategoryScreen';
 import StatisticsScreen from '../screens/StatisticsScreen';
 import SettingsScreen from '../screens/SettingsScreen';
+import { AchievementsScreen } from '../screens/AchievementsScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -37,6 +38,11 @@ const AppNavigator = () => {
         />
         <Stack.Screen name="Statistics" component={StatisticsScreen} options={{ headerShown: false }} />
         <Stack.Screen name="Settings" component={SettingsScreen} options={{ headerShown: false }} />
+        <Stack.Screen 
+          name="Achievements" 
+          component={AchievementsScreen} 
+          options={{ headerShown: false }}
+        />
         
         {/* Экраны категорий */}
         <Stack.Screen name="Categories" component={CategoriesScreen} />
