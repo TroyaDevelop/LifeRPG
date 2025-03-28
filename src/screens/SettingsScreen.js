@@ -53,6 +53,13 @@ export default function SettingsScreen({ navigation }) {
       onPress: () => navigation.navigate('Profile')
     },
     {
+      id: 'appSettings',
+      title: 'Настройки приложения',
+      icon: 'settings-outline',
+      description: 'Настройка поведения приложения',
+      onPress: () => navigation.navigate('AppSettings')
+    },
+    {
       id: 'about',
       title: 'О приложении',
       icon: 'information-circle-outline',

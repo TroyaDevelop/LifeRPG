@@ -14,6 +14,7 @@ import EditCategoryScreen from '../screens/EditCategoryScreen';
 import StatisticsScreen from '../screens/StatisticsScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import { AchievementsScreen } from '../screens/AchievementsScreen';
+import AppSettingsScreen from '../screens/AppSettingsScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -56,6 +57,11 @@ export default function AppNavigator() {
           name="Achievements" 
           component={AchievementsScreen} 
           options={{ headerShown: false }}
+        />
+        <Stack.Screen 
+          name="AppSettings" 
+          component={AppSettingsScreen} 
+          options={{ headerShown: false }} 
         />
         
         {/* Экраны категорий */}

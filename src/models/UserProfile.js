@@ -12,6 +12,12 @@ export class UserProfile {
     this.streakDays = data.streakDays || 0;
     this.lastActive = data.lastActive || new Date().toISOString();
     this.unlockedBonuses = data.unlockedBonuses || [];
+    
+    // Добавляем объект настроек приложения
+    this.settings = data.settings || {
+      autoDeleteCompletedTasks: true, // По умолчанию включено
+      // Другие настройки можно добавить здесь
+    };
   }
 
   // Метод для расчета опыта, необходимого для следующего уровня

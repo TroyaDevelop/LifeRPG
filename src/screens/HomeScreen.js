@@ -165,87 +165,126 @@ const HomeScreen = ({ navigation }) => {
     setFilteredTasks(result);
   };
 
-  // Обработка отметки задачи как выполненной
-  const handleCompleteTask = async (taskId) => {
-    try {
-      console.log('Получен ID задачи:', taskId);
-      const task = tasks.find(t => t.id === taskId);
-      if (!task) {
-        console.warn(`Задача с ID ${taskId} не найдена в локальном состоянии`);
-        return;
-      }
-      
-      // Если задача уже выполнена, просто меняем статус
-      if (task.isCompleted) {
-        // Обновляем локальное состояние
-        setTasks(prevTasks => 
-          prevTasks.map(t => 
-            t.id === taskId ? { ...t, isCompleted: false, completedAt: null } : t
-          )
-        );
-        
-        Alert.alert(
-          'Отменить выполнение?',
-          'Вы уверены, что хотите отменить выполнение задачи?',
-          [
-            { text: 'Нет' },
-            { 
-              text: 'Да', 
-              onPress: async () => {
-                // Реализация отмены выполнения
+  // Модифицируем обработчик отмены выполнения задачи
+
+// Обработка отметки задачи как выполненной/невыполненной
+const handleCompleteTask = async (taskId) => {
+  try {
+    const task = tasks.find(t => t.id === taskId);
+    if (!task) {
+      console.warn(`Задача с ID ${taskId} не найдена в локальном состоянии`);
+      return;
+    }
+    
+    // Если задача уже выполнена, показываем диалог отмены
+    if (task.isCompleted) {
+      Alert.alert(
+        'Отменить выполнение?',
+        'Вы уверены, что хотите отменить выполнение задачи? Полученный опыт будет возвращен.',
+        [
+          { text: 'Нет' },
+          { 
+            text: 'Да', 
+            onPress: async () => {
+              try {
+                setLoading(true);
+                const result = await TaskService.uncompleteTask(taskId);
+                
+                if (!result.success) {
+                  throw new Error(result.error || 'Ошибка при отмене выполнения задачи');
+                }
+                
+                // Обновляем состояние задачи в списке
+                setTasks(prevTasks => 
+                  prevTasks.map(t => 
+                    t.id === taskId 
+                      ? { ...t, isCompleted: false, completedAt: null }
+                      : t
+                  )
+                );
+                
+                // Обновляем профиль
+                await loadProfile();
+                
+                // Сообщаем пользователю о возврате опыта
+                Alert.alert(
+                  'Выполнение отменено',
+                  `Возвращено ${result.experienceReturned} XP`,
+                  [{ text: 'OK' }]
+                );
+                
+                if (result.didLevelDown) {
+                  Alert.alert(
+                    'Уровень понижен',
+                    `Ваш уровень понижен до ${result.newLevel}`,
+                    [{ text: 'OK' }]
+                  );
+                }
+              } catch (error) {
+                console.error('Ошибка при отмене выполнения задачи:', error);
+                Alert.alert('Ошибка', 'Не удалось отменить выполнение задачи');
+                loadTasks();
+              } finally {
+                setLoading(false);
               }
             }
-          ]
-        );
-        return;
-      }
-      
-      // Выполняем задачу через сервис
-      const result = await TaskService.completeTask(taskId);
-      
-      if (!result.success) {
-        throw new Error(result.error || 'Ошибка при выполнении задачи');
-      }
-      
-      // Если это обычная задача, удаляем ее из списка
-      if (result.taskRemoved) {
-        setTasks(prevTasks => prevTasks.filter(t => t.id !== taskId));
-      } else {
-        // Иначе просто обновляем ее статус
-        setTasks(prevTasks => 
-          prevTasks.map(t => 
-            t.id === taskId 
-              ? { ...t, isCompleted: true, completedAt: new Date().toISOString() }
-              : t
-          )
-        );
-      }
-      
-      // Обновляем профиль
-      await loadProfile();
-      
-      // Если произошло повышение уровня, показываем модальное окно
-      if (result.didLevelUp) {
-        setLevelUpData({
-          visible: true,
-          level: result.newLevel,
-          bonuses: result.newBonuses
-        });
-      }
-      
-      // Сообщаем пользователю о полученном опыте
-      Alert.alert(
-        'Задача выполнена!',
-        `Вы получили +${result.experienceGained} XP`,
-        [{ text: 'OK' }]
+          }
+        ]
       );
-    } catch (error) {
-      console.error('Ошибка при обновлении задачи:', error);
-      Alert.alert('Ошибка', 'Не удалось обновить статус задачи');
-      // Откатываем изменения, если произошла ошибка
-      loadTasks();
+      return;
     }
-  };
+    
+    // Выполняем задачу
+    setLoading(true);
+    
+    const result = await TaskService.completeTask(taskId);
+    
+    if (!result.success) {
+      throw new Error(result.error || 'Ошибка при выполнении задачи');
+    }
+    
+    // Обрабатываем случай, когда задача была удалена после выполнения
+    if (result.taskRemoved) {
+      // Удаляем задачу из локального состояния
+      setTasks(prevTasks => prevTasks.filter(t => t.id !== taskId));
+    } else {
+      // Обновляем статус задачи в локальном состоянии
+      setTasks(prevTasks => 
+        prevTasks.map(t => 
+          t.id === taskId 
+            ? { ...t, isCompleted: true, completedAt: new Date().toISOString() }
+            : t
+        )
+      );
+    }
+    
+    // Обновляем интерфейс и показываем результаты
+    await loadProfile();
+    
+    // Показываем уведомление о полученном опыте
+    Alert.alert(
+      'Задача выполнена!',
+      `Вы получили +${result.experienceGained} XP`,
+      [{ text: 'OK' }]
+    );
+    
+    // Показываем уведомление о повышении уровня
+    if (result.didLevelUp) {
+      setLevelUpData({
+        visible: true,
+        level: result.newLevel,
+        bonuses: result.newBonuses
+      });
+    }
+    
+    setLoading(false);
+  } catch (error) {
+    console.error('Ошибка при обновлении задачи:', error);
+    Alert.alert('Ошибка', 'Не удалось обновить статус задачи');
+    loadTasks();
+    setLoading(false);
+  }
+};
 
   // Обработка удаления задачи
   const handleDeleteTask = (taskId) => {

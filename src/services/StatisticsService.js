@@ -310,4 +310,41 @@ export class StatisticsService {
       return 'Понедельник'; // По умолчанию
     }
   }
+
+  /**
+   * Обновление статистики при отмене выполнения задачи
+   * @param {object} task - задача, для которой отменено выполнение
+   * @param {number} experienceReturned - возвращенный опыт
+   */
+  static async updateStatisticsOnTaskUncompletion(task, experienceReturned) {
+    try {
+      // Получаем текущую статистику за день
+      const today = new Date();
+      const dailyStats = await this.getDailyStatistics(today);
+      
+      if (!dailyStats || !dailyStats.dailyStats) {
+        console.error('Не удалось получить ежедневную статистику');
+        return;
+      }
+      
+      // Обновляем статистику
+      dailyStats.dailyStats.tasksCompleted = Math.max(0, (dailyStats.dailyStats.tasksCompleted || 0) - 1);
+      dailyStats.dailyStats.totalExperienceGained = Math.max(0, (dailyStats.dailyStats.totalExperienceGained || 0) - experienceReturned);
+      
+      // Пересчитываем коэффициент выполнения
+      const totalTasks = dailyStats.dailyStats.tasksCreated + 
+                        (dailyStats.dailyStats.tasksPlanned || 0);
+      
+      if (totalTasks > 0) {
+        dailyStats.dailyStats.completionRate = Math.round(
+          (dailyStats.dailyStats.tasksCompleted / totalTasks) * 100
+        );
+      }
+      
+      // Сохраняем обновленную статистику
+      await this.saveStatistics(dailyStats);
+    } catch (error) {
+      console.error('Ошибка при обновлении статистики отмены выполнения:', error);
+    }
+  }
 }
