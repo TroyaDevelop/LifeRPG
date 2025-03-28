@@ -11,7 +11,8 @@ export class StatisticsModel {
       tasksPlanned: data.dailyStats?.tasksPlanned || 0, // добавляем запланированные
       tasksOverdue: data.dailyStats?.tasksOverdue || 0,  // добавляем просроченные
       completionRate: data.dailyStats?.completionRate || 0,
-      totalExperienceGained: data.dailyStats?.totalExperienceGained || 0
+      totalExperienceGained: data.dailyStats?.totalExperienceGained || 0,
+      dayOfWeek: data.dailyStats?.dayOfWeek || this.getDayOfWeek(data.date)
     };
     
     // Хранение данных по категориям
@@ -31,6 +32,20 @@ export class StatisticsModel {
       eveningCompleted: 0, // 17:00 - 21:00
       nightCompleted: 0 // 21:00 - 5:00
     };
+  }
+  
+  // Метод для определения дня недели
+  getDayOfWeek(dateStr) {
+    const date = dateStr ? new Date(dateStr) : new Date();
+    const days = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
+    return days[date.getDay()];
+  }
+  
+  // Получение короткого названия дня недели
+  getShortDayOfWeek(dateStr) {
+    const date = dateStr ? new Date(dateStr) : new Date();
+    const days = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
+    return days[date.getDay()];
   }
   
   // Вспомогательные методы для анализа данных

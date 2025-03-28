@@ -178,4 +178,136 @@ export class StatisticsService {
     
     return adjustedEfficiency;
   }
+  
+  // Получение статистики по дням недели
+  static async getWeekdayStatistics() {
+    try {
+      // Объект для хранения данных по дням недели
+      const weekdayStats = {
+        'Понедельник': { completed: 0, created: 0, planned: 0, overdue: 0, efficiency: 0, count: 0 },
+        'Вторник': { completed: 0, created: 0, planned: 0, overdue: 0, efficiency: 0, count: 0 },
+        'Среда': { completed: 0, created: 0, planned: 0, overdue: 0, efficiency: 0, count: 0 },
+        'Четверг': { completed: 0, created: 0, planned: 0, overdue: 0, efficiency: 0, count: 0 },
+        'Пятница': { completed: 0, created: 0, planned: 0, overdue: 0, efficiency: 0, count: 0 },
+        'Суббота': { completed: 0, created: 0, planned: 0, overdue: 0, efficiency: 0, count: 0 },
+        'Воскресенье': { completed: 0, created: 0, planned: 0, overdue: 0, efficiency: 0, count: 0 }
+      };
+      
+      // Получаем данные за месяц для более точной статистики
+      const monthlyStats = await this.getMonthlyStatistics();
+      
+      if (!monthlyStats || monthlyStats.length === 0) {
+        return weekdayStats;
+      }
+      
+      // Группируем статистику по дням недели
+      for (const stats of monthlyStats) {
+        if (!stats || !stats.date) continue;
+        
+        const date = new Date(stats.date);
+        // Получаем день недели (0 - воскресенье, 1 - понедельник и т.д.)
+        const dayIndex = date.getDay();
+        const dayNames = [
+          'Воскресенье', 'Понедельник', 'Вторник', 'Среда', 
+          'Четверг', 'Пятница', 'Суббота'
+        ];
+        const dayOfWeek = dayNames[dayIndex];
+        
+        // Добавляем данные в соответствующий день недели
+        if (stats.dailyStats) {
+          weekdayStats[dayOfWeek].completed += stats.dailyStats.tasksCompleted || 0;
+          weekdayStats[dayOfWeek].created += stats.dailyStats.tasksCreated || 0;
+          weekdayStats[dayOfWeek].planned += stats.dailyStats.tasksPlanned || 0;
+          weekdayStats[dayOfWeek].overdue += stats.dailyStats.tasksOverdue || 0;
+          
+          // Используем существующую эффективность или рассчитываем, если нет
+          const efficiency = stats.dailyStats.completionRate || this.calculateDailyEfficiency(stats.dailyStats);
+          weekdayStats[dayOfWeek].efficiency += efficiency;
+          weekdayStats[dayOfWeek].count += 1;
+        }
+      }
+      
+      // Вычисляем средние значения эффективности
+      for (const day in weekdayStats) {
+        if (weekdayStats[day].count > 0) {
+          weekdayStats[day].efficiency = Math.round(weekdayStats[day].efficiency / weekdayStats[day].count);
+        }
+      }
+      
+      return weekdayStats;
+    } catch (error) {
+      console.error('Ошибка при получении статистики по дням недели:', error);
+      return {};
+    }
+  }
+  
+  // Получение лучшего и худшего дня недели по эффективности
+  static async getBestAndWorstDay() {
+    try {
+      const weekdayStats = await this.getWeekdayStatistics();
+      
+      let bestDay = { day: null, efficiency: -1 };
+      let worstDay = { day: null, efficiency: 101 }; // 101%, т.к. максимум 100%
+      
+      for (const day in weekdayStats) {
+        const dayStats = weekdayStats[day];
+        
+        // Проверяем только дни с данными
+        if (dayStats.count > 0) {
+          if (dayStats.efficiency > bestDay.efficiency) {
+            bestDay = { day, efficiency: dayStats.efficiency };
+          }
+          
+          if (dayStats.efficiency < worstDay.efficiency) {
+            worstDay = { day, efficiency: dayStats.efficiency };
+          }
+        }
+      }
+      
+      // Если нет данных, устанавливаем значения по умолчанию
+      if (bestDay.day === null) {
+        bestDay = { day: 'Не определен', efficiency: 0 };
+      }
+      
+      if (worstDay.day === null) {
+        worstDay = { day: 'Не определен', efficiency: 0 };
+      }
+      
+      return { bestDay, worstDay };
+    } catch (error) {
+      console.error('Ошибка при определении лучшего и худшего дня:', error);
+      return { bestDay: { day: 'Не определен', efficiency: 0 }, worstDay: { day: 'Не определен', efficiency: 0 } };
+    }
+  }
+  
+  // Вспомогательный метод для расчета дневной эффективности
+  static calculateDailyEfficiency(dailyStats) {
+    if (!dailyStats) return 0;
+    
+    const completed = dailyStats.tasksCompleted || 0;
+    const created = dailyStats.tasksCreated || 0;
+    const planned = dailyStats.tasksPlanned || 0;
+    const overdue = dailyStats.tasksOverdue || 0;
+    
+    const totalTasksForEfficiency = Math.max(completed, created + planned) + overdue;
+    
+    if (totalTasksForEfficiency === 0) return 0;
+    
+    return Math.round((completed / totalTasksForEfficiency) * 100);
+  }
+
+  // Вспомогательный метод для определения дня недели из даты
+  static getDayOfWeekFromDate(dateStr) {
+    try {
+      const date = new Date(dateStr);
+      const days = [
+        'Воскресенье', 'Понедельник', 'Вторник', 'Среда', 
+        'Четверг', 'Пятница', 'Суббота'
+      ];
+      return days[date.getDay()];
+    } catch (error) {
+      console.error('Ошибка при определении дня недели:', error, dateStr);
+      return 'Понедельник'; // По умолчанию
+    }
+  }
 }

@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { SchedulerService } from '../services/SchedulerService';
 
 // Импорт экранов
 import HomeScreen from '../screens/HomeScreen';
@@ -16,7 +17,20 @@ import { AchievementsScreen } from '../screens/AchievementsScreen';
 
 const Stack = createNativeStackNavigator();
 
-const AppNavigator = () => {
+export default function AppNavigator() {
+  useEffect(() => {
+    // Проверка и сброс ежедневных задач при загрузке навигатора
+    const initializeScheduler = async () => {
+      // Проверяем и сбрасываем ежедневные задачи, если нужно
+      await SchedulerService.checkAndResetDailyTasks();
+      
+      // Настраиваем обработчики для других периодических задач
+      SchedulerService.setupScheduledEvents();
+    };
+    
+    initializeScheduler();
+  }, []);
+  
   return (
     <NavigationContainer>
       <Stack.Navigator
@@ -51,6 +65,4 @@ const AppNavigator = () => {
       </Stack.Navigator>
     </NavigationContainer>
   );
-};
-
-export default AppNavigator;
+}

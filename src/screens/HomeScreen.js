@@ -10,7 +10,7 @@ import {
   RefreshControl,
   ActivityIndicator
 } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useIsFocused } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { TaskService } from '../services';
 // Добавляем новые импорты
@@ -22,6 +22,7 @@ import { TaskCard, Modal, Button } from '../components/index';
 import Header from '../components/Header';
 import { formatDate } from '../utils/helpers';
 import { TASK_PRIORITIES, PRIORITY_COLORS } from '../utils/constants';
+import { SchedulerService } from '../services/SchedulerService';
 
 const HomeScreen = ({ navigation }) => {
   const [tasks, setTasks] = useState([]);
@@ -36,6 +37,8 @@ const HomeScreen = ({ navigation }) => {
   // Добавляем новые состояния для профиля и модального окна повышения уровня
   const [profile, setProfile] = useState(null);
   const [levelUpData, setLevelUpData] = useState({ visible: false, level: 1, bonuses: [] });
+  const [tabType, setTabType] = useState('regular'); // 'regular' или 'daily'
+  const isFocused = useIsFocused();
 
   // Загрузка задач при фокусе на экране
   useFocusEffect(
@@ -50,12 +53,32 @@ const HomeScreen = ({ navigation }) => {
     applyFiltersAndSort();
   }, [tasks, searchQuery, sortType, filterType]);
 
+  // Загрузка задач при активации экрана
+  useEffect(() => {
+    if (isFocused) {
+      const initializeScreen = async () => {
+        // Проверяем и сбрасываем ежедневные задачи при каждом возвращении на главный экран
+        await SchedulerService.checkAndResetDailyTasks();
+        loadTasks();
+      };
+      
+      initializeScreen();
+    }
+  }, [isFocused, tabType]);
+
   // Загрузка задач из хранилища
   const loadTasks = async () => {
     try {
       setLoading(true);
-      const allTasks = await TaskService.getAllTasks();
-      setTasks(allTasks || []);
+      let taskList;
+      
+      if (tabType === 'daily') {
+        taskList = await TaskService.getDailyTasks();
+      } else {
+        taskList = await TaskService.getRegularTasks();
+      }
+      
+      setTasks(taskList);
     } catch (error) {
       console.error('Ошибка при загрузке задач:', error);
       Alert.alert('Ошибка', 'Не удалось загрузить задачи');
@@ -152,7 +175,6 @@ const HomeScreen = ({ navigation }) => {
         return;
       }
       
-      console.log('Найденная задача:', task);
       // Если задача уже выполнена, просто меняем статус
       if (task.isCompleted) {
         // Обновляем локальное состояние
@@ -162,19 +184,42 @@ const HomeScreen = ({ navigation }) => {
           )
         );
         
-        // Отправляем изменения в хранилище
-        await TaskService.updateTask(taskId, { 
-          isCompleted: false, 
-          completedAt: null 
-        });
+        Alert.alert(
+          'Отменить выполнение?',
+          'Вы уверены, что хотите отменить выполнение задачи?',
+          [
+            { text: 'Нет' },
+            { 
+              text: 'Да', 
+              onPress: async () => {
+                // Реализация отмены выполнения
+              }
+            }
+          ]
+        );
         return;
       }
       
-      // Если задача не выполнена, выполняем ее и начисляем опыт
+      // Выполняем задачу через сервис
       const result = await TaskService.completeTask(taskId);
       
-      // Обновляем список задач
-      await loadTasks();
+      if (!result.success) {
+        throw new Error(result.error || 'Ошибка при выполнении задачи');
+      }
+      
+      // Если это обычная задача, удаляем ее из списка
+      if (result.taskRemoved) {
+        setTasks(prevTasks => prevTasks.filter(t => t.id !== taskId));
+      } else {
+        // Иначе просто обновляем ее статус
+        setTasks(prevTasks => 
+          prevTasks.map(t => 
+            t.id === taskId 
+              ? { ...t, isCompleted: true, completedAt: new Date().toISOString() }
+              : t
+          )
+        );
+      }
       
       // Обновляем профиль
       await loadProfile();
@@ -461,6 +506,13 @@ const HomeScreen = ({ navigation }) => {
     );
   };
 
+  // Переключение между обычными и ежедневными задачами
+  const toggleTaskType = (type) => {
+    if (type !== tabType) {
+      setTabType(type);
+    }
+  };
+
   if (loading && !refreshing) {
     return (
       <View style={styles.loadingContainer}>
@@ -474,6 +526,23 @@ const HomeScreen = ({ navigation }) => {
     <View style={styles.container}>
       {renderHeader()}
       
+      {/* Переключение между обычными и ежедневными задачами */}
+      <View style={styles.tabContainer}>
+      <TouchableOpacity 
+          style={[styles.tabButton, tabType === 'daily' ? styles.activeTab : null]}
+          onPress={() => toggleTaskType('daily')}
+        >
+          <Text style={tabType === 'daily' ? styles.activeTabText : styles.tabText}>Ежедневные</Text>
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={[styles.tabButton, tabType === 'regular' ? styles.activeTab : null]}
+          onPress={() => toggleTaskType('regular')}
+        >
+          <Text style={tabType === 'regular' ? styles.activeTabText : styles.tabText}>Обычные</Text>
+        </TouchableOpacity>
+        
+      </View>
+
       <FlatList
         data={filteredTasks}
         renderItem={({ item }) => (
@@ -662,6 +731,31 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 2,
     elevation: 2,
+  },
+  tabContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#EEEEEE',
+  },
+  tabButton: {
+    flex: 1,
+    paddingVertical: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  activeTab: {
+    borderBottomWidth: 2,
+    borderBottomColor: '#4E66F1',
+  },
+  tabText: {
+    color: '#888888',
+    fontSize: 16,
+  },
+  activeTabText: {
+    color: '#4E66F1',
+    fontWeight: 'bold',
+    fontSize: 16,
   },
 });
 

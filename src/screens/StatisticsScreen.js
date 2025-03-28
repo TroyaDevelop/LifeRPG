@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Alert } from 'react-native';
-import Button from '../components/Button';
-import Header from '../components/Header';
-import { StatisticsService } from '../services/StatisticsService';
-import { AchievementService } from '../services/AchievementService';
-import TaskService from '../services/TaskService';
-import { LineChart, BarChart, PieChart } from 'react-native-chart-kit';
-import { Dimensions } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Alert, ActivityIndicator } from 'react-native';
+import { LineChart, BarChart } from 'react-native-chart-kit';
 import { useIsFocused } from '@react-navigation/native';
+import { Dimensions } from 'react-native';
+import { StatisticsService } from '../services/StatisticsService';
+import TaskService from '../services/TaskService';
+import { AchievementService } from '../services/AchievementService';
+import Header from '../components/Header';
+import Button from '../components/Button';
 
 const screenWidth = Dimensions.get('window').width;
 
@@ -17,99 +17,107 @@ export default function StatisticsScreen({ navigation }) {
   const [dailyStats, setDailyStats] = useState(null);
   const [weeklyStats, setWeeklyStats] = useState([]);
   const [monthlyStats, setMonthlyStats] = useState([]);
+  const [weekdayStats, setWeekdayStats] = useState(null);
+  const [bestWorstDay, setBestWorstDay] = useState({ bestDay: null, worstDay: null });
   const isFocused = useIsFocused();
-
-  const loadStatistics = async () => {
-    setLoading(true);
-    try {
-      const today = new Date();
-      const daily = await StatisticsService.getDailyStatistics(today);
-      const weekly = await StatisticsService.getWeeklyStatistics();
-      const monthly = await StatisticsService.getMonthlyStatistics();
-      
-      setDailyStats(daily);
-      setWeeklyStats(weekly);
-      setMonthlyStats(monthly);
-    } catch (error) {
-      console.error('Ошибка загрузки статистики:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   useEffect(() => {
     if (isFocused) {
-      loadStatistics();
-    }
-  }, [isFocused]);
-
-  useEffect(() => {
-    // Получаем все активные задачи и обновляем статистику
-    const updateStatistics = async () => {
-      try {
-        const tasks = await TaskService.getAllTasks();
-        const today = new Date().toISOString().split('T')[0];
-        
-        // Считаем количество просроченных и запланированных задач
-        const overdueTasks = tasks.filter(task => 
-          !task.isCompleted && 
-          task.dueDate && 
-          new Date(task.dueDate) < new Date() && 
-          task.dueDate.split('T')[0] !== today);
-        
-        const plannedTasks = tasks.filter(task => 
-          !task.isCompleted && 
-          task.dueDate && 
-          task.dueDate.split('T')[0] === today);
-        
-        // Обновляем статистику
-        await StatisticsService.updateStatisticsData(today, {
-          plannedTasks: plannedTasks.length,
-          overdueTasks: overdueTasks.length
-        });
-        
-        // Проверка достижений эффективности только в конце недели (воскресенье)
-        const currentDay = new Date().getDay();
-        const isEndOfWeek = currentDay === 0; // 0 = воскресенье
-        
-        if (isEndOfWeek) {
+      // Функция для загрузки всей статистики
+      const loadAllStatistics = async () => {
+        setLoading(true);
+        try {
+          // Обновление данных о задачах
           try {
-            const weeklyStats = await StatisticsService.getWeeklyStatistics();
+            const tasks = await TaskService.getAllTasks();
+            const today = new Date().toISOString().split('T')[0];
             
-            // Проверяем, достаточно ли дней для расчета
-            if (weeklyStats && weeklyStats.length >= 3) {
-              console.log("Проверка достижений по эффективности в конце недели");
-              const result = await AchievementService.updateAchievementsForEfficiency();
-              
-              // Если получены новые достижения, показать уведомление
-              if (result && result.achievementsUnlocked && result.achievementsUnlocked.length > 0) {
-                Alert.alert(
-                  "Новые достижения!",
-                  `Получено ${result.achievementsUnlocked.length} новых достижений за эффективность. Проверьте их в разделе Достижения.`,
-                  [
-                    { text: "OK" },
-                    { 
-                      text: "Посмотреть", 
-                      onPress: () => navigation.navigate('Achievements') 
-                    }
-                  ]
-                );
-              }
-            }
+            // Считаем количество просроченных и запланированных задач
+            const overdueTasks = tasks.filter(task => 
+              !task.isCompleted && 
+              task.dueDate && 
+              new Date(task.dueDate) < new Date() && 
+              task.dueDate.split('T')[0] !== today);
+            
+            const plannedTasks = tasks.filter(task => 
+              !task.isCompleted && 
+              task.dueDate && 
+              task.dueDate.split('T')[0] === today);
+            
+            // Обновляем статистику
+            await StatisticsService.updateStatisticsData(today, {
+              plannedTasks: plannedTasks.length,
+              overdueTasks: overdueTasks.length
+            });
           } catch (error) {
-            console.error("Ошибка при проверке достижений эффективности:", error);
+            console.error('Ошибка при обновлении данных о задачах:', error);
           }
+          
+          // Проверка достижений в конце недели
+          const currentDay = new Date().getDay();
+          const isEndOfWeek = currentDay === 0; // 0 = воскресенье
+          
+          if (isEndOfWeek) {
+            try {
+              const weeklyStats = await StatisticsService.getWeeklyStatistics();
+              
+              // Проверяем, достаточно ли дней для расчета
+              if (weeklyStats && weeklyStats.length >= 3) {
+                console.log("Проверка достижений по эффективности в конце недели");
+                const result = await AchievementService.updateAchievementsForEfficiency();
+                
+                // Если получены новые достижения, показать уведомление
+                if (result && result.achievementsUnlocked && result.achievementsUnlocked.length > 0) {
+                  Alert.alert(
+                    "Новые достижения!",
+                    `Получено ${result.achievementsUnlocked.length} новых достижений за эффективность. Проверьте их в разделе Достижения.`,
+                    [
+                      { text: "OK" },
+                      { 
+                        text: "Посмотреть", 
+                        onPress: () => navigation.navigate('Achievements') 
+                      }
+                    ]
+                  );
+                }
+              }
+            } catch (error) {
+              console.error("Ошибка при проверке достижений эффективности:", error);
+            }
+          }
+          
+          // Загрузка основной статистики
+          const daily = await StatisticsService.getDailyStatistics(new Date());
+          const weekly = await StatisticsService.getWeeklyStatistics();
+          const monthly = await StatisticsService.getMonthlyStatistics();
+          
+          setDailyStats(daily);
+          setWeeklyStats(weekly);
+          setMonthlyStats(monthly);
+          
+          // Загрузка статистики по дням недели
+          try {
+            console.log('Загружаем статистику по дням недели...');
+            const stats = await StatisticsService.getWeekdayStatistics();
+            console.log('Загружена статистика по дням недели:', JSON.stringify(stats));
+            setWeekdayStats(stats);
+            
+            const dayComparison = await StatisticsService.getBestAndWorstDay();
+            console.log('Лучший/худший день недели:', JSON.stringify(dayComparison));
+            setBestWorstDay(dayComparison);
+          } catch (error) {
+            console.error('Ошибка при загрузке статистики по дням недели:', error);
+          }
+        } catch (error) {
+          console.error('Ошибка загрузки статистики:', error);
+        } finally {
+          setLoading(false);
         }
-        
-        // Теперь загружаем обновленную статистику
-        loadStatistics();
-      } catch (error) {
-        console.error('Ошибка при обновлении статистики:', error);
-      }
-    };
-
-    updateStatistics();
-  }, [navigation, isFocused]);
+      };
+      
+      loadAllStatistics();
+    }
+  }, [isFocused, navigation]);
 
   const renderPeriodSelector = () => (
     <View style={styles.periodSelector}>
@@ -118,18 +126,21 @@ export default function StatisticsScreen({ navigation }) {
         onPress={() => setPeriod('day')} 
         style={period === 'day' ? styles.activeButton : styles.inactiveButton}
         textStyle={period === 'day' ? styles.activeButtonText : styles.inactiveButtonText}
+        type={period === 'day' ? 'primary' : 'secondary'}
       />
       <Button 
         title="Неделя" 
         onPress={() => setPeriod('week')} 
         style={period === 'week' ? styles.activeButton : styles.inactiveButton}
         textStyle={period === 'week' ? styles.activeButtonText : styles.inactiveButtonText}
+        type={period === 'week' ? 'primary' : 'secondary'}
       />
       <Button 
         title="Месяц" 
         onPress={() => setPeriod('month')} 
         style={period === 'month' ? styles.activeButton : styles.inactiveButton}
         textStyle={period === 'month' ? styles.activeButtonText : styles.inactiveButtonText}
+        type={period === 'month' ? 'primary' : 'secondary'}
       />
     </View>
   );
@@ -264,6 +275,106 @@ export default function StatisticsScreen({ navigation }) {
     
     const weeklyEfficiency = StatisticsService.calculateEfficiency(weeklyStats);
     
+    const renderWeekdaysStats = () => {
+      if (!weekdayStats) {
+        console.log('weekdayStats равен null, не отображаем график по дням');
+        return null;
+      }
+      
+      // Проверяем, есть ли в weekdayStats хотя бы один день с данными
+      let hasData = false;
+      for (const day in weekdayStats) {
+        if (weekdayStats[day] && weekdayStats[day].count > 0) {
+          hasData = true;
+          break;
+        }
+      }
+      
+      if (!hasData) {
+        console.log('В weekdayStats нет дней с данными');
+        return null;
+      }
+      
+      console.log('Подготавливаем данные для графика по дням недели');
+      
+      // Подготовка данных для графика
+      const dayLabels = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+      const fullDayNames = [
+        'Понедельник', 'Вторник', 'Среда', 'Четверг', 
+        'Пятница', 'Суббота', 'Воскресенье'
+      ];
+      
+      const efficiencyData = fullDayNames.map(day => {
+        if (!weekdayStats[day]) {
+          console.log(`Отсутствуют данные для ${day}`);
+          return 0;
+        }
+        const eff = weekdayStats[day].count > 0 ? weekdayStats[day].efficiency : 0;
+        console.log(`Эффективность для ${day}: ${eff}%`);
+        return eff;
+      });
+      
+      console.log('Данные для графика эффективности:', efficiencyData);
+      
+      const completionData = {
+        labels: dayLabels,
+        datasets: [
+          {
+            data: efficiencyData,
+            color: (opacity = 1) => `rgba(134, 65, 244, ${opacity})`,
+            strokeWidth: 2
+          }
+        ],
+        legend: ['Эффективность по дням недели (%)']
+      };
+      
+      return (
+        <View style={styles.statsCard}>
+          <Text style={styles.statTitle}>Эффективность по дням недели</Text>
+          <BarChart
+            data={completionData}
+            width={screenWidth - 40}
+            height={220}
+            yAxisLabel=""
+            yAxisSuffix="%"
+            chartConfig={{
+              backgroundColor: '#fff',
+              backgroundGradientFrom: '#fff',
+              backgroundGradientTo: '#fff',
+              decimalPlaces: 0,
+              color: (opacity = 1) => `rgba(134, 65, 244, ${opacity})`,
+              labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+              style: {
+                borderRadius: 16
+              },
+              barPercentage: 0.7
+            }}
+            style={styles.chart}
+          />
+          
+          {bestWorstDay.bestDay && bestWorstDay.worstDay && (
+            <View style={styles.bestWorstDays}>
+              {/* Лучший день - первая строка */}
+              <View style={styles.dayStatsRow}>
+                <Text style={styles.infoText}>
+                  Лучший день: <Text style={styles.highlightText}>{bestWorstDay.bestDay.day}</Text>
+                </Text>
+                <Text style={[styles.statValue, styles.goodValue]}>{bestWorstDay.bestDay.efficiency}%</Text>
+              </View>
+              
+              {/* Худший день - вторая строка */}
+              <View style={styles.dayStatsRow}>
+                <Text style={styles.infoText}>
+                  Худший день: <Text style={styles.highlightText}>{bestWorstDay.worstDay.day}</Text>
+                </Text>
+                <Text style={[styles.statValue, styles.badValue]}>{bestWorstDay.worstDay.efficiency}%</Text>
+              </View>
+            </View>
+          )}
+        </View>
+      );
+    };
+    
     return (
       <View>
         <View style={styles.statsCard}>
@@ -327,6 +438,8 @@ export default function StatisticsScreen({ navigation }) {
             style={styles.chart}
           />
         </View>
+
+        {renderWeekdaysStats()}
       </View>
     );
   };
@@ -550,4 +663,26 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: 20,
   },
+  bestWorstDays: {
+    marginTop: 16,
+    paddingHorizontal: 10,
+    width: '100%' // Обеспечиваем полную ширину
+  },
+  goodValue: {
+    color: '#4CD964',
+    fontWeight: 'bold',
+    marginTop: 5
+  },
+  badValue: {
+    color: '#FF3B30',
+    fontWeight: 'bold',
+    marginTop: 5
+  },
+  dayStatsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10, // Расстояние между строками
+    width: '100%'
+  }
 });

@@ -10,7 +10,7 @@ import { AchievementService } from './AchievementService';
 
 const TASKS_STORAGE_KEY = 'tasks';
 
-class TaskService {
+export class TaskService {
   // Получение всех задач
   static async getAllTasks() {
     return await StorageService.getTasks();
@@ -355,6 +355,150 @@ class TaskService {
       return { success: false, message: error.message };
     }
   }
-}
 
+  /**
+   * Получение ежедневных задач
+   * @returns {Promise<Array>} - массив ежедневных задач
+   */
+  static async getDailyTasks() {
+    try {
+      const allTasks = await this.getAllTasks();
+      return allTasks.filter(task => task.isDaily);
+    } catch (error) {
+      console.error('Ошибка при получении ежедневных задач:', error);
+      return [];
+    }
+  }
+  
+  /**
+   * Получение обычных задач (не ежедневных)
+   * @returns {Promise<Array>} - массив обычных задач
+   */
+  static async getRegularTasks() {
+    try {
+      const allTasks = await this.getAllTasks();
+      return allTasks.filter(task => !task.isDaily);
+    } catch (error) {
+      console.error('Ошибка при получении обычных задач:', error);
+      return [];
+    }
+  }
+  
+  /**
+   * Сброс ежедневных задач (вызывается через SchedulerService)
+   * @returns {Promise<boolean>} - результат операции
+   */
+  static async resetDailyTasks() {
+    try {
+      const dailyTasks = await this.getDailyTasks();
+      const today = new Date().toISOString().split('T')[0];
+      let updatedCount = 0;
+      
+      for (const task of dailyTasks) {
+        // Сбрасываем только те задачи, которые были выполнены не сегодня
+        if (task.isCompleted && (!task.lastCompletedDate || task.lastCompletedDate !== today)) {
+          // Обновляем задачу: сбрасываем статус выполнения, но сохраняем историю
+          const updatedTask = {
+            ...task,
+            isCompleted: false,
+            completedAt: null
+          };
+          
+          await this.updateTask(updatedTask.id, updatedTask);
+          updatedCount++;
+        }
+      }
+      
+      console.log(`Сброшено ${updatedCount} из ${dailyTasks.length} ежедневных задач`);
+      return true;
+    } catch (error) {
+      console.error('Ошибка при сбросе ежедневных задач:', error);
+      return false;
+    }
+  }
+  
+  /**
+   * Отметка задачи как выполненной
+   * @param {object|string} taskOrId - задача или ее ID
+   * @returns {Promise<object>} - результат операции
+   */
+  static async completeTask(taskOrId) {
+    try {
+      const taskId = typeof taskOrId === 'string' ? taskOrId : taskOrId.id;
+      const tasks = await this.getAllTasks();
+      const taskIndex = tasks.findIndex(t => t.id === taskId);
+      
+      if (taskIndex === -1) {
+        return { success: false, error: 'Задача не найдена' };
+      }
+      
+      const task = tasks[taskIndex];
+      const now = new Date();
+      
+      // Устанавливаем выполнение задачи
+      task.isCompleted = true;
+      task.completedAt = now.toISOString();
+      
+      // Для ежедневных задач записываем дату выполнения
+      if (task.isDaily) {
+        task.lastCompletedDate = now.toISOString().split('T')[0];
+        tasks[taskIndex] = task;
+        
+        // Сохраняем обновленную задачу
+        const success = await StorageService.setTasks(tasks);
+        
+        if (!success) {
+          return { success: false, error: 'Не удалось сохранить изменения' };
+        }
+      } else {
+        // Для обычных задач - удаляем задачу после выполнения расчетов и обновления статистики
+        // Просто оставляем task в памяти и не обновляем массив tasks
+      }
+      
+      // Отменяем уведомление, если оно было
+      if (task.notificationId) {
+        await NotificationService.cancelTaskReminder(task.notificationId);
+      }
+      
+      // Расчет опыта в зависимости от приоритета задачи
+      let experienceGained = 10; // базовый опыт
+      if (task.priority === 'medium') experienceGained = 20;
+      if (task.priority === 'high') experienceGained = 30;
+      
+      // Обновление статистики
+      await StatisticsService.updateStatisticsOnTaskCompletion(task, experienceGained);
+      
+      // Получаем экземпляр ProfileService
+      const profileService = ProfileService.getInstance();
+      
+      // Обновление статистики профиля
+      await profileService.updateStatsOnTaskComplete();
+      
+      // Добавление опыта пользователю
+      const result = await profileService.addExperience(experienceGained);
+      
+      // Обновление достижений при выполнении задачи
+      const achievementsResult = await AchievementService.updateAchievementsOnTaskComplete(task, result.profile);
+      
+      // Если это обычная задача, удаляем ее
+      if (!task.isDaily) {
+        // Удаляем задачу из списка
+        const updatedTasks = tasks.filter(t => t.id !== taskId);
+        await StorageService.setTasks(updatedTasks);
+      }
+      
+      return { 
+        success: true, 
+        task, 
+        experienceGained, 
+        taskRemoved: !task.isDaily, // Добавляем флаг, указывающий, что задача была удалена
+        ...result,
+        achievements: achievementsResult
+      };
+    } catch (error) {
+      console.error('Ошибка при выполнении задачи:', error);
+      return { success: false, error: error.message };
+    }
+  }
+}
 export default TaskService;

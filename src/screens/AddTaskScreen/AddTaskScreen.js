@@ -16,7 +16,10 @@ import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { TaskService, CategoryService } from '../../services';
 
-const AddTaskScreen = ({ navigation }) => {
+export default function AddTaskScreen({ navigation, route }) {
+  // Получаем параметр isDaily из навигации
+  const isDaily = route.params?.isDaily || false;
+
   // Состояние задачи
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -29,6 +32,7 @@ const AddTaskScreen = ({ navigation }) => {
   const [reminderEnabled, setReminderEnabled] = useState(false);
   const [reminderTime, setReminderTime] = useState(new Date());
   const [showReminderTimePicker, setShowReminderTimePicker] = useState(false);
+  const [taskType, setTaskType] = useState(isDaily ? 'daily' : 'regular'); // Тип задачи
 
   // Состояние ошибок
   const [titleError, setTitleError] = useState('');
@@ -87,21 +91,21 @@ const AddTaskScreen = ({ navigation }) => {
     }
     
     try {
-      // Показываем индикатор загрузки (если нужно)
-      // setIsSubmitting(true);
-      
-      // Создаем объект задачи
+      // Создаем объект задачи в зависимости от типа
       const taskData = {
         title,
         description,
-        dueDate: hasDueDate ? dueDate.toISOString() : null,
+        // Для ежедневных задач не устанавливаем срок выполнения
+        dueDate: taskType === 'daily' ? null : (hasDueDate ? dueDate.toISOString() : null),
         priority,
         categoryId: category || 'Другое',
         isCompleted: false,
-        reminderEnabled: hasDueDate && reminderEnabled,
-        reminderTime: hasDueDate && reminderEnabled ? reminderTime.toISOString() : null,
+        // Для ежедневных задач отключаем напоминания
+        reminderEnabled: taskType === 'daily' ? false : (hasDueDate && reminderEnabled),
+        reminderTime: taskType === 'daily' ? null : (hasDueDate && reminderEnabled ? reminderTime.toISOString() : null),
         createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+        updatedAt: new Date().toISOString(),
+        isDaily: taskType === 'daily'
       };
       
       // Сохраняем задачу через TaskService
@@ -122,9 +126,6 @@ const AddTaskScreen = ({ navigation }) => {
     } catch (error) {
       console.error('Ошибка при создании задачи:', error);
       Alert.alert('Ошибка', 'Не удалось создать задачу');
-    } finally {
-      // Скрываем индикатор загрузки
-      // setIsSubmitting(false);
     }
   };
 
@@ -315,40 +316,85 @@ const AddTaskScreen = ({ navigation }) => {
               textAlignVertical="top"
             />
           </View>
-          
-          {/* Дата выполнения */}
+
+          {/* Выбор типа задачи */}
           <View style={styles.inputContainer}>
-            <View style={styles.switchContainer}>
-              <Text style={styles.label}>Срок выполнения</Text>
-              <Switch
-                value={hasDueDate}
-                onValueChange={setHasDueDate}
-                trackColor={{ false: "#E5E7EB", true: "#4E64EE" }}
-                thumbColor={hasDueDate ? "#FFFFFF" : "#F4F3F4"}
-              />
-            </View>
-            {hasDueDate && (
-              <TouchableOpacity 
-                style={styles.datePickerButton}
-                onPress={() => setShowDatePicker(true)}
+            <Text style={styles.label}>Тип задачи</Text>
+            <View style={styles.typeSelector}>
+            <TouchableOpacity 
+                style={[
+                  styles.typeOption, 
+                  taskType === 'daily' ? styles.selectedType : null
+                ]}
+                onPress={() => setTaskType('daily')}
               >
-                <Ionicons name="calendar-outline" size={20} color="#4E64EE" />
-                <Text style={styles.datePickerText}>{formatDate(dueDate)}</Text>
+                <Ionicons 
+                  name="repeat" 
+                  size={24} 
+                  color={taskType === 'daily' ? '#4E66F1' : '#888888'} 
+                />
+                <Text style={[
+                  styles.typeText,
+                  taskType === 'daily' ? styles.selectedTypeText : null
+                ]}>Ежедневная</Text>
               </TouchableOpacity>
-            )}
-
-            {showDatePicker && (
-              <DateTimePicker
-                value={dueDate}
-                mode="date"
-                display="default"
-                onChange={onDateChange}
-                minimumDate={new Date()}
-              />
-            )}
+              
+              <TouchableOpacity 
+                style={[
+                  styles.typeOption, 
+                  taskType === 'regular' ? styles.selectedType : null
+                ]}
+                onPress={() => setTaskType('regular')}
+              >
+                <Ionicons 
+                  name="calendar-outline" 
+                  size={24} 
+                  color={taskType === 'regular' ? '#4E66F1' : '#888888'} 
+                />
+                <Text style={[
+                  styles.typeText,
+                  taskType === 'regular' ? styles.selectedTypeText : null
+                ]}>Обычная</Text>
+              </TouchableOpacity>
+            </View>
           </View>
+          
+          {/* Дата выполнения - только для обычных задач */}
+          {taskType === 'regular' && (
+            <View style={styles.inputContainer}>
+              <View style={styles.switchContainer}>
+                <Text style={styles.label}>Срок выполнения</Text>
+                <Switch
+                  value={hasDueDate}
+                  onValueChange={setHasDueDate}
+                  trackColor={{ false: "#E5E7EB", true: "#4E64EE" }}
+                  thumbColor={hasDueDate ? "#FFFFFF" : "#F4F3F4"}
+                />
+              </View>
+              {hasDueDate && (
+                <TouchableOpacity 
+                  style={styles.datePickerButton}
+                  onPress={() => setShowDatePicker(true)}
+                >
+                  <Ionicons name="calendar-outline" size={20} color="#4E64EE" />
+                  <Text style={styles.datePickerText}>{formatDate(dueDate)}</Text>
+                </TouchableOpacity>
+              )}
 
-          {hasDueDate && (
+              {showDatePicker && (
+                <DateTimePicker
+                  value={dueDate}
+                  mode="date"
+                  display="default"
+                  onChange={onDateChange}
+                  minimumDate={new Date()}
+                />
+              )}
+            </View>
+          )}
+
+          {/* Напоминание - только для обычных задач с установленным сроком выполнения */}
+          {taskType === 'regular' && hasDueDate && (
             <View style={styles.inputContainer}>
               <View style={styles.switchContainer}>
                 <Text style={styles.label}>Напоминание</Text>
@@ -665,6 +711,32 @@ const styles = StyleSheet.create({
     padding: 16,
     textAlign: 'center',
   },
+  typeSelector: {
+    flexDirection: 'row',
+    marginBottom: 16,
+  },
+  typeOption: {
+    flex: 1,
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#DDDDDD',
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginHorizontal: 4,
+  },
+  selectedType: {
+    borderColor: '#4E66F1',
+    backgroundColor: '#F0F3FF',
+  },
+  typeText: {
+    marginLeft: 8,
+    fontSize: 16,
+    color: '#888888',
+  },
+  selectedTypeText: {
+    color: '#4E66F1',
+    fontWeight: 'bold',
+  },
 });
-
-export default AddTaskScreen;
