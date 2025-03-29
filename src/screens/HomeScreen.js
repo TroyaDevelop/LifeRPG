@@ -829,7 +829,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   avatarContainer: {
-    marginRight: 16,
+    marginRight: 8,
     // Добавим немного отступа сверху и снизу
     marginVertical: 6,
   },
@@ -847,8 +847,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 3,
     elevation: 3,
-    width: 80, // Явно задаем размер
-    height: 80, // Явно задаем размер
+    width: 110, // Явно задаем размер
+    height: 110, // Явно задаем размер
   },
   levelProgressBar: {
     flex: 1,

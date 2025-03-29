@@ -1,7 +1,7 @@
-export const BASE_SPRITES = {
-  default: require('../../assets/sprites/avatars/default.png'),
-  male: require('../../assets/sprites/avatars/male.png'),
-  female: require('../../assets/sprites/avatars/female.png'),
+// Оставляем только BODY_TYPES и убираем прежнее понятие BASE_SPRITES
+export const BODY_TYPES = {
+  typeA: require('../../assets/sprites/avatars/male.png'),
+  typeB: require('../../assets/sprites/avatars/female.png'),
 };
 
 export const HAIR_STYLES = {

@@ -4,14 +4,12 @@
 export class AvatarModel {
   constructor(data = {}) {
     this.id = data.id || Date.now().toString();
-    this.baseSprite = data.baseSprite || 'default';  // Базовый спрайт персонажа
-    this.skinTone = data.skinTone || 'normal';       // Оттенок кожи
-    this.hairStyle = data.hairStyle || 'short';      // Стиль волос
-    this.hairColor = data.hairColor || 'brown';      // Цвет волос
-    this.eyeColor = data.eyeColor || 'blue';         // Цвет глаз
-    this.background = data.background || 'default';  // Добавляем фон
-    this.environmentItems = data.environmentItems || []; // Добавляем массив элементов окружения
-    this.equipment = data.equipment || {             // Места для снаряжения (пока пустые)
+    this.bodyType = data.bodyType || 'typeA';  // Используем только bodyType
+    this.skinTone = data.skinTone || 'normal';    
+    this.hairStyle = data.hairStyle || 'short';   
+    this.hairColor = data.hairColor || 'brown';   
+    this.eyeColor = data.eyeColor || 'blue';      
+    this.equipment = data.equipment || {          
       head: null,
       body: null,
       legs: null,
@@ -44,13 +42,11 @@ export class AvatarModel {
   toJSON() {
     return {
       id: this.id,
-      baseSprite: this.baseSprite,
+      bodyType: this.bodyType,
       skinTone: this.skinTone,
       hairStyle: this.hairStyle,
       hairColor: this.hairColor,
       eyeColor: this.eyeColor,
-      background: this.background,
-      environmentItems: this.environmentItems,
       equipment: this.equipment,
       createdAt: this.createdAt,
       updatedAt: this.updatedAt

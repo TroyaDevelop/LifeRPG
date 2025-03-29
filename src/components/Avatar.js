@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { View, Image, StyleSheet } from 'react-native';
 import { AvatarService } from '../services/AvatarService';
-import { BASE_SPRITES, HAIR_STYLES, HAIR_COLORS, SKIN_TONES, EYE_COLORS } from '../constants/AvatarSprites';
+import { BODY_TYPES, HAIR_STYLES, HAIR_COLORS, SKIN_TONES, EYE_COLORS } from '../constants/AvatarSprites';
 import LoadingIndicator from './LoadingIndicator';
 
-// Добавляем avatarData в props
 const Avatar = ({ size = 'medium', onPress, style, avatarData = null }) => {
   const [avatar, setAvatar] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -57,7 +56,7 @@ const Avatar = ({ size = 'medium', onPress, style, avatarData = null }) => {
   }
 
   // Определяем спрайты для отображения
-  const baseSprite = BASE_SPRITES[avatar?.baseSprite] || BASE_SPRITES.default;
+  const bodySprite = BODY_TYPES[avatar?.bodyType] || BODY_TYPES.typeA;
   const hairStyle = avatar?.hairStyle ? HAIR_STYLES[avatar.hairStyle]?.sprite : null;
   const hairColor = avatar?.hairColor ? HAIR_COLORS[avatar.hairColor] : HAIR_COLORS.brown;
   
@@ -65,7 +64,7 @@ const Avatar = ({ size = 'medium', onPress, style, avatarData = null }) => {
     <View style={[styles.container, { width: avatarSize, height: avatarSize }, style]}>
       {/* Базовый спрайт персонажа */}
       <Image
-        source={baseSprite}
+        source={bodySprite}
         style={styles.baseSprite}
         resizeMode="contain"
       />

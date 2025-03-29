@@ -6,7 +6,7 @@ import { AvatarService } from '../services/AvatarService';
 import Avatar from '../components/Avatar';
 import Header from '../components/Header';
 import LevelProgressBar from '../components/LevelProgressBar';
-import { SKIN_TONES, HAIR_COLORS, HAIR_STYLES, EYE_COLORS, BASE_SPRITES } from '../constants/AvatarSprites';
+import { BODY_TYPES, HAIR_STYLES, HAIR_COLORS, SKIN_TONES, EYE_COLORS } from '../constants/AvatarSprites';
 import LoadingIndicator from '../components/LoadingIndicator';
 
 const ProfileScreen = ({ navigation }) => {
@@ -39,37 +39,42 @@ const ProfileScreen = ({ navigation }) => {
   const handleUpdateAvatar = async (field, value) => {
     try {
       const updateData = { [field]: value };
-      
-      // Обновляем локальное состояние немедленно для мгновенного отображения
-      setAvatar(prev => ({
-        ...prev,
-        [field]: value,
-        updatedAt: new Date().toISOString()
-      }));
-      
-      // Сохраняем в хранилище асинхронно
-      await AvatarService.updateAvatar(updateData);
+      const updatedAvatar = await AvatarService.updateAvatar(updateData);
+      setAvatar(updatedAvatar);
     } catch (error) {
       console.error('Ошибка при обновлении аватара:', error);
     }
   };
 
-  // Рендер для выбора базы персонажа
-  const renderBaseSelection = () => (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.optionsScrollView}>
-      {Object.keys(BASE_SPRITES).map((base) => (
-        <TouchableOpacity
-          key={`base-${base}`}
-          style={[
-            styles.optionItem,
-            avatar?.baseSprite === base && styles.selectedOption
-          ]}
-          onPress={() => handleUpdateAvatar('baseSprite', base)}
-        >
-          <Text style={styles.optionText}>{base}</Text>
-        </TouchableOpacity>
-      ))}
-    </ScrollView>
+  // Обновляем функцию renderBaseSelection на renderBodyTypeSelection
+  const renderBodyTypeSelection = () => (
+    <View style={styles.bodyTypeSelectionContainer}>
+      <TouchableOpacity
+        style={[
+          styles.bodyTypeOption,
+          avatar?.bodyType === 'typeA' && styles.selectedBodyTypeOption
+        ]}
+        onPress={() => handleUpdateAvatar('bodyType', 'typeA')}
+      >
+        <Text style={[
+          styles.bodyTypeOptionText,
+          avatar?.bodyType === 'typeA' && styles.selectedBodyTypeText
+        ]}>Тип A</Text>
+      </TouchableOpacity>
+      
+      <TouchableOpacity
+        style={[
+          styles.bodyTypeOption,
+          avatar?.bodyType === 'typeB' && styles.selectedBodyTypeOption
+        ]}
+        onPress={() => handleUpdateAvatar('bodyType', 'typeB')}
+      >
+        <Text style={[
+          styles.bodyTypeOptionText,
+          avatar?.bodyType === 'typeB' && styles.selectedBodyTypeText
+        ]}>Тип B</Text>
+      </TouchableOpacity>
+    </View>
   );
 
   // Рендер для выбора прически
@@ -168,14 +173,11 @@ const ProfileScreen = ({ navigation }) => {
             {profile && <LevelProgressBar profile={profile} style={styles.levelProgress} />}
             
             <View style={styles.statsContainer}>
-              <View style={styles.statItem}>
-                <Ionicons name="star" size={20} color="#4E64EE" />
-                <Text style={styles.statValue}>{profile?.experience}</Text>
-                <Text style={styles.statLabel}>Опыт</Text>
-              </View>
+              {/* Удаляем блок со статистикой опыта */}
               
+              {/* Оставляем только информацию о выполненных задачах */}
               <View style={styles.statItem}>
-                <Ionicons name="checkbox" size={20} color="#4E64EE" />
+                <Ionicons name="checkbox" size={24} color="#4E64EE" />
                 <Text style={styles.statValue}>{profile?.tasksCompleted || 0}</Text>
                 <Text style={styles.statLabel}>Выполнено задач</Text>
               </View>
@@ -188,8 +190,8 @@ const ProfileScreen = ({ navigation }) => {
           <Text style={styles.sectionTitle}>Настройки персонажа</Text>
           
           <View style={styles.customizationOption}>
-            <Text style={styles.optionTitle}>Базовый вид</Text>
-            {renderBaseSelection()}
+            <Text style={styles.optionTitle}>Тип тела</Text>
+            {renderBodyTypeSelection()}
           </View>
           
           <View style={styles.customizationOption}>
@@ -278,21 +280,22 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   statsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
+    justifyContent: 'center', // Центрируем контент
     width: '100%',
+    marginTop: 10, // Добавляем отступ сверху
   },
   statItem: {
     alignItems: 'center',
+    paddingVertical: 10, // Добавляем вертикальный отступ
   },
   statValue: {
-    fontSize: 18,
+    fontSize: 22, // Увеличиваем размер шрифта для лучшей видимости
     fontWeight: 'bold',
     color: '#333333',
-    marginVertical: 4,
+    marginVertical: 6, // Увеличиваем отступы
   },
   statLabel: {
-    fontSize: 12,
+    fontSize: 14,
     color: '#888888',
   },
   customizationSection: {
@@ -350,6 +353,32 @@ const styles = StyleSheet.create({
   },
   selectedColorOption: {
     borderColor: '#4E64EE',
+  },
+  bodyTypeSelectionContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginVertical: 10,
+  },
+  bodyTypeOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F0F3FF',
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    width: '45%',
+    justifyContent: 'center',
+  },
+  selectedBodyTypeOption: {
+    backgroundColor: '#4E64EE',
+  },
+  bodyTypeOptionText: {
+    fontSize: 16,
+    color: '#4E64EE',
+    fontWeight: '500',
+  },
+  selectedBodyTypeText: {
+    color: '#FFFFFF',
   },
 });
 
