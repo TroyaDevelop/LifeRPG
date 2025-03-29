@@ -15,6 +15,7 @@ import StatisticsScreen from '../screens/StatisticsScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import { AchievementsScreen } from '../screens/AchievementsScreen';
 import AppSettingsScreen from '../screens/AppSettingsScreen';
+import ProfileScreen from '../screens/ProfileScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -61,6 +62,11 @@ export default function AppNavigator() {
         <Stack.Screen 
           name="AppSettings" 
           component={AppSettingsScreen} 
+          options={{ headerShown: false }} 
+        />
+        <Stack.Screen 
+          name="Profile" 
+          component={ProfileScreen} 
           options={{ headerShown: false }} 
         />
         

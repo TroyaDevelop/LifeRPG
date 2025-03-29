@@ -23,6 +23,10 @@ import Header from '../components/Header';
 import { formatDate } from '../utils/helpers';
 import { TASK_PRIORITIES, PRIORITY_COLORS } from '../utils/constants';
 import { SchedulerService } from '../services/SchedulerService';
+// Добавляем импорт компонента Avatar
+import Avatar from '../components/Avatar';
+// Добавляем импорт AvatarService
+import { AvatarService } from '../services/AvatarService';
 
 const HomeScreen = ({ navigation }) => {
   const [tasks, setTasks] = useState([]);
@@ -39,6 +43,8 @@ const HomeScreen = ({ navigation }) => {
   const [levelUpData, setLevelUpData] = useState({ visible: false, level: 1, bonuses: [] });
   const [tabType, setTabType] = useState('regular'); // 'regular' или 'daily'
   const isFocused = useIsFocused();
+  // Добавляем состояние для аватара
+  const [avatar, setAvatar] = useState(null);
 
   // Загрузка задач при фокусе на экране
   useFocusEffect(
@@ -65,6 +71,22 @@ const HomeScreen = ({ navigation }) => {
       initializeScreen();
     }
   }, [isFocused, tabType]);
+
+  // Эффект для обновления данных при возвращении на экран
+  useEffect(() => {
+    if (isFocused) {
+      const updateAvatarOnFocus = async () => {
+        try {
+          const userAvatar = await AvatarService.getAvatar();
+          setAvatar(userAvatar);
+        } catch (error) {
+          console.error('Ошибка при обновлении аватара:', error);
+        }
+      };
+
+      updateAvatarOnFocus();
+    }
+  }, [isFocused]);
 
   // Загрузка задач из хранилища
   const loadTasks = async () => {
@@ -344,11 +366,19 @@ const handleCompleteTask = async (taskId) => {
   // Компонент фильтра и сортировки
   const renderHeaderComponent = () => (
     <View style={styles.headerContainer}>
-      {/* Показываем прогресс уровня */}
-      {profile && (
-        <LevelProgressBar profile={profile} style={styles.levelProgressBar} />
-      )}
-    
+      {/* Показываем аватар и прогресс уровня */}
+      <View style={styles.profileContainer}>
+        <TouchableOpacity 
+          style={styles.avatarContainer}
+          onPress={() => navigation.navigate('Profile')}
+        >
+          <Avatar size="small" style={styles.avatar} avatarData={avatar} />
+        </TouchableOpacity>
+        {profile && (
+          <LevelProgressBar profile={profile} style={styles.levelProgressBar} />
+        )}
+      </View>
+      
       <View style={styles.searchContainer}>
         <Ionicons name="search" size={20} color="#AAAAAA" style={styles.searchIcon} />
         <TextInput
@@ -356,26 +386,21 @@ const handleCompleteTask = async (taskId) => {
           placeholder="Поиск задач..."
           value={searchQuery}
           onChangeText={setSearchQuery}
-          returnKeyType="search"
+          placeholderTextColor="#AAAAAA"
         />
-        {searchQuery ? (
-          <TouchableOpacity onPress={() => setSearchQuery('')}>
-            <Ionicons name="close-circle" size={20} color="#AAAAAA" />
-          </TouchableOpacity>
-        ) : null}
       </View>
 
       <View style={styles.filterSortContainer}>
         <TouchableOpacity 
-          style={styles.filterButton} 
+          style={styles.filterButton}
           onPress={() => setShowFilterModal(true)}
         >
           <Ionicons name="filter" size={20} color="#4E64EE" />
           <Text style={styles.filterSortText}>Фильтр</Text>
         </TouchableOpacity>
-
+        
         <TouchableOpacity 
-          style={styles.sortButton} 
+          style={styles.sortButton}
           onPress={() => setShowSortModal(true)}
         >
           <Ionicons name="swap-vertical" size={20} color="#4E64EE" />
@@ -795,6 +820,38 @@ const styles = StyleSheet.create({
     color: '#4E66F1',
     fontWeight: 'bold',
     fontSize: 16,
+  },
+  // Добавляем новые стили
+  profileContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+    paddingHorizontal: 16,
+  },
+  avatarContainer: {
+    marginRight: 16,
+    // Добавим немного отступа сверху и снизу
+    marginVertical: 6,
+  },
+  avatar: {
+    borderWidth: 2,
+    borderColor: '#4E64EE',
+    borderRadius: 8, // Изменяем на квадрат с закругленными углами
+    backgroundColor: '#E9EDF5', // Соответствует цвету фона в Avatar
+    // Добавим небольшую тень
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 3,
+    width: 80, // Явно задаем размер
+    height: 80, // Явно задаем размер
+  },
+  levelProgressBar: {
+    flex: 1,
   },
 });
 
