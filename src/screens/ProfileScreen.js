@@ -1,150 +1,68 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { ProfileService } from '../services/ProfileService';
 import { AvatarService } from '../services/AvatarService';
 import Avatar from '../components/Avatar';
 import Header from '../components/Header';
 import LevelProgressBar from '../components/LevelProgressBar';
-import { BODY_TYPES, HAIR_STYLES, HAIR_COLORS, SKIN_TONES, EYE_COLORS } from '../constants/AvatarSprites';
 import LoadingIndicator from '../components/LoadingIndicator';
+import { Button } from '../components';
 
 const ProfileScreen = ({ navigation }) => {
   const [profile, setProfile] = useState(null);
   const [avatar, setAvatar] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [avatarSize, setAvatarSize] = useState('large'); // По умолчанию большой
 
-  // Загрузка профиля и аватара
-  useEffect(() => {
-    const loadProfileData = async () => {
-      try {
-        // Используем экземпляр профиль-сервиса
-        const profileService = ProfileService.getInstance();
-        const userProfile = await profileService.getProfile();
-        const userAvatar = await AvatarService.getAvatar();
-        
-        setProfile(userProfile);
-        setAvatar(userAvatar);
-      } catch (error) {
-        console.error('Ошибка при загрузке данных профиля:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
+  // Функция для переключения размера аватара
+  const toggleAvatarSize = () => {
+    setAvatarSize(prev => prev === 'large' ? 'xlarge' : 'large');
+  };
 
-    loadProfileData();
-  }, []);
-
-  // Обновление аватара
-  const handleUpdateAvatar = async (field, value) => {
+  // Функция загрузки данных профиля и аватара
+  const loadProfileData = async () => {
     try {
-      const updateData = { [field]: value };
-      const updatedAvatar = await AvatarService.updateAvatar(updateData);
-      setAvatar(updatedAvatar);
+      setLoading(true);
+      // Используем getInstance(), так как ProfileService - это синглтон
+      const profileService = ProfileService.getInstance();
+      const userProfile = await profileService.getProfile();
+      const userAvatar = await AvatarService.getAvatar(true); // Форсируем свежие данные
+      
+      setProfile(userProfile);
+      setAvatar(userAvatar);
     } catch (error) {
-      console.error('Ошибка при обновлении аватара:', error);
+      console.error('Ошибка при загрузке данных профиля:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Обновляем функцию renderBaseSelection на renderBodyTypeSelection
-  const renderBodyTypeSelection = () => (
-    <View style={styles.bodyTypeSelectionContainer}>
-      <TouchableOpacity
-        style={[
-          styles.bodyTypeOption,
-          avatar?.bodyType === 'typeA' && styles.selectedBodyTypeOption
-        ]}
-        onPress={() => handleUpdateAvatar('bodyType', 'typeA')}
-      >
-        <Text style={[
-          styles.bodyTypeOptionText,
-          avatar?.bodyType === 'typeA' && styles.selectedBodyTypeText
-        ]}>Тип A</Text>
-      </TouchableOpacity>
-      
-      <TouchableOpacity
-        style={[
-          styles.bodyTypeOption,
-          avatar?.bodyType === 'typeB' && styles.selectedBodyTypeOption
-        ]}
-        onPress={() => handleUpdateAvatar('bodyType', 'typeB')}
-      >
-        <Text style={[
-          styles.bodyTypeOptionText,
-          avatar?.bodyType === 'typeB' && styles.selectedBodyTypeText
-        ]}>Тип B</Text>
-      </TouchableOpacity>
-    </View>
+  // Загрузка профиля при первом рендере
+  useEffect(() => {
+    loadProfileData();
+  }, []);
+
+  // Важное дополнение: обновляем данные при каждом фокусе на экране
+  useFocusEffect(
+    useCallback(() => {
+      loadProfileData();
+    }, [])
   );
 
-  // Рендер для выбора прически
-  const renderHairStyleSelection = () => (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.optionsScrollView}>
-      {Object.keys(HAIR_STYLES).map((style) => (
-        <TouchableOpacity
-          key={`hair-${style}`}
-          style={[
-            styles.optionItem,
-            avatar?.hairStyle === style && styles.selectedOption
-          ]}
-          onPress={() => handleUpdateAvatar('hairStyle', style)}
-        >
-          <Text style={styles.optionText}>{HAIR_STYLES[style].name}</Text>
-        </TouchableOpacity>
-      ))}
-    </ScrollView>
-  );
+  // Функции для вычисления контейнера в зависимости от размера аватара
 
-  // Рендер для выбора цвета волос
-  const renderHairColorSelection = () => (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.optionsScrollView}>
-      {Object.keys(HAIR_COLORS).map((color) => (
-        <TouchableOpacity
-          key={`hair-color-${color}`}
-          style={[
-            styles.colorOption,
-            { backgroundColor: HAIR_COLORS[color] },
-            avatar?.hairColor === color && styles.selectedColorOption
-          ]}
-          onPress={() => handleUpdateAvatar('hairColor', color)}
-        />
-      ))}
-    </ScrollView>
-  );
-
-  // Рендер для выбора тона кожи
-  const renderSkinToneSelection = () => (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.optionsScrollView}>
-      {Object.keys(SKIN_TONES).map((tone) => (
-        <TouchableOpacity
-          key={`skin-${tone}`}
-          style={[
-            styles.colorOption,
-            { backgroundColor: SKIN_TONES[tone] },
-            avatar?.skinTone === tone && styles.selectedColorOption
-          ]}
-          onPress={() => handleUpdateAvatar('skinTone', tone)}
-        />
-      ))}
-    </ScrollView>
-  );
-
-  // Рендер для выбора цвета глаз
-  const renderEyeColorSelection = () => (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.optionsScrollView}>
-      {Object.keys(EYE_COLORS).map((color) => (
-        <TouchableOpacity
-          key={`eye-${color}`}
-          style={[
-            styles.colorOption,
-            { backgroundColor: EYE_COLORS[color] },
-            avatar?.eyeColor === color && styles.selectedColorOption
-          ]}
-          onPress={() => handleUpdateAvatar('eyeColor', color)}
-        />
-      ))}
-    </ScrollView>
-  );
+  // Определяем размеры аватара
+  const getAvatarSize = (size) => {
+    switch (size) {
+      case 'small': return 64;
+      case 'medium': return 120;
+      case 'large': return 180;
+      case 'xlarge': return 240;
+      default: return 180;
+    }
+  };
 
   if (loading) {
     return (
@@ -165,17 +83,42 @@ const ProfileScreen = ({ navigation }) => {
       <ScrollView style={styles.scrollView}>
         {/* Информация о персонаже */}
         <View style={styles.profileSection}>
-          {/* Передаем текущее состояние аватара в компонент Avatar */}
-          <Avatar size="large" style={styles.avatar} avatarData={avatar} />
+          <View style={styles.avatarContainer}>
+            <TouchableOpacity 
+              onPress={toggleAvatarSize}
+              activeOpacity={0.8}
+              style={[
+                styles.avatarWrapper,
+                {
+                  // Возвращаем квадратную рамку
+                  width: avatarSize === 'xlarge' ? 260 : 200,
+                  height: avatarSize === 'xlarge' ? 260 : 200,
+                  borderRadius: 20, // Фиксированный радиус для квадратной рамки с закругленными углами
+                }
+              ]}
+            >
+              <Avatar 
+                size={avatarSize === 'xlarge' ? 240 : 180} // Явно указываем размер
+                style={styles.avatar}
+                avatarData={avatar} 
+              />
+              
+              {/* Иконка увеличения/уменьшения */}
+              <View style={styles.zoomIconContainer}>
+                <Ionicons 
+                  name={avatarSize === 'large' ? 'expand-outline' : 'contract-outline'} 
+                  size={24} 
+                  color="#FFFFFF" 
+                />
+              </View>
+            </TouchableOpacity>
+          </View>
           
           <View style={styles.profileInfo}>
             <Text style={styles.profileName}>Уровень {profile?.level}</Text>
             {profile && <LevelProgressBar profile={profile} style={styles.levelProgress} />}
             
             <View style={styles.statsContainer}>
-              {/* Удаляем блок со статистикой опыта */}
-              
-              {/* Оставляем только информацию о выполненных задачах */}
               <View style={styles.statItem}>
                 <Ionicons name="checkbox" size={24} color="#4E64EE" />
                 <Text style={styles.statValue}>{profile?.tasksCompleted || 0}</Text>
@@ -183,35 +126,38 @@ const ProfileScreen = ({ navigation }) => {
               </View>
             </View>
           </View>
+
+          {/* Добавляем кнопку для перехода на экран редактирования аватара */}
+          <Button 
+            title="Изменить внешность" 
+            onPress={() => navigation.navigate('AvatarCustomization')}
+            icon="brush-outline"
+            style={styles.editAvatarButton}
+          />
         </View>
-        
-        {/* Настройки аватара */}
-        <View style={styles.customizationSection}>
-          <Text style={styles.sectionTitle}>Настройки персонажа</Text>
+
+        {/* Дополнительная информация о персонаже */}
+        <View style={styles.statsSection}>
+          <Text style={styles.sectionTitle}>Статистика</Text>
           
-          <View style={styles.customizationOption}>
-            <Text style={styles.optionTitle}>Тип тела</Text>
-            {renderBodyTypeSelection()}
-          </View>
-          
-          <View style={styles.customizationOption}>
-            <Text style={styles.optionTitle}>Прическа</Text>
-            {renderHairStyleSelection()}
-          </View>
-          
-          <View style={styles.customizationOption}>
-            <Text style={styles.optionTitle}>Цвет волос</Text>
-            {renderHairColorSelection()}
-          </View>
-          
-          <View style={styles.customizationOption}>
-            <Text style={styles.optionTitle}>Тон кожи</Text>
-            {renderSkinToneSelection()}
-          </View>
-          
-          <View style={styles.customizationOption}>
-            <Text style={styles.optionTitle}>Цвет глаз</Text>
-            {renderEyeColorSelection()}
+          <View style={styles.statsGrid}>
+            <View style={styles.statGridItem}>
+              <Ionicons name="star-outline" size={22} color="#4E64EE" />
+              <Text style={styles.statGridValue}>{profile?.experience || 0}</Text>
+              <Text style={styles.statGridLabel}>Очки опыта</Text>
+            </View>
+            
+            <View style={styles.statGridItem}>
+              <Ionicons name="calendar-outline" size={22} color="#4E64EE" />
+              <Text style={styles.statGridValue}>{profile?.streakDays || 0}</Text>
+              <Text style={styles.statGridLabel}>Дней подряд</Text>
+            </View>
+            
+            <View style={styles.statGridItem}>
+              <Ionicons name="trophy-outline" size={22} color="#4E64EE" />
+              <Text style={styles.statGridValue}>{profile?.unlockedBonuses?.length || 0}</Text>
+              <Text style={styles.statGridLabel}>Бонусов</Text>
+            </View>
           </View>
         </View>
       </ScrollView>
@@ -249,21 +195,36 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 2,
   },
-  avatar: {
-    marginBottom: 16,
+  avatarContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: 20,
+    width: '100%',
+  },
+  avatarWrapper: {
     borderWidth: 3,
     borderColor: '#4E64EE',
-    borderRadius: 8, // Изменяем на квадрат с закругленными углами
-    backgroundColor: '#E9EDF5', // Соответствует цвету фона в Avatar
-    // Возможно добавить тень для более интересного эффекта
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 3,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
-    elevation: 5,
+    backgroundColor: '#F0F3FF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden', // Важно! Это не позволит аватару выйти за пределы
+    position: 'relative', // Для правильного позиционирования дочерних элементов
+  },
+  avatar: {
+    width: '92%', // Чуть меньше контейнера для гарантии
+    height: '92%',
+    // Используем абсолютное позиционирование для центрирования
+    position: 'absolute',
+    top: '4%',
+    left: '4%',
+  },
+  zoomIconContainer: {
+    position: 'absolute',
+    bottom: 10,
+    right: 10,
+    backgroundColor: 'rgba(78, 100, 238, 0.7)',
+    borderRadius: 15,
+    padding: 5,
   },
   profileInfo: {
     width: '100%',
@@ -280,25 +241,29 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   statsContainer: {
-    justifyContent: 'center', // Центрируем контент
+    justifyContent: 'center',
     width: '100%',
-    marginTop: 10, // Добавляем отступ сверху
+    marginTop: 10,
   },
   statItem: {
     alignItems: 'center',
-    paddingVertical: 10, // Добавляем вертикальный отступ
+    paddingVertical: 10,
   },
   statValue: {
-    fontSize: 22, // Увеличиваем размер шрифта для лучшей видимости
+    fontSize: 22,
     fontWeight: 'bold',
     color: '#333333',
-    marginVertical: 6, // Увеличиваем отступы
+    marginVertical: 6,
   },
   statLabel: {
     fontSize: 14,
     color: '#888888',
   },
-  customizationSection: {
+  editAvatarButton: {
+    marginTop: 16,
+    width: '100%',
+  },
+  statsSection: {
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
     margin: 16,
@@ -315,71 +280,27 @@ const styles = StyleSheet.create({
     color: '#333333',
     marginBottom: 16,
   },
-  customizationOption: {
-    marginBottom: 16,
-  },
-  optionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#666666',
-    marginBottom: 8,
-  },
-  optionsScrollView: {
+  statsGrid: {
     flexDirection: 'row',
-    marginBottom: 8,
+    justifyContent: 'space-between',
+    marginTop: 8,
   },
-  optionItem: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    backgroundColor: '#F0F3FF',
-    borderRadius: 20,
-    marginRight: 8,
-  },
-  selectedOption: {
-    backgroundColor: '#4E64EE',
-  },
-  optionText: {
-    fontSize: 14,
-    color: '#4E64EE',
-    fontWeight: '500',
-  },
-  colorOption: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    marginRight: 8,
-    borderWidth: 2,
-    borderColor: 'transparent',
-  },
-  selectedColorOption: {
-    borderColor: '#4E64EE',
-  },
-  bodyTypeSelectionContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginVertical: 10,
-  },
-  bodyTypeOption: {
-    flexDirection: 'row',
+  statGridItem: {
+    flex: 1,
     alignItems: 'center',
-    backgroundColor: '#F0F3FF',
-    borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    width: '45%',
-    justifyContent: 'center',
+    paddingHorizontal: 4,
   },
-  selectedBodyTypeOption: {
-    backgroundColor: '#4E64EE',
+  statGridValue: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333333',
+    marginVertical: 6,
   },
-  bodyTypeOptionText: {
-    fontSize: 16,
-    color: '#4E64EE',
-    fontWeight: '500',
-  },
-  selectedBodyTypeText: {
-    color: '#FFFFFF',
-  },
+  statGridLabel: {
+    fontSize: 12,
+    color: '#888888',
+    textAlign: 'center',
+  }
 });
 
 export default ProfileScreen;

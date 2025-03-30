@@ -4,12 +4,13 @@
 export class AvatarModel {
   constructor(data = {}) {
     this.id = data.id || Date.now().toString();
-    this.bodyType = data.bodyType || 'typeA';  // Используем только bodyType
-    this.skinTone = data.skinTone || 'normal';    
-    this.hairStyle = data.hairStyle || 'short';   
-    this.hairColor = data.hairColor || 'brown';   
-    this.eyeColor = data.eyeColor || 'blue';      
-    this.equipment = data.equipment || {          
+    this.bodyType = data.bodyType || 'typeA';        // Тип тела персонажа
+    this.skinTone = data.skinTone || 'normal';       // Оттенок кожи
+    this.hairStyle = data.hairStyle || 'short';      // Стиль волос
+    this.hairColor = data.hairColor || 'brown';      // Цвет волос
+    this.eyeColor = data.eyeColor || 'blue';         // Цвет глаз
+    this.faceExpression = data.faceExpression || 'neutral'; // Выражение лица
+    this.equipment = data.equipment || {             // Места для снаряжения (пока пустые)
       head: null,
       body: null,
       legs: null,
@@ -47,6 +48,7 @@ export class AvatarModel {
       hairStyle: this.hairStyle,
       hairColor: this.hairColor,
       eyeColor: this.eyeColor,
+      faceExpression: this.faceExpression,
       equipment: this.equipment,
       createdAt: this.createdAt,
       updatedAt: this.updatedAt

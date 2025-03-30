@@ -1,23 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { View, Image, StyleSheet } from 'react-native';
 import { AvatarService } from '../services/AvatarService';
-import { BODY_TYPES, HAIR_STYLES, HAIR_COLORS, SKIN_TONES, EYE_COLORS } from '../constants/AvatarSprites';
 import LoadingIndicator from './LoadingIndicator';
+import { BODY_TYPES, HAIR_STYLES, HAIR_COLORS, FACE_EXPRESSIONS, EYE_SPRITE, EYE_COLORS } from '../constants/AvatarSprites';
 
-const Avatar = ({ size = 'medium', onPress, style, avatarData = null }) => {
+const Avatar = ({ size = 'medium', onPress, style, avatarData }) => {
   const [avatar, setAvatar] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Загружаем данные аватара при монтировании компонента или обновлении avatarData
+  // Загружаем данные аватара при монтировании компонента или при изменении avatarData
   useEffect(() => {
     const loadAvatar = async () => {
       try {
         if (avatarData) {
-          // Если переданы данные аватара, используем их
           setAvatar(avatarData);
           setLoading(false);
         } else {
-          // Иначе загружаем из хранилища
           const userAvatar = await AvatarService.getAvatar();
           setAvatar(userAvatar);
           setLoading(false);
@@ -29,7 +27,7 @@ const Avatar = ({ size = 'medium', onPress, style, avatarData = null }) => {
     };
 
     loadAvatar();
-  }, [avatarData]); // Зависимость от avatarData для повторного запуска эффекта
+  }, [avatarData]);
 
   // Определяем размеры аватара в зависимости от переданного параметра
   const getSize = () => {
@@ -40,8 +38,11 @@ const Avatar = ({ size = 'medium', onPress, style, avatarData = null }) => {
         return 120;
       case 'large':
         return 180;
+      case 'xlarge':
+        return 240;
       default:
-        return size; // Если передано числовое значение
+        // Если передано числовое значение
+        return typeof size === 'number' ? size : 120;
     }
   };
 
@@ -55,50 +56,102 @@ const Avatar = ({ size = 'medium', onPress, style, avatarData = null }) => {
     );
   }
 
-  // Определяем спрайты для отображения
-  const bodySprite = BODY_TYPES[avatar?.bodyType] || BODY_TYPES.typeA;
-  const hairStyle = avatar?.hairStyle ? HAIR_STYLES[avatar.hairStyle]?.sprite : null;
-  const hairColor = avatar?.hairColor ? HAIR_COLORS[avatar.hairColor] : HAIR_COLORS.brown;
+  // Определяем тип тела и тон кожи
+  const bodyType = avatar?.bodyType || 'typeA';
+  const skinTone = avatar?.skinTone || 'normal';
   
+  // Получаем правильный спрайт в зависимости от типа тела и тона кожи
+  const bodySprite = BODY_TYPES[bodyType]?.sprites?.[skinTone] || BODY_TYPES.typeA.sprites.normal;
+  
+  const hairStyle = avatar?.hairStyle && HAIR_STYLES[avatar.hairStyle] && avatar.hairStyle !== 'none' ? 
+    HAIR_STYLES[avatar.hairStyle].sprite : null;
+  
+  const hairColor = avatar?.hairColor ? HAIR_COLORS[avatar.hairColor] : HAIR_COLORS.brown;
+
+  const faceExpression = avatar?.faceExpression && FACE_EXPRESSIONS[avatar.faceExpression]?.sprite ?
+    FACE_EXPRESSIONS[avatar.faceExpression].sprite : FACE_EXPRESSIONS.neutral.sprite;
+    
+  const eyeColor = avatar?.eyeColor ? EYE_COLORS[avatar.eyeColor] : EYE_COLORS.blue;
+
   return (
     <View style={[styles.container, { width: avatarSize, height: avatarSize }, style]}>
-      {/* Базовый спрайт персонажа */}
-      <Image
-        source={bodySprite}
-        style={styles.baseSprite}
-        resizeMode="contain"
-      />
-      
-      {/* Здесь будут добавляться другие элементы аватара (волосы, глаза, снаряжение и т.д.) */}
-      {hairStyle && (
+      <View style={styles.spriteContainer}>
+        {/* Базовый спрайт персонажа с нужным тоном кожи */}
         <Image
-          source={hairStyle}
-          style={[styles.hairStyle, { tintColor: hairColor }]}
+          source={bodySprite}
+          style={styles.baseSprite}
           resizeMode="contain"
         />
-      )}
-      
-      {/* Место для будущих слоев снаряжения */}
+        
+        {/* Зрачки глаз */}
+        <Image
+          source={EYE_SPRITE}
+          style={[styles.eyeSprite, { tintColor: eyeColor }]}
+          resizeMode="contain"
+        />
+        
+        {/* Выражение лица персонажа */}
+        <Image
+          source={faceExpression}
+          style={styles.faceExpression}
+          resizeMode="contain"
+        />
+        
+        {/* Прическа персонажа */}
+        {hairStyle && (
+          <Image
+            source={hairStyle}
+            style={[styles.hairStyle, { tintColor: hairColor }]}
+            resizeMode="contain"
+          />
+        )}
+      </View>
     </View>
   );
 };
 
+// Обновляем стили для аватара
 const styles = StyleSheet.create({
   container: {
     justifyContent: 'center',
     alignItems: 'center',
-    overflow: 'hidden',
-    aspectRatio: 1,
+    overflow: 'hidden', // Ограничиваем видимую область
+  },
+  spriteContainer: {
+    width: '95%', // Немного уменьшаем размер спрайтов
+    height: '95%',
+    position: 'relative',
   },
   baseSprite: {
     position: 'absolute',
     width: '100%',
     height: '100%',
+    top: 0,
+    left: 0,
+  },
+  eyeSprite: {
+    position: 'absolute',
+    width: '100%',
+    height: '100%',
+    zIndex: 1,
+    top: 0,
+    left: 0,
+  },
+  faceExpression: {
+    position: 'absolute',
+    width: '100%',
+    height: '100%',
+    zIndex: 2,
+    top: 0,
+    left: 0,
   },
   hairStyle: {
     position: 'absolute',
     width: '100%',
     height: '100%',
+    zIndex: 3,
+    top: 0,
+    left: 0,
   },
 });
 

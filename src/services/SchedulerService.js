@@ -9,6 +9,26 @@ export class SchedulerService {
   static LAST_DAILY_RESET_KEY = 'LAST_DAILY_RESET_DATE';
   
   /**
+   * Инициализирует планировщик и выполняет первоначальные проверки
+   * @returns {Promise<void>}
+   */
+  static async initializeScheduler() {
+    try {
+      console.log('Инициализация планировщика...');
+      
+      // Проверяем и сбрасываем ежедневные задачи при запуске
+      await this.checkAndResetDailyTasks();
+      
+      // Настраиваем обработчики периодических событий
+      this.setupScheduledEvents();
+      
+      console.log('Планировщик успешно инициализирован');
+    } catch (error) {
+      console.error('Ошибка при инициализации планировщика:', error);
+    }
+  }
+  
+  /**
    * Проверяет и сбрасывает ежедневные задачи, если нужно
    * @returns {Promise<boolean>} - true если был выполнен сброс, false если сброс не требуется
    */
@@ -40,3 +60,6 @@ export class SchedulerService {
     // Например, еженедельных или ежемесячных
   }
 }
+
+// Экспортируем класс по умолчанию
+export default SchedulerService;
