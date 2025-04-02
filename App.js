@@ -1,11 +1,12 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import AppNavigator from './src/navigation/AppNavigator';
+import SplashScreen from './src/screens/SplashScreen';
 import { NotificationService } from './src/services';
-import { TaskService } from './src/services/TaskService';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { AppProvider } from './src/context/AppContext';
 
 // Настройка обработчика уведомлений
 Notifications.setNotificationHandler({
@@ -17,6 +18,8 @@ Notifications.setNotificationHandler({
 });
 
 export default function App() {
+  const [isLoading, setIsLoading] = useState(true);
+
   useEffect(() => {
     // Запрос разрешений на уведомления
     NotificationService.registerForPushNotificationsAsync();
@@ -30,10 +33,9 @@ export default function App() {
       console.log('Пользователь нажал на уведомление:', response);
       const { data } = response.notification.request.content;
       
-      // Здесь можно добавить логику для навигации к задаче
       if (data && data.taskId) {
-        // NavigationService.navigate('EditTask', { taskId: data.taskId });
         console.log('Нужно перейти к задаче с ID:', data.taskId);
+        // Навигация будет обрабатываться отдельно
       }
     });
 
@@ -44,10 +46,23 @@ export default function App() {
     };
   }, []);
 
+  // Обработчик завершения экрана загрузки
+  const handleSplashFinish = () => {
+    setIsLoading(false);
+  };
+
   return (
     <>
-      <StatusBar style="auto" />
-      <AppNavigator />
+      {isLoading ? (
+        <SplashScreen onFinish={handleSplashFinish} />
+      ) : (
+        <AppProvider>
+          <SafeAreaProvider>
+            <StatusBar style="auto" />
+            <AppNavigator />
+          </SafeAreaProvider>
+        </AppProvider>
+      )}
     </>
   );
 }

@@ -9,7 +9,7 @@ export class AvatarModel {
     this.hairStyle = data.hairStyle || 'short';      // Стиль волос
     this.hairColor = data.hairColor || 'brown';      // Цвет волос
     this.eyeColor = data.eyeColor || 'blue';         // Цвет глаз
-    this.faceExpression = data.faceExpression || 'neutral'; // Выражение лица
+    // Убираем faceExpression
     this.equipment = data.equipment || {             // Места для снаряжения (пока пустые)
       head: null,
       body: null,
@@ -48,7 +48,6 @@ export class AvatarModel {
       hairStyle: this.hairStyle,
       hairColor: this.hairColor,
       eyeColor: this.eyeColor,
-      faceExpression: this.faceExpression,
       equipment: this.equipment,
       createdAt: this.createdAt,
       updatedAt: this.updatedAt

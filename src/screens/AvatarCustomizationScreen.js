@@ -1,43 +1,87 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
-import { AvatarService } from '../services/AvatarService';
-import Avatar from '../components/Avatar';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Image,
+  Alert
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { useAppContext } from '../context/AppContext'; // Добавляем контекст
 import Header from '../components/Header';
+import Avatar from '../components/Avatar';
 import LoadingIndicator from '../components/LoadingIndicator';
-import { SKIN_TONES, HAIR_COLORS, HAIR_STYLES, EYE_COLORS, BODY_TYPES, FACE_EXPRESSIONS } from '../constants/AvatarSprites';
+import { SKIN_TONES, HAIR_COLORS, HAIR_STYLES, EYE_COLORS, BODY_TYPES } from '../constants/AvatarSprites';
 import { Button } from '../components';
-import Ionicons from 'react-native-vector-icons/Ionicons';
 import AvatarPreview from '../components/AvatarPreview';
 
 const AvatarCustomizationScreen = ({ navigation }) => {
-  const [avatar, setAvatar] = useState(null);
+  // Получаем данные из контекста вместо прямых вызовов сервиса
+  const { avatar, updateAvatar, isLoading } = useAppContext();
+  
+  // Оставляем существующие состояния
+  const [currentTab, setCurrentTab] = useState('hair'); // или то, что используется у вас
   const [loading, setLoading] = useState(true);
+  // Другие состояния, которые у вас есть
 
-  // Загрузка аватара
+  // Локальное состояние для аватара
+  const [localAvatar, setLocalAvatar] = useState(null);
+  const [originalAvatarData, setOriginalAvatarData] = useState(null);
+
+  // Загрузка данных аватара при монтировании
   useEffect(() => {
-    const loadAvatarData = async () => {
-      try {
-        const userAvatar = await AvatarService.getAvatar();
-        setAvatar(userAvatar);
-      } catch (error) {
-        console.error('Ошибка при загрузке аватара:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
+    if (avatar) {
+      // Сохраняем оригинальные данные для возможности отмены
+      setOriginalAvatarData(JSON.parse(JSON.stringify(avatar)));
+      setLocalAvatar(avatar);
+      setLoading(false);
+    }
+  }, [avatar]);
 
-    loadAvatarData();
-  }, []);
-
-  // Обновление аватара
+  // Обработчик обновления аватара - модифицируем для использования контекста
   const handleUpdateAvatar = async (field, value) => {
     try {
-      const updateData = { [field]: value };
-      const updatedAvatar = await AvatarService.updateAvatar(updateData);
-      setAvatar(updatedAvatar);
+      // Обновляем локальное состояние
+      const updatedAvatar = {
+        ...localAvatar,
+        [field]: value
+      };
+      setLocalAvatar(updatedAvatar);
+
+      // Используем функцию из контекста вместо прямого вызова сервиса
+      await updateAvatar({ [field]: value });
     } catch (error) {
       console.error('Ошибка при обновлении аватара:', error);
+      Alert.alert('Ошибка', 'Не удалось обновить аватар');
     }
+  };
+
+  // Обработчик отмены изменений
+  const handleCancel = () => {
+    // Спрашиваем пользователя, хочет ли он отменить изменения
+    Alert.alert(
+      'Отменить изменения?',
+      'Все внесённые изменения будут потеряны. Вы уверены?',
+      [
+        { text: 'Нет', style: 'cancel' },
+        { 
+          text: 'Да', 
+          onPress: async () => {
+            try {
+              // Восстанавливаем оригинальный аватар
+              if (originalAvatarData) {
+                await updateAvatar(originalAvatarData);
+                navigation.goBack();
+              }
+            } catch (error) {
+              console.error('Ошибка при восстановлении аватара:', error);
+            }
+          }
+        }
+      ]
+    );
   };
 
   // Рендер для выбора типа тела
@@ -80,14 +124,11 @@ const renderHairStyleSelection = () => {
         >
           {style === 'none' ? (
             // Для лысой прически отображаем только базовый спрайт
-            <View style={styles.spriteImageContainer}>
               <Image 
                 source={BODY_TYPES[avatar?.bodyType || 'typeA'].sprites[avatar?.skinTone || 'normal']}
                 style={styles.hairPreview}
                 resizeMode="contain"
               />
-              <Text style={styles.spriteLabel}>{HAIR_STYLES[style].name}</Text>
-            </View>
           ) : (
             // Для обычных причесок используем AvatarPreview с передачей тона кожи
             <AvatarPreview
@@ -112,22 +153,45 @@ const renderHairStyleSelection = () => {
   );
 };
 
-  // Рендер для выбора цветов волос в сетке
-  const renderHairColorSelection = () => (
-    <View style={styles.colorGrid}>
-      {Object.keys(HAIR_COLORS).map((color) => (
-        <TouchableOpacity
-          key={`hair-color-${color}`}
-          style={[
-            styles.colorOption,
-            { backgroundColor: HAIR_COLORS[color] },
-            avatar?.hairColor === color && styles.selectedColorOption
-          ]}
-          onPress={() => handleUpdateAvatar('hairColor', color)}
-        />
-      ))}
-    </View>
-  );
+  // Обновленная функция рендеринга цветов волос
+const renderHairColorSelection = () => (
+  <View style={styles.colorGrid}>
+    {Object.keys(HAIR_COLORS).map((color) => (
+      <TouchableOpacity
+        key={`hair-color-${color}`}
+        style={[
+          styles.colorOption,
+          { backgroundColor: HAIR_COLORS[color] },
+          // Добавляем дополнительную тень для светлых цветов
+          HAIR_COLORS[color] === '#FFFFFF' || HAIR_COLORS[color] === '#F0F0F0' ? 
+            styles.lightColorOption : null,
+          avatar?.hairColor === color && styles.selectedColorOption
+        ]}
+        onPress={() => handleUpdateAvatar('hairColor', color)}
+      />
+    ))}
+  </View>
+);
+
+// Обновленная функция рендеринга цветов глаз
+const renderEyeColorSelection = () => (
+  <View style={styles.colorGrid}>
+    {Object.keys(EYE_COLORS).map((color) => (
+      <TouchableOpacity
+        key={`eye-${color}`}
+        style={[
+          styles.colorOption,
+          { backgroundColor: EYE_COLORS[color] },
+          // Добавляем дополнительную тень для светлых цветов
+          EYE_COLORS[color] === '#FFFFFF' || EYE_COLORS[color] === '#F0F0F0' ? 
+            styles.lightColorOption : null,
+          avatar?.eyeColor === color && styles.selectedColorOption
+        ]}
+        onPress={() => handleUpdateAvatar('eyeColor', color)}
+      />
+    ))}
+  </View>
+);
 
   // Рендер для выбора тона кожи
   const renderSkinToneSelection = () => (
@@ -142,51 +206,6 @@ const renderHairStyleSelection = () => {
           ]}
           onPress={() => handleUpdateAvatar('skinTone', tone)}
         />
-      ))}
-    </View>
-  );
-
-  // Рендер для выбора цвета глаз
-  const renderEyeColorSelection = () => (
-    <View style={styles.colorGrid}>
-      {Object.keys(EYE_COLORS).map((color) => (
-        <TouchableOpacity
-          key={`eye-${color}`}
-          style={[
-            styles.colorOption,
-            { backgroundColor: EYE_COLORS[color] },
-            avatar?.eyeColor === color && styles.selectedColorOption
-          ]}
-          onPress={() => handleUpdateAvatar('eyeColor', color)}
-        />
-      ))}
-    </View>
-  );
-
-  // Обновляем функцию отображения выражений лица с использованием миниатюр
-  const renderFaceExpressionSelection = () => (
-    <View style={styles.spriteGrid}>
-      {Object.keys(FACE_EXPRESSIONS).map((expression) => (
-        <TouchableOpacity
-          key={`face-${expression}`}
-          style={[
-            styles.spriteItem,
-            avatar?.faceExpression === expression && styles.selectedSpriteItem
-          ]}
-          onPress={() => handleUpdateAvatar('faceExpression', expression)}
-        >
-          <Image 
-            source={FACE_EXPRESSIONS[expression].thumbnail || FACE_EXPRESSIONS[expression].sprite}
-            style={styles.thumbnailSprite}
-            resizeMode="contain"
-          />
-          <Text style={styles.spriteLabel}>{FACE_EXPRESSIONS[expression].name}</Text>
-          {avatar?.faceExpression === expression && (
-            <View style={styles.selectedOverlay}>
-              <Ionicons name="checkmark-circle" size={20} color="#4E64EE" />
-            </View>
-          )}
-        </TouchableOpacity>
       ))}
     </View>
   );
@@ -233,7 +252,8 @@ const renderHairStyleSelection = () => {
   const hairColor = avatar?.hairColor ? HAIR_COLORS[avatar.hairColor] : HAIR_COLORS.brown;
   const eyeColor = avatar?.eyeColor ? EYE_COLORS[avatar.eyeColor] : EYE_COLORS.blue;
 
-  if (loading) {
+  // Проверка на загрузку
+  if (loading || isLoading) {
     return (
       <View style={styles.container}>
         <Header title="Редактирование внешности" hasBack={true} onBack={() => navigation.goBack()} />
@@ -247,75 +267,68 @@ const renderHairStyleSelection = () => {
 
   return (
     <View style={styles.container}>
-      <Header title="Редактирование внешности" hasBack={true} onBack={() => navigation.goBack()} />
+      <Header 
+        title="Редактирование внешности" 
+        hasBack={true} 
+        onBack={handleCancel}  // Используем новую функцию для кнопки назад
+      />
       
-      <ScrollView style={styles.scrollView}>
-        {/* Предпросмотр аватара */}
-        <View style={styles.avatarPreviewSection}>
-          <View style={styles.avatarFrame}>
-            <View style={styles.avatarFrameInner}>
-              {/* Аватар должен быть немного меньше, чтобы не выходить за рамки */}
-              <AvatarPreview
-                bodyType={avatar?.bodyType || 'typeA'}
-                skinTone={avatar?.skinTone || 'normal'}
-                faceExpression={avatar?.faceExpression || 'neutral'}
-                hairStyle={avatar?.hairStyle}
-                hairColor={hairColor}
-                eyeColor={eyeColor}
-                style={styles.previewAvatar}
-              />
-            </View>
-          </View>
-          <Text style={styles.previewLabel}>Предпросмотр персонажа</Text>
-          <Text style={styles.previewDescription}>
-            Здесь вы можете увидеть, как будет выглядеть ваш персонаж
-          </Text>
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <LoadingIndicator size="large" color="#4E64EE" />
+          <Text style={styles.loadingText}>Загрузка редактора...</Text>
         </View>
-        
-        {/* Настройки аватара */}
-        <View style={styles.customizationSection}>
-          {Object.keys(BODY_TYPES || {}).length > 0 && (
-            <View style={styles.customizationOption}>
-              <Text style={styles.optionTitle}>Тип тела</Text>
-              {renderBodyTypeSelection()}
+      ) : (
+        <>
+          <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+            <View style={styles.avatarPreviewSection}>
+              <View style={styles.avatarFrame}>
+                <Avatar size="large" style={styles.avatar} avatarData={avatar} />
+              </View>
+              <Text style={styles.previewLabel}>Предпросмотр персонажа</Text>
             </View>
-          )}
-          
-          <View style={styles.customizationOption}>
-            <Text style={styles.optionTitle}>Прическа</Text>
-            {renderHairStyleSelection()}
-          </View>
 
-          <View style={styles.customizationOption}>
-            <Text style={styles.optionTitle}>Выражение лица</Text>
-            {renderFaceExpressionSelection()}
+            <View style={styles.customizationSection}>
+              {Object.keys(BODY_TYPES || {}).length > 0 && (
+                <View style={styles.customizationOption}>
+                  <Text style={styles.optionTitle}>Тип тела</Text>
+                  {renderBodyTypeSelection()}
+                </View>
+              )}
+
+              <View style={styles.customizationOption}>
+                <Text style={styles.optionTitle}>Тон кожи</Text>
+                {renderSkinToneSelection()}
+              </View>
+              
+              <View style={styles.customizationOption}>
+                <Text style={styles.optionTitle}>Прическа</Text>
+                {renderHairStyleSelection()}
+              </View>
+
+              {/* Удаляем блок с выражениями лица */}
+              
+              <View style={styles.customizationOption}>
+                <Text style={styles.optionTitle}>Цвет волос</Text>
+                {renderHairColorSelection()}
+              </View>
+              
+              <View style={styles.customizationOption}>
+                <Text style={styles.optionTitle}>Цвет глаз</Text>
+                {renderEyeColorSelection()}
+              </View>
+            </View>
+          </ScrollView>
+
+          <View style={styles.buttonsContainer}>
+            <Button
+              title="Сохранить"
+              onPress={() => navigation.goBack()}
+              style={styles.doneButton}
+            />
           </View>
-          
-          <View style={styles.customizationOption}>
-            <Text style={styles.optionTitle}>Цвет волос</Text>
-            {renderHairColorSelection()}
-          </View>
-          
-          <View style={styles.customizationOption}>
-            <Text style={styles.optionTitle}>Тон кожи</Text>
-            {renderSkinToneSelection()}
-          </View>
-          
-          <View style={styles.customizationOption}>
-            <Text style={styles.optionTitle}>Цвет глаз</Text>
-            {renderEyeColorSelection()}
-          </View>
-          
-        </View>
-      </ScrollView>
-      
-      <View style={styles.buttonsContainer}>
-        <Button
-          title="Сохранить изменения"
-          onPress={handleSaveAndGoBack}
-          style={styles.doneButton}
-        />
-      </View>
+        </>
+      )}
     </View>
   );
 };
@@ -499,11 +512,24 @@ const styles = StyleSheet.create({
     height: 40,
     borderRadius: 20,
     margin: 8,
-    borderWidth: 2,
-    borderColor: 'transparent',
+    borderWidth: 1,  // Базовая обводка для всех цветов
+    borderColor: '#DDDDDD',  // Серый цвет обводки
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 1,
+    elevation: 2,
+  },
+  lightColorOption: {
+    borderWidth: 1.5,  // Более толстая обводка для светлых цветов
+    borderColor: '#AAAAAA',  // Более тёмная обводка для светлых цветов
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 3,
   },
   selectedColorOption: {
-    borderColor: '#4E64EE',
+    borderWidth: 3,  // Увеличиваем толщину обводки для выбранного элемента
+    borderColor: '#4E64EE',  // Синий цвет для выбранного элемента
     transform: [{ scale: 1.1 }],
   },
   // Добавляем новый стиль для контейнера изображения в сетке

@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Image, StyleSheet } from 'react-native';
-import { BODY_TYPES, HAIR_STYLES, FACE_EXPRESSIONS, EYE_SPRITE, EYE_COLORS } from '../constants/AvatarSprites';
+import { BODY_TYPES, HAIR_STYLES, EYE_SPRITE, EYE_COLORS } from '../constants/AvatarSprites';
 
 /**
  * Компонент для отображения миниатюры аватара
@@ -8,22 +8,13 @@ import { BODY_TYPES, HAIR_STYLES, FACE_EXPRESSIONS, EYE_SPRITE, EYE_COLORS } fro
 const AvatarPreview = ({ 
   bodyType = 'typeA',
   skinTone = 'normal',
-  faceExpression = 'neutral',
   hairStyle,
   hairColor,
   eyeColor = '#4A90E2',
   style
 }) => {
-  // Проверяем и логируем входные данные для отладки
-  console.log("AvatarPreview props:", { 
-    bodyType, skinTone, faceExpression, hairStyle, 
-    hairColor: typeof hairColor === 'string' ? hairColor : JSON.stringify(hairColor),
-    eyeColor: typeof eyeColor === 'string' ? eyeColor : JSON.stringify(eyeColor)
-  });
-
   // Получаем правильный спрайт в зависимости от типа тела и тона кожи
   const bodySprite = BODY_TYPES[bodyType]?.sprites?.[skinTone] || BODY_TYPES.typeA.sprites.normal;
-  const faceSprite = FACE_EXPRESSIONS[faceExpression]?.sprite || FACE_EXPRESSIONS.neutral.sprite;
   const hairSprite = hairStyle && HAIR_STYLES[hairStyle]?.sprite;
   
   return (
@@ -42,25 +33,33 @@ const AvatarPreview = ({
         resizeMode="contain"
       />
       
-      {/* Выражение лица */}
-      <Image
-        source={faceSprite}
-        style={styles.faceSprite}
-        resizeMode="contain"
-      />
-      
-      {/* Прическа - проверяем наличие спрайта */}
+      {/* Волосы - в два слоя */}
       {hairSprite && (
-        <Image
-          source={hairSprite}
-          style={[styles.hairSprite, hairColor && { tintColor: hairColor }]}
-          resizeMode="contain"
-        />
+        <>
+          {/* Базовый слой волос с цветом */}
+          <Image
+            source={hairSprite}
+            style={[styles.hairSprite, hairColor && { tintColor: hairColor }]}
+            resizeMode="contain"
+          />
+          
+          {/* Слой деталей волос */}
+          {hairStyle && HAIR_STYLES[hairStyle]?.details && (
+            <Image
+              source={HAIR_STYLES[hairStyle].details}
+              style={styles.hairDetails}
+              resizeMode="contain"
+            />
+          )}
+        </>
       )}
+      
+      {/* Убираем выражение лица */}
     </View>
   );
 };
 
+// Стили остаются без изменений
 const styles = StyleSheet.create({
   container: {
     justifyContent: 'center',
@@ -92,6 +91,12 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
     zIndex: 3,
+  },
+  hairDetails: {
+    position: 'absolute',
+    width: '100%',
+    height: '100%',
+    zIndex: 4,
   },
 });
 

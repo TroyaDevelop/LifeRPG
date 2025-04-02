@@ -32,6 +32,10 @@ export class StatisticsModel {
       eveningCompleted: 0, // 17:00 - 21:00
       nightCompleted: 0 // 21:00 - 5:00
     };
+
+    // Даты создания и обновления
+    this.createdAt = data.createdAt || new Date().toISOString();
+    this.updatedAt = data.updatedAt || new Date().toISOString();
   }
   
   // Метод для определения дня недели

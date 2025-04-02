@@ -1,12 +1,10 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { UserProfile } from '../models/UserProfile';
-import StorageService from './StorageService';
 
 const PROFILE_STORAGE_KEY = '@LifeRPG:userProfile';
 
 export class ProfileService {
-  static instance;
-  _profile = null;
+  static instance = null;
 
   constructor() {
     if (ProfileService.instance) {
@@ -22,29 +20,20 @@ export class ProfileService {
     return ProfileService.instance;
   }
 
+  /**
+   * Получение профиля пользователя из хранилища
+   * @returns {Promise<UserProfile>} Профиль пользователя
+   */
   async getProfile() {
     try {
-      // Получаем данные напрямую из AsyncStorage
-      const rawData = await AsyncStorage.getItem(PROFILE_STORAGE_KEY);
-      
-      if (!rawData) {
-        // Если профиль не найден, создаем новый
-        const newProfile = new UserProfile();
-        await this.saveProfile(newProfile);
-        return newProfile;
+      const data = await AsyncStorage.getItem(PROFILE_STORAGE_KEY);
+      if (data) {
+        return new UserProfile(JSON.parse(data));
       }
-      
-      // Парсим JSON только один раз
-      try {
-        const profileData = JSON.parse(rawData);
-        return new UserProfile(profileData);
-      } catch (parseError) {
-        console.error('Ошибка парсинга данных профиля:', parseError);
-        // Если данные повреждены, создаем новый профиль
-        const newProfile = new UserProfile();
-        await this.saveProfile(newProfile);
-        return newProfile;
-      }
+      // Если профиля нет, создаем новый
+      const newProfile = new UserProfile();
+      await this.saveProfile(newProfile);
+      return newProfile;
     } catch (error) {
       console.error('Ошибка при получении профиля:', error);
       // В случае ошибки возвращаем новый профиль
@@ -52,15 +41,66 @@ export class ProfileService {
     }
   }
 
+  /**
+   * Сохранение профиля пользователя
+   * @param {UserProfile} profile Профиль для сохранения
+   * @returns {Promise<void>}
+   */
   async saveProfile(profile) {
     try {
-      profile.updatedAt = new Date().toISOString();
-      // Сохраняем напрямую в AsyncStorage
-      await AsyncStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(profile));
-      return true;
+      await AsyncStorage.setItem(
+        PROFILE_STORAGE_KEY, 
+        JSON.stringify(profile)
+      );
     } catch (error) {
       console.error('Ошибка при сохранении профиля:', error);
-      return false;
+      throw error;
+    }
+  }
+
+  /**
+   * Обновление профиля пользователя
+   * @param {Object} updateData Данные для обновления
+   * @returns {Promise<UserProfile>} Обновленный профиль
+   */
+  async updateProfile(updateData) {
+    try {
+      const profile = await this.getProfile();
+      
+      // Обновляем поля профиля
+      Object.keys(updateData).forEach(key => {
+        if (key === 'settings' && updateData.settings) {
+          // Для настроек делаем глубокое объединение
+          profile.settings = {
+            ...profile.settings,
+            ...updateData.settings
+          };
+        } else if (profile.hasOwnProperty(key)) {
+          profile[key] = updateData[key];
+        }
+      });
+      
+      profile.updatedAt = new Date().toISOString();
+      await this.saveProfile(profile);
+      return profile;
+    } catch (error) {
+      console.error('Ошибка при обновлении профиля:', error);
+      throw error;
+    }
+  }
+  
+  /**
+   * Сброс профиля пользователя
+   * @returns {Promise<UserProfile>} Новый профиль
+   */
+  async resetProfile() {
+    try {
+      const newProfile = new UserProfile();
+      await this.saveProfile(newProfile);
+      return newProfile;
+    } catch (error) {
+      console.error('Ошибка при сбросе профиля:', error);
+      throw error;
     }
   }
 
@@ -277,4 +317,47 @@ export class ProfileService {
       experienceToNextLevel
     };
   }
+
+  /**
+   * Сбросить профиль, сохраняя ID
+   * @returns {Promise<Object>} - Новый профиль
+   */
+  resetProfile = async () => {
+    try {
+      console.log('ProfileService: Сброс профиля');
+      
+      // Получаем текущий профиль для сохранения ID
+      const currentProfile = await this.getProfile();
+      
+      if (!currentProfile) {
+        console.log('ProfileService: Профиль не найден, создаем новый');
+        return this.createNewProfile();
+      }
+      
+      // Создаем новый профиль, сохраняя только ID
+      const defaultProfile = {
+        id: currentProfile.id,
+        level: 1,
+        experience: 0,
+        tasksCompleted: 0,
+        createdAt: currentProfile.createdAt,
+        updatedAt: new Date().toISOString(),
+        settings: {}
+      };
+      
+      // Сохраняем новый профиль
+      await AsyncStorage.setItem(
+        PROFILE_STORAGE_KEY,
+        JSON.stringify(defaultProfile)
+      );
+      
+      console.log('ProfileService: Профиль успешно сброшен');
+      return defaultProfile;
+    } catch (error) {
+      console.error('ProfileService: Ошибка при сбросе профиля:', error);
+      throw error;
+    }
+  }
 }
+
+export default ProfileService;

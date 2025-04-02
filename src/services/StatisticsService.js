@@ -347,4 +347,244 @@ export class StatisticsService {
       console.error('Ошибка при обновлении статистики отмены выполнения:', error);
     }
   }
+
+  /**
+   * Получение всей статистики для контекста
+   * @returns {Promise<Object>} - Объект со всеми данными статистики
+   */
+  static async getAllStatistics() {
+    try {
+      console.log('StatisticsService: Начинаем загрузку всей статистики');
+      
+      // Создаем новую модель статистики для текущего дня
+      const today = new Date();
+      const dailyStats = new StatisticsModel({
+        date: today.toISOString().split('T')[0]
+      });
+      
+      // Загружаем сохраненную статистику для текущего дня, если она есть
+      const dailyKey = `${STATS_STORAGE_KEY}:${today.toISOString().split('T')[0]}`;
+      let dailyStatistics = dailyStats;
+      
+      try {
+        const dailyData = await AsyncStorage.getItem(dailyKey);
+        if (dailyData) {
+          dailyStatistics = new StatisticsModel(JSON.parse(dailyData));
+        }
+      } catch (dailyError) {
+        console.error('StatisticsService: Ошибка при загрузке дневной статистики:', dailyError);
+      }
+      
+      // Загружаем недельную статистику с защитой от ошибок
+      let weeklyStatistics = [];
+      try {
+        weeklyStatistics = await this._getWeeklyDataFromStorage();
+      } catch (weeklyError) {
+        console.error('StatisticsService: Ошибка при загрузке недельной статистики:', weeklyError);
+      }
+      
+      // Загружаем месячную статистику с защитой от ошибок
+      let monthlyStatistics = [];
+      try {
+        monthlyStatistics = await this._getMonthlyDataFromStorage();
+      } catch (monthlyError) {
+        console.error('StatisticsService: Ошибка при загрузке месячной статистики:', monthlyError);
+      }
+      
+      // Рассчитываем статистику по дням недели с защитой от ошибок
+      let weekdayStatistics = {};
+      try {
+        weekdayStatistics = this._calculateWeekdayStats(weeklyStatistics);
+      } catch (weekdayError) {
+        console.error('StatisticsService: Ошибка при расчете статистики по дням недели:', weekdayError);
+      }
+      
+      const result = {
+        dailyStatistics,
+        weeklyStatistics,
+        monthlyStatistics,
+        weekdayStatistics
+      };
+      
+      console.log('StatisticsService: Статистика успешно загружена');
+      return result;
+    } catch (error) {
+      console.error('StatisticsService: Ошибка при получении всей статистики:', error);
+      // Возвращаем базовую структуру при ошибке
+      return {
+        dailyStatistics: new StatisticsModel(),
+        weeklyStatistics: [],
+        monthlyStatistics: [],
+        weekdayStatistics: {}
+      };
+    }
+  }
+  
+  /**
+   * Получение недельных данных из хранилища
+   * @private
+   * @returns {Promise<Array>} - Массив статистики за неделю
+   */
+  static async _getWeeklyDataFromStorage() {
+    try {
+      const keys = await AsyncStorage.getAllKeys();
+      const statKeys = keys.filter(key => key.startsWith(STATS_STORAGE_KEY));
+      
+      // Получаем все элементы статистики
+      const allStats = await AsyncStorage.multiGet(statKeys);
+      
+      // Фильтруем только данные за последние 7 дней
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      
+      const weeklyStats = [];
+      
+      allStats.forEach(([key, value]) => {
+        if (value) {
+          const data = JSON.parse(value);
+          const statsDate = new Date(data.date);
+          
+          if (statsDate >= sevenDaysAgo) {
+            weeklyStats.push(new StatisticsModel(data));
+          }
+        }
+      });
+      
+      // Сортируем по дате
+      weeklyStats.sort((a, b) => new Date(a.date) - new Date(b.date));
+      
+      return weeklyStats;
+    } catch (error) {
+      console.error('StatisticsService: Ошибка при получении недельных данных:', error);
+      return [];
+    }
+  }
+  
+  /**
+   * Получение месячных данных из хранилища
+   * @private
+   * @returns {Promise<Array>} - Массив статистики за месяц
+   */
+  static async _getMonthlyDataFromStorage() {
+    try {
+      const keys = await AsyncStorage.getAllKeys();
+      const statKeys = keys.filter(key => key.startsWith(STATS_STORAGE_KEY));
+      
+      // Получаем все элементы статистики
+      const allStats = await AsyncStorage.multiGet(statKeys);
+      
+      // Фильтруем только данные за последние 30 дней
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      
+      const monthlyStats = [];
+      
+      allStats.forEach(([key, value]) => {
+        if (value) {
+          const data = JSON.parse(value);
+          const statsDate = new Date(data.date);
+          
+          if (statsDate >= thirtyDaysAgo) {
+            monthlyStats.push(new StatisticsModel(data));
+          }
+        }
+      });
+      
+      // Сортируем по дате
+      monthlyStats.sort((a, b) => new Date(a.date) - new Date(b.date));
+      
+      return monthlyStats;
+    } catch (error) {
+      console.error('StatisticsService: Ошибка при получении месячных данных:', error);
+      return [];
+    }
+  }
+  
+  /**
+   * Рассчитывает статистику по дням недели
+   * @private
+   * @param {Array} weeklyStats - Массив недельной статистики
+   * @returns {Object} - Объект со статистикой по дням недели
+   */
+  static _calculateWeekdayStats(weeklyStats) {
+    if (!weeklyStats || !Array.isArray(weeklyStats)) {
+      console.log('StatisticsService: Недельные данные пусты или некорректны, возвращаем пустой объект');
+      return {};
+    }
+    
+    const dayNames = [
+      'Воскресенье', 'Понедельник', 'Вторник', 'Среда', 
+      'Четверг', 'Пятница', 'Суббота'
+    ];
+    
+    // Инициализируем статистику по дням недели
+    const weekdayStats = {};
+    dayNames.forEach(day => {
+      weekdayStats[day] = {
+        completed: 0,
+        total: 0,
+        count: 0,
+        efficiency: 0
+      };
+    });
+    
+    // Заполняем статистику из недельных данных
+    weeklyStats.forEach(dayStat => {
+      if (dayStat && dayStat.date) {
+        try {
+          const date = new Date(dayStat.date);
+          const dayName = dayNames[date.getDay()];
+          
+          if (dayName) {
+            weekdayStats[dayName].completed += dayStat.dailyStats?.tasksCompleted || 0;
+            weekdayStats[dayName].total += dayStat.dailyStats?.tasksCreated || 0;
+            weekdayStats[dayName].count += 1;
+          }
+        } catch (e) {
+          console.error('StatisticsService: Ошибка при обработке статистики дня:', e, dayStat);
+        }
+      }
+    });
+    
+    // Вычисляем эффективность для каждого дня
+    Object.keys(weekdayStats).forEach(day => {
+      const stats = weekdayStats[day];
+      if (stats.total > 0) {
+        stats.efficiency = Math.round((stats.completed / stats.total) * 100);
+      } else {
+        stats.efficiency = 0;
+      }
+    });
+    
+    return weekdayStats;
+  }
+  
+  /**
+   * Сброс всей статистики
+   * @returns {Promise<boolean>} - Успешность операции
+   */
+  static async resetAllStatistics() {
+    try {
+      console.log('StatisticsService: Начинаем сброс статистики');
+      
+      // Получаем все ключи
+      const keys = await AsyncStorage.getAllKeys();
+      
+      // Фильтруем ключи, связанные со статистикой
+      const statsKeys = keys.filter(key => key.startsWith(STATS_STORAGE_KEY));
+      
+      if (statsKeys.length > 0) {
+        console.log(`StatisticsService: Найдено ${statsKeys.length} записей статистики для удаления`);
+        await AsyncStorage.multiRemove(statsKeys);
+        console.log('StatisticsService: Сброс статистики выполнен успешно');
+      } else {
+        console.log('StatisticsService: Нет записей статистики для удаления');
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('StatisticsService: Ошибка при сбросе статистики:', error);
+      return false;
+    }
+  }
 }

@@ -1,124 +1,164 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, Alert, ActivityIndicator } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
 import { LineChart, BarChart } from 'react-native-chart-kit';
-import { useIsFocused } from '@react-navigation/native';
+import { useFocusEffect } from '@react-navigation/native';
 import { Dimensions } from 'react-native';
-import { StatisticsService } from '../services/StatisticsService';
-import TaskService from '../services/TaskService';
-import { AchievementService } from '../services/AchievementService';
+import { useAppContext } from '../context/AppContext';
 import Header from '../components/Header';
 import Button from '../components/Button';
 
 const screenWidth = Dimensions.get('window').width;
 
 export default function StatisticsScreen({ navigation }) {
-  const [period, setPeriod] = useState('day'); // 'day', 'week', 'month'
-  const [loading, setLoading] = useState(true);
+  const [period, setPeriod] = useState('day');
+  
+  // Локальное состояние для обработанных данных
   const [dailyStats, setDailyStats] = useState(null);
   const [weeklyStats, setWeeklyStats] = useState([]);
   const [monthlyStats, setMonthlyStats] = useState([]);
-  const [weekdayStats, setWeekdayStats] = useState(null);
+  const [weekdayStats, setWeekdayStats] = useState({});
   const [bestWorstDay, setBestWorstDay] = useState({ bestDay: null, worstDay: null });
-  const isFocused = useIsFocused();
-
+  
+  // Используем контекст
+  const { 
+    statistics, 
+    refreshData,
+    isLoading
+  } = useAppContext();
+  
+  // Локальное состояние загрузки (для UI)
+  const [localLoading, setLocalLoading] = useState(true);
+  
+  // Таймер для автоматического сброса состояния загрузки
   useEffect(() => {
-    if (isFocused) {
-      // Функция для загрузки всей статистики
-      const loadAllStatistics = async () => {
-        setLoading(true);
+    if (localLoading) {
+      // Если загрузка идет дольше 10 секунд, считаем что произошла ошибка
+      const timer = setTimeout(() => {
+        console.log('StatisticsScreen: Превышено время ожидания загрузки статистики (10с), сбрасываем состояние');
+        setLocalLoading(false);
+      }, 10000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [localLoading]);
+
+  // Обновляем данные только при фокусе на экране
+  useFocusEffect(
+    useCallback(() => {
+      console.log('StatisticsScreen: Экран в фокусе, обновляем данные');
+      setLocalLoading(true);
+      
+      const updateData = async () => {
         try {
-          // Обновление данных о задачах
-          try {
-            const tasks = await TaskService.getAllTasks();
-            const today = new Date().toISOString().split('T')[0];
-            
-            // Считаем количество просроченных и запланированных задач
-            const overdueTasks = tasks.filter(task => 
-              !task.isCompleted && 
-              task.dueDate && 
-              new Date(task.dueDate) < new Date() && 
-              task.dueDate.split('T')[0] !== today);
-            
-            const plannedTasks = tasks.filter(task => 
-              !task.isCompleted && 
-              task.dueDate && 
-              task.dueDate.split('T')[0] === today);
-            
-            // Обновляем статистику
-            await StatisticsService.updateStatisticsData(today, {
-              plannedTasks: plannedTasks.length,
-              overdueTasks: overdueTasks.length
-            });
-          } catch (error) {
-            console.error('Ошибка при обновлении данных о задачах:', error);
-          }
+          // Обновляем данные из контекста
+          await refreshData();
           
-          // Проверка достижений в конце недели
-          const currentDay = new Date().getDay();
-          const isEndOfWeek = currentDay === 0; // 0 = воскресенье
-          
-          if (isEndOfWeek) {
-            try {
-              const weeklyStats = await StatisticsService.getWeeklyStatistics();
-              
-              // Проверяем, достаточно ли дней для расчета
-              if (weeklyStats && weeklyStats.length >= 3) {
-                console.log("Проверка достижений по эффективности в конце недели");
-                const result = await AchievementService.updateAchievementsForEfficiency();
-                
-                // Если получены новые достижения, показать уведомление
-                if (result && result.achievementsUnlocked && result.achievementsUnlocked.length > 0) {
-                  Alert.alert(
-                    "Новые достижения!",
-                    `Получено ${result.achievementsUnlocked.length} новых достижений за эффективность. Проверьте их в разделе Достижения.`,
-                    [
-                      { text: "OK" },
-                      { 
-                        text: "Посмотреть", 
-                        onPress: () => navigation.navigate('Achievements') 
-                      }
-                    ]
-                  );
-                }
-              }
-            } catch (error) {
-              console.error("Ошибка при проверке достижений эффективности:", error);
+          // Обрабатываем полученную статистику после получения данных
+          setTimeout(() => {
+            if (statistics) {
+              processStatisticsData();
             }
-          }
-          
-          // Загрузка основной статистики
-          const daily = await StatisticsService.getDailyStatistics(new Date());
-          const weekly = await StatisticsService.getWeeklyStatistics();
-          const monthly = await StatisticsService.getMonthlyStatistics();
-          
-          setDailyStats(daily);
-          setWeeklyStats(weekly);
-          setMonthlyStats(monthly);
-          
-          // Загрузка статистики по дням недели
-          try {
-            console.log('Загружаем статистику по дням недели...');
-            const stats = await StatisticsService.getWeekdayStatistics();
-            console.log('Загружена статистика по дням недели:', JSON.stringify(stats));
-            setWeekdayStats(stats);
-            
-            const dayComparison = await StatisticsService.getBestAndWorstDay();
-            console.log('Лучший/худший день недели:', JSON.stringify(dayComparison));
-            setBestWorstDay(dayComparison);
-          } catch (error) {
-            console.error('Ошибка при загрузке статистики по дням недели:', error);
-          }
+            setLocalLoading(false);
+          }, 500);
         } catch (error) {
-          console.error('Ошибка загрузки статистики:', error);
-        } finally {
-          setLoading(false);
+          console.error('StatisticsScreen: Ошибка при обновлении данных', error);
+          setLocalLoading(false);
         }
       };
       
-      loadAllStatistics();
-    }
-  }, [isFocused, navigation]);
+      updateData();
+      
+      return () => {
+        console.log('StatisticsScreen: Выход из фокуса');
+      };
+    }, [])
+  );
 
+  // Обрабатываем статистику, когда данные изменились
+  useEffect(() => {
+    if (statistics && !localLoading) {
+      console.log('StatisticsScreen: Данные статистики изменились, обновляем');
+      processStatisticsData();
+    }
+  }, [statistics]);
+
+  // Функция для обработки данных статистики
+  const processStatisticsData = () => {
+    if (!statistics) {
+      console.log('StatisticsScreen: statistics is null or undefined');
+      return;
+    }
+    
+    try {
+      console.log('StatisticsScreen: Начинаем обработку статистики');
+      
+      // Извлекаем данные из объекта статистики
+      const { dailyStatistics, weeklyStatistics, monthlyStatistics, weekdayStatistics } = statistics;
+      
+      console.log('StatisticsScreen: Обрабатываем дневную статистику:', dailyStatistics ? 'получена' : 'отсутствует');
+      console.log('StatisticsScreen: Обрабатываем недельную статистику:', 
+                 weeklyStatistics ? `${weeklyStatistics.length} записей` : 'отсутствует');
+      
+      // Устанавливаем данные в локальное состояние
+      if (dailyStatistics) {
+        setDailyStats(dailyStatistics);
+      }
+      
+      if (Array.isArray(weeklyStatistics)) {
+        setWeeklyStats(weeklyStatistics);
+      }
+      
+      if (Array.isArray(monthlyStatistics)) {
+        setMonthlyStats(monthlyStatistics);
+      }
+      
+      if (weekdayStatistics) {
+        setWeekdayStats(weekdayStatistics);
+        
+        // Определяем лучший и худший день
+        let bestDay = { day: '', efficiency: 0 };
+        let worstDay = { day: '', efficiency: 100 };
+        
+        // Проходим по всем дням и ищем лучший и худший
+        Object.entries(weekdayStatistics).forEach(([day, stats]) => {
+          if (stats && stats.count > 0) {
+            if (stats.efficiency > bestDay.efficiency) {
+              bestDay = { day, efficiency: stats.efficiency };
+            }
+            
+            if (stats.efficiency < worstDay.efficiency && stats.efficiency > 0) {
+              worstDay = { day, efficiency: stats.efficiency };
+            }
+          }
+        });
+        
+        // Устанавливаем лучший и худший день, если они найдены
+        if (bestDay.day && worstDay.day) {
+          setBestWorstDay({ bestDay, worstDay });
+        }
+      }
+      
+      console.log('StatisticsScreen: Обработка статистики завершена');
+    } catch (error) {
+      console.error('StatisticsScreen: Ошибка при обработке статистики:', error);
+    }
+  };
+
+  // Проверка наличия данных
+  const hasData = () => {
+    switch (period) {
+      case 'day': 
+        return !!dailyStats;
+      case 'week': 
+        return weeklyStats && weeklyStats.length > 0;
+      case 'month': 
+        return monthlyStats && monthlyStats.length > 0;
+      default: 
+        return false;
+    }
+  };
+
+  // Селектор периода
   const renderPeriodSelector = () => (
     <View style={styles.periodSelector}>
       <Button 
@@ -144,6 +184,60 @@ export default function StatisticsScreen({ navigation }) {
       />
     </View>
   );
+
+  // Функция расчета эффективности
+  const calculateEfficiency = (stats) => {
+    if (!stats || stats.length === 0) return 0;
+    
+    let totalCompleted = 0;
+    let totalCreated = 0;
+    
+    stats.forEach(stat => {
+      if (stat && stat.dailyStats) {
+        totalCompleted += stat.dailyStats.tasksCompleted || 0;
+        totalCreated += stat.dailyStats.tasksCreated || 0;
+      }
+    });
+    
+    if (totalCreated === 0) return 0;
+    return Math.round((totalCompleted / totalCreated) * 100);
+  };
+
+  // Содержимое экрана
+  const renderContent = () => {
+    if (isLoading || localLoading) {
+      return (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#4E66F1" />
+          <Text style={styles.loadingText}>Загрузка статистики...</Text>
+        </View>
+      );
+    }
+    
+    if (!hasData()) {
+      return (
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyText}>
+            Нет данных для отображения статистики за выбранный период
+          </Text>
+          <Text style={styles.emptySubText}>
+            Выполняйте задачи, чтобы накапливать статистику
+          </Text>
+        </View>
+      );
+    }
+    
+    switch (period) {
+      case 'day':
+        return renderDailyStatistics();
+      case 'week':
+        return renderWeeklyStatistics();
+      case 'month':
+        return renderMonthlyStatistics();
+      default:
+        return null;
+    }
+  };
 
   const renderDailyStatistics = () => {
     if (!dailyStats) return null;
@@ -273,7 +367,7 @@ export default function StatisticsScreen({ navigation }) {
       legend: ['Выполненные задачи']
     };
     
-    const weeklyEfficiency = StatisticsService.calculateEfficiency(weeklyStats);
+    const weeklyEfficiency = calculateEfficiency(weeklyStats);
     
     const renderWeekdaysStats = () => {
       if (!weekdayStats) {
@@ -451,7 +545,7 @@ export default function StatisticsScreen({ navigation }) {
     const weeklyData = [];
     for (let i = 0; i < monthlyStats.length; i += 7) {
       const weekStats = monthlyStats.slice(i, i + 7);
-      const weekEfficiency = StatisticsService.calculateEfficiency(weekStats);
+      const weekEfficiency = calculateEfficiency(weekStats);
       const weekNumber = Math.floor(i / 7) + 1;
       weeklyData.push({ week: `Нед ${weekNumber}`, efficiency: weekEfficiency });
     }
@@ -471,7 +565,7 @@ export default function StatisticsScreen({ navigation }) {
     // Вычисляем общую месячную статистику
     const totalTasksCompleted = monthlyStats.reduce((sum, stat) => sum + stat.dailyStats.tasksCompleted, 0);
     const totalTasksCreated = monthlyStats.reduce((sum, stat) => sum + stat.dailyStats.tasksCreated, 0);
-    const monthlyEfficiency = StatisticsService.calculateEfficiency(monthlyStats);
+    const monthlyEfficiency = calculateEfficiency(monthlyStats);
     
     return (
       <View>
@@ -521,28 +615,6 @@ export default function StatisticsScreen({ navigation }) {
         </View>
       </View>
     );
-  };
-
-  const renderContent = () => {
-    if (loading) {
-      return (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#4E66F1" />
-          <Text style={styles.loadingText}>Загрузка статистики...</Text>
-        </View>
-      );
-    }
-
-    switch (period) {
-      case 'day':
-        return renderDailyStatistics();
-      case 'week':
-        return renderWeeklyStatistics();
-      case 'month':
-        return renderMonthlyStatistics();
-      default:
-        return null;
-    }
   };
 
   return (
@@ -684,5 +756,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 10, // Расстояние между строками
     width: '100%'
-  }
+  },
+  emptyContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 20,
+    marginTop: 40,
+  },
+  emptyText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 10,
+  },
+  emptySubText: {
+    fontSize: 14,
+    color: '#888',
+    textAlign: 'center',
+  },
 });

@@ -2,17 +2,22 @@ import { v4 as uuidv4 } from 'uuid';
 
 export class TaskModel {
   constructor(data = {}) {
-    this.id = data.id || Date.now().toString();
+    this.id = data.id || uuidv4();
     this.title = data.title || '';
     this.description = data.description || '';
-    this.isCompleted = data.isCompleted || false;
-    this.priority = data.priority || 'medium';
-    this.category = data.category || null;
     this.dueDate = data.dueDate || null;
+    this.priority = data.priority || 'medium';
+    this.categoryId = data.categoryId || null; // Убедимся, что используется именно categoryId
+    this.isCompleted = data.isCompleted || false;
+    this.completedAt = data.completedAt || null;
+    
+    // Устранение конфликта между type и isDaily
+    this.isDaily = data.isDaily || false;
+    // Для обратной совместимости
+    this.type = data.isDaily ? 'daily' : 'regular';
+    
     this.createdAt = data.createdAt || new Date().toISOString();
     this.updatedAt = data.updatedAt || new Date().toISOString();
-    this.completedAt = data.completedAt || null;
-    this.isDaily = data.isDaily || false; // Добавляем флаг ежедневной задачи
     this.lastCompletedDate = data.lastCompletedDate || null; // Для отслеживания выполнения ежедневных задач
     this.reminderEnabled = data.reminderEnabled || false;
     this.reminderTime = data.reminderTime || null;
@@ -42,16 +47,17 @@ export class TaskModel {
       description: this.description,
       dueDate: this.dueDate,
       priority: this.priority,
-      category: this.category,
+      categoryId: this.categoryId, // Проверим обработку categoryId
       isCompleted: this.isCompleted,
       completedAt: this.completedAt,
+      isDaily: this.isDaily, // Добавляем флаг ежедневной задачи
+      type: this.isDaily ? 'daily' : 'regular',
       createdAt: this.createdAt,
       updatedAt: this.updatedAt,
       reminderEnabled: this.reminderEnabled,
       reminderTime: this.reminderTime,
       notificationId: this.notificationId,
       xpReward: this.xpReward,
-      isDaily: this.isDaily, // Добавляем флаг ежедневной задачи
       lastCompletedDate: this.lastCompletedDate, // Для отслеживания выполнения ежедневных задач
     };
   }

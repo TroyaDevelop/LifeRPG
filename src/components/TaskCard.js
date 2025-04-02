@@ -13,6 +13,7 @@ import { CategoryService } from '../services'; // Исправленный им�
 const TaskCard = ({ task, onPress, onComplete, onDelete }) => {
   const [categoryInfo, setCategoryInfo] = useState(null);
 
+  // Загрузка информации о категории
   useEffect(() => {
     const loadCategoryInfo = async () => {
       if (task.categoryId) {
@@ -20,6 +21,8 @@ const TaskCard = ({ task, onPress, onComplete, onDelete }) => {
           const category = await CategoryService.getCategoryById(task.categoryId);
           if (category) {
             setCategoryInfo(category);
+          } else {
+            console.log(`Категория с ID ${task.categoryId} не найдена`);
           }
         } catch (error) {
           console.error('Ошибка при загрузке информации о категории:', error);

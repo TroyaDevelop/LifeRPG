@@ -58,3 +58,38 @@ export const CATEGORY_COLORS = [
   '#38B2AC', // Бирюзовый темный
   '#5A67D8', // Сине-фиолетовый
 ];
+
+// События для EventBus
+export const APP_EVENTS = {
+  // События задач
+  TASKS_UPDATED: 'tasks:updated',
+  TASK_COMPLETED: 'task:completed',
+  TASK_CREATED: 'task:created',
+  TASK_DELETED: 'task:deleted',
+  TASK_UNCOMPLETED: 'task:uncompleted',
+  
+  // События категорий
+  CATEGORIES_UPDATED: 'categories:updated',
+  
+  // События профиля
+  PROFILE_UPDATED: 'profile:updated',
+  LEVEL_UP: 'profile:levelUp',
+  LEVEL_DOWN: 'profile:levelDown',
+  
+  // События аватара
+  AVATAR_UPDATED: 'avatar:updated',
+  
+  // События статистики
+  STATISTICS_UPDATED: 'statistics:updated',
+  
+  // События достижений
+  ACHIEVEMENTS_UPDATED: 'achievements:updated',
+  ACHIEVEMENT_UNLOCKED: 'achievement:unlocked',
+  
+  // События настроек
+  SETTINGS_UPDATED: 'settings:updated',
+  
+  // Глобальные события
+  DATA_RESET: 'app:dataReset',
+  THEME_CHANGED: 'app:themeChanged',
+};

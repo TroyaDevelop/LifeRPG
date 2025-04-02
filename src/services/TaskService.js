@@ -8,12 +8,32 @@ import { ProfileService } from './ProfileService';
 import { StatisticsService } from './StatisticsService';
 import { AchievementService } from './AchievementService';
 
+let tasksCache = null;
+let lastFetchTime = 0;
+const CACHE_TTL = 60000; // 1 минута действия кэша
+
 const TASKS_STORAGE_KEY = 'tasks';
 
 export class TaskService {
   // Получение всех задач
-  static async getAllTasks() {
-    return await StorageService.getTasks();
+  static async getAllTasks(forceRefresh = false) {
+    // Если запрошено принудительное обновление или кэш отсутствует
+    if (forceRefresh || !tasksCache) {
+      try {
+        const data = await AsyncStorage.getItem(TASKS_STORAGE_KEY);
+        const tasks = data ? JSON.parse(data).map(taskData => 
+          new TaskModel(taskData)
+        ) : [];
+        
+        tasksCache = tasks;
+        return tasks;
+      } catch (error) {
+        console.error('Ошибка при получении задач:', error);
+        return [];
+      }
+    }
+    
+    return tasksCache;
   }
 
   // Получение задачи по ID
@@ -24,117 +44,70 @@ export class TaskService {
 
   // Создание новой задачи
   static async createTask(taskData) {
-    const tasks = await this.getAllTasks();
-    
-    const newTask = {
-      id: uuidv4(),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      isCompleted: false,
-      notificationId: null,
-      ...taskData
-    };
-    
-    const updatedTasks = [...tasks, newTask];
-    const success = await StorageService.setTasks(updatedTasks);
-    
-    // Если задача сохранена успешно и у неё есть дедлайн и включено напоминание
-    if (success && newTask.dueDate && newTask.reminderEnabled) {
-      const notificationId = await NotificationService.scheduleTaskReminder(
-        newTask, 
-        newTask.reminderTime
-      );
+    try {
+      const tasks = await this.getAllTasks();
       
-      // Если уведомление запланировано, сохраняем его ID
-      if (notificationId) {
-        newTask.notificationId = notificationId;
-        await this.updateTask(newTask.id, { notificationId });
-      }
+      // Преобразуем данные задачи в модель
+      const newTask = new TaskModel({
+        ...taskData,
+        id: uuidv4(),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      });
+      
+      console.log('TaskService: Создаваемая задача:', newTask.toJSON());
+      
+      const updatedTasks = [...tasks, newTask.toJSON()];
+      const success = await StorageService.setTasks(updatedTasks);
+      
+      // Инвалидируем кэш после создания
+      this.invalidateCache();
+      
+      // Обновление статистики при создании задачи
+      await StatisticsService.updateStatisticsOnTaskCreation(newTask);
+      
+      return success ? newTask.toJSON() : null;
+    } catch (error) {
+      console.error('Ошибка при создании задачи:', error);
+      return null;
     }
-    
-    // Обновление статистики при создании задачи
-    await StatisticsService.updateStatisticsOnTaskCreation(newTask);
-    
-    return success ? newTask : null;
   }
 
   // Обновление задачи
   static async updateTask(taskId, taskData) {
-    const tasks = await this.getAllTasks();
-    const taskIndex = tasks.findIndex(task => task.id === taskId);
-    
-    if (taskIndex === -1) {
+    try {
+      const tasks = await this.getAllTasks();
+      const taskIndex = tasks.findIndex(task => task.id === taskId);
+      
+      if (taskIndex === -1) {
+        console.error('Задача не найдена:', taskId);
+        return null;
+      }
+      
+      // Убедимся, что categoryId корректно обрабатывается
+      console.log('TaskService: Исходные данные для обновления:', taskData);
+      
+      const updatedTask = {
+        ...tasks[taskIndex],
+        ...taskData,
+        updatedAt: new Date().toISOString()
+      };
+      
+      console.log('TaskService: Обновленная задача:', updatedTask);
+      
+      const updatedTasks = [...tasks];
+      updatedTasks[taskIndex] = updatedTask;
+      
+      const success = await StorageService.setTasks(updatedTasks);
+      
+      // Инвалидируем кэш
+      this.invalidateCache();
+      
+      return success ? updatedTask : null;
+    } catch (error) {
+      console.error('Ошибка при обновлении задачи:', error);
       return null;
     }
-    
-    const oldTask = tasks[taskIndex];
-    const updatedTask = {
-      ...oldTask,
-      ...taskData,
-      updatedAt: new Date().toISOString()
-    };
-    
-    const updatedTasks = [...tasks];
-    updatedTasks[taskIndex] = updatedTask;
-    
-    const success = await StorageService.setTasks(updatedTasks);
-    
-    // Обработка уведомлений
-    if (success) {
-      // Если задача выполнена, отменяем уведомление
-      if (updatedTask.isCompleted && updatedTask.notificationId) {
-        await NotificationService.cancelTaskReminder(updatedTask.notificationId);
-        updatedTask.notificationId = null;
-        
-        // Обновляем задачу без уведомления
-        const tasksWithoutNotification = updatedTasks.map(t => 
-          t.id === taskId ? { ...t, notificationId: null } : t
-        );
-        await StorageService.setTasks(tasksWithoutNotification);
-      }
-      // Если изменились параметры напоминания, обновляем уведомление
-      else if (updatedTask.dueDate && updatedTask.reminderEnabled) {
-        const needUpdateNotification = 
-          taskData.dueDate !== undefined || 
-          taskData.reminderTime !== undefined ||
-          (taskData.reminderEnabled !== undefined && taskData.reminderEnabled !== oldTask.reminderEnabled);
-        
-        if (needUpdateNotification) {
-          // Отменяем старое уведомление, если оно есть
-          if (updatedTask.notificationId) {
-            await NotificationService.cancelTaskReminder(updatedTask.notificationId);
-          }
-          
-          // Создаем новое уведомление
-          const notificationId = await NotificationService.scheduleTaskReminder(
-            updatedTask, 
-            updatedTask.reminderTime
-          );
-          
-          // Обновляем ID уведомления в хранилище
-          if (notificationId) {
-            updatedTask.notificationId = notificationId;
-            const tasksWithNewNotification = updatedTasks.map(t => 
-              t.id === taskId ? { ...t, notificationId } : t
-            );
-            await StorageService.setTasks(tasksWithNewNotification);
-          }
-        }
-      }
-      // Если напоминание отключено, отменяем уведомление
-      else if (taskData.reminderEnabled === false && updatedTask.notificationId) {
-        await NotificationService.cancelTaskReminder(updatedTask.notificationId);
-        updatedTask.notificationId = null;
-        
-        // Обновляем задачу без уведомления
-        const tasksWithoutNotification = updatedTasks.map(t => 
-          t.id === taskId ? { ...t, notificationId: null } : t
-        );
-        await StorageService.setTasks(tasksWithoutNotification);
-      }
-    }
-    
-    return success ? updatedTask : null;
   }
 
   // Удаление задачи
@@ -279,11 +252,17 @@ export class TaskService {
       // Снимаем опыт у пользователя
       const result = await profileService.subtractExperience(experienceToReturn);
       
+      // Инвалидируем кэш
+      this.invalidateCache();
+      
       return { 
         success: true, 
         task, 
-        experienceReturned: experienceToReturn, 
-        ...result
+        experienceReturned: experienceToReturn, // Используем experienceToReturn вместо experienceReturned
+        profile: result.profile,
+        levelDown: result.didLevelDown ? {
+          level: result.newLevel
+        } : null
       };
     } catch (error) {
       console.error('Ошибка при отмене выполнения задачи:', error);
@@ -384,25 +363,19 @@ export class TaskService {
         task.lastCompletedDate = now.toISOString().split('T')[0];
       }
       
-      // Сохраняем задачу
-      tasks[taskIndex] = task;
-      
-      // Используем StorageService.setTasks вместо this.saveTasks
-      const storageSuccess = await StorageService.setTasks(tasks);
-      
-      if (!storageSuccess) {
-        return { success: false, error: 'Не удалось сохранить изменения' };
-      }
-      
-      // Отменяем уведомление, если оно было
-      if (task.notificationId) {
-        await NotificationService.cancelTaskReminder(task.notificationId);
-      }
+      // Создаем новый массив задач для сохранения
+      let updatedTasks = [...tasks];
+      updatedTasks[taskIndex] = task;
       
       // Расчет опыта в зависимости от приоритета задачи
       let experienceGained = 10; // базовый опыт
       if (task.priority === 'medium') experienceGained = 20;
       if (task.priority === 'high') experienceGained = 30;
+      
+      // Отменяем уведомление, если оно было
+      if (task.notificationId) {
+        await NotificationService.cancelTaskReminder(task.notificationId);
+      }
       
       // Обновление статистики
       await StatisticsService.updateStatisticsOnTaskCompletion(task, experienceGained);
@@ -427,10 +400,9 @@ export class TaskService {
           const profile = await profileService.getProfile();
           const autoDeleteCompletedTasks = profile.settings?.autoDeleteCompletedTasks ?? true;
           
-          // Если включено автоудаление, удаляем задачу
+          // Если включено автоудаление, удаляем задачу из массива перед сохранением
           if (autoDeleteCompletedTasks) {
-            const updatedTasks = tasks.filter(t => t.id !== taskId);
-            await StorageService.setTasks(updatedTasks);
+            updatedTasks = updatedTasks.filter(t => t.id !== taskId);
             taskRemoved = true;
           }
         } catch (error) {
@@ -438,17 +410,61 @@ export class TaskService {
         }
       }
       
-      return { 
+      // Сохраняем обновленные задачи
+      const success = await StorageService.setTasks(updatedTasks);
+      
+      if (!success) {
+        return { success: false, error: 'Не удалось сохранить изменения' };
+      }
+      
+      // Инвалидируем кэш
+      this.invalidateCache();
+      
+      return {
         success: true, 
         task, 
         experienceGained, 
         taskRemoved,
-        ...result,
+        profile: result.profile,
+        levelUp: result.didLevelUp ? {
+          level: result.newLevel,
+          bonuses: result.bonuses || []
+        } : null,
         achievements: achievementsResult
       };
     } catch (error) {
       console.error('Ошибка при выполнении задачи:', error);
       return { success: false, error: error.message };
+    }
+  }
+
+  // Добавьте метод для инвалидации кэша при изменениях
+  static invalidateCache() {
+    console.log('Invalidating tasks cache');
+    tasksCache = null;
+  }
+
+  // Добавляем метод сброса всех задач
+
+  /**
+   * Сброс всех задач
+   * @returns {Promise<boolean>} - Результат операции
+   */
+  static async resetAllTasks() {
+    try {
+      console.log('TaskService: Начинаем сброс всех задач');
+      
+      // Очищаем хранилище
+      await AsyncStorage.removeItem(TASKS_STORAGE_KEY);
+      
+      // Очищаем кэш в сервисе, если он используется
+      tasksCache = [];
+      
+      console.log('TaskService: Все задачи успешно сброшены');
+      return true;
+    } catch (error) {
+      console.error('TaskService: Ошибка при сбросе задач:', error);
+      return false;
     }
   }
 }

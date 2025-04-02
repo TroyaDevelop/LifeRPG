@@ -1,33 +1,75 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  TouchableOpacity,
+  ScrollView,
+  ActivityIndicator
+} from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import { useAppContext } from '../context/AppContext'; // Импортируем контекст
 import Header from '../components/Header';
-import { AchievementService } from '../services/AchievementService';
 import Modal from '../components/Modal';
 
 export function AchievementsScreen({ navigation }) {
-  const [achievements, setAchievements] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedAchievement, setSelectedAchievement] = useState(null);
   const [showModal, setShowModal] = useState(false);
-  const [activeTab, setActiveTab] = useState('all'); // 'all', 'completed', 'inProgress'
+  const [selectedAchievement, setSelectedAchievement] = useState(null);
+  const [activeTab, setActiveTab] = useState('all'); // 'all', 'unlocked', 'locked'
+  
+  // Используем контекст
+  const { 
+    achievements, 
+    refreshData,
+    isLoading 
+  } = useAppContext();
 
-  useEffect(() => {
-    loadAchievements();
-  }, []);
+  // Загружаем достижения при фокусе на экране
+  useFocusEffect(
+    React.useCallback(() => {
+      refreshData();
+    }, [])
+  );
 
-  const loadAchievements = async () => {
-    setLoading(true);
-    try {
-      const allAchievements = await AchievementService.getAllAchievements();
-      console.log(`Загружено ${allAchievements.length} достижений`);
-      setAchievements(allAchievements);
-    } catch (error) {
-      console.error('Ошибка при загрузке достижений:', error);
-    } finally {
-      setLoading(false);
+  // Фильтрация достижений по вкладкам
+  const filteredAchievements = React.useMemo(() => {
+    if (!achievements) return [];
+    
+    switch (activeTab) {
+      case 'unlocked':
+        return achievements.filter(achievement => achievement.unlocked);
+      case 'locked':
+        return achievements.filter(achievement => !achievement.unlocked);
+      case 'all':
+      default:
+        return achievements;
     }
-  };
+  }, [achievements, activeTab]);
+
+  // Группировка достижений по категориям
+  const achievementsByCategory = React.useMemo(() => {
+    const grouped = {
+      tasks: [],
+      streaks: [],
+      efficiency: [],
+      organization: [],
+      priorities: [],
+      levels: [],
+      general: []
+    };
+    
+    filteredAchievements.forEach(achievement => {
+      if (achievement.category in grouped) {
+        grouped[achievement.category].push(achievement);
+      } else {
+        grouped.general.push(achievement);
+      }
+    });
+    
+    return grouped;
+  }, [filteredAchievements]);
 
   const handleAchievementPress = (achievement) => {
     setSelectedAchievement(achievement);
@@ -71,13 +113,6 @@ export function AchievementsScreen({ navigation }) {
         return 'Обычное';
     }
   };
-
-  const filteredAchievements = achievements.filter(achievement => {
-    if (activeTab === 'all') return true;
-    if (activeTab === 'completed') return achievement.unlocked;
-    if (activeTab === 'inProgress') return !achievement.unlocked && !achievement.hidden;
-    return true;
-  });
 
   const renderCategory = (category) => {
     const categoryAchievements = filteredAchievements.filter(
@@ -292,23 +327,31 @@ export function AchievementsScreen({ navigation }) {
           style={[styles.tab, activeTab === 'all' && styles.activeTab]} 
           onPress={() => setActiveTab('all')}
         >
-          <Text style={[styles.tabText, activeTab === 'all' && styles.activeTabText]}>Все</Text>
+          <Text style={[styles.tabText, activeTab === 'all' && styles.activeTabText]}>
+            Все
+          </Text>
         </TouchableOpacity>
+        
         <TouchableOpacity 
-          style={[styles.tab, activeTab === 'completed' && styles.activeTab]} 
-          onPress={() => setActiveTab('completed')}
+          style={[styles.tab, activeTab === 'unlocked' && styles.activeTab]} 
+          onPress={() => setActiveTab('unlocked')}
         >
-          <Text style={[styles.tabText, activeTab === 'completed' && styles.activeTabText]}>Полученные</Text>
+          <Text style={[styles.tabText, activeTab === 'unlocked' && styles.activeTabText]}>
+            Разблокированные
+          </Text>
         </TouchableOpacity>
+        
         <TouchableOpacity 
-          style={[styles.tab, activeTab === 'inProgress' && styles.activeTab]} 
-          onPress={() => setActiveTab('inProgress')}
+          style={[styles.tab, activeTab === 'locked' && styles.activeTab]} 
+          onPress={() => setActiveTab('locked')}
         >
-          <Text style={[styles.tabText, activeTab === 'inProgress' && styles.activeTabText]}>В процессе</Text>
+          <Text style={[styles.tabText, activeTab === 'locked' && styles.activeTabText]}>
+            Заблокированные
+          </Text>
         </TouchableOpacity>
       </View>
       
-      {loading ? (
+      {isLoading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#4E66F1" />
           <Text style={styles.loadingText}>Загрузка достижений...</Text>

@@ -1,58 +1,61 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, Switch } from 'react-native';
-import { ProfileService } from '../services/ProfileService';
+import { useAppContext } from '../context/AppContext'; // Импортируем контекст
 import Header from '../components/Header';
 
 const AppSettingsScreen = ({ navigation }) => {
+  // Используем контекст
+  const { profile, updateProfile, refreshData, isLoading } = useAppContext();
+  
   const [settings, setSettings] = useState({
-    autoDeleteCompletedTasks: true
+    autoDeleteCompletedTasks: true,
+    // Другие настройки...
   });
-  const [loading, setLoading] = useState(true);
   
-  // Загружаем настройки при открытии экрана
+  // Загружаем настройки из профиля
   useEffect(() => {
-    loadSettings();
-  }, []);
-  
-  const loadSettings = async () => {
-    try {
-      setLoading(true);
-      const profileService = ProfileService.getInstance();
-      const userSettings = await profileService.getSettings();
-      
+    if (profile && profile.settings) {
       setSettings({
-        autoDeleteCompletedTasks: userSettings.autoDeleteCompletedTasks ?? true
+        autoDeleteCompletedTasks: profile.settings.autoDeleteCompletedTasks ?? true,
+        // Загружаем другие настройки...
       });
-    } catch (error) {
-      console.error('Ошибка при загрузке настроек:', error);
-    } finally {
-      setLoading(false);
     }
-  };
-  
-  const handleToggle = async (setting, value) => {
+  }, [profile]);
+
+  // Обработчик изменения настройки
+  const handleSettingChange = async (setting, value) => {
     try {
-      const newSettings = { ...settings, [setting]: value };
-      setSettings(newSettings);
+      // Обновляем локальное состояние
+      setSettings(prev => ({
+        ...prev,
+        [setting]: value
+      }));
       
-      const profileService = ProfileService.getInstance();
-      await profileService.updateSettings({ [setting]: value });
+      // Обновляем профиль через контекст
+      await updateProfile({
+        settings: {
+          ...profile.settings,
+          [setting]: value
+        }
+      });
+      
+      // Обновляем данные в контексте
+      refreshData();
     } catch (error) {
-      console.error('Ошибка при сохранении настройки:', error);
-      // Возвращаем предыдущее значение, если произошла ошибка
-      setSettings(prev => ({ ...prev }));
+      console.error('Ошибка при обновлении настроек:', error);
     }
   };
-  
-  const renderSettingItem = (label, key, description = "") => (
+
+  // Компонент для отображения элемента настройки
+  const renderSettingItem = (label, setting, description) => (
     <View style={styles.settingItem}>
-      <View style={styles.settingTextContainer}>
+      <View style={styles.settingInfo}>
         <Text style={styles.settingLabel}>{label}</Text>
-        {description ? <Text style={styles.settingDescription}>{description}</Text> : null}
+        <Text style={styles.settingDescription}>{description}</Text>
       </View>
       <Switch
-        value={settings[key]}
-        onValueChange={(value) => handleToggle(key, value)}
+        value={settings[setting]}
+        onValueChange={(value) => handleSettingChange(setting, value)}
         trackColor={{ false: "#E5E7EB", true: "#4E66F1" }}
         thumbColor="#FFFFFF"
       />

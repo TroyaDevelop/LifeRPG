@@ -11,58 +11,117 @@ import {
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import { CategoryService, TaskService } from '../services';
+import { useAppContext } from '../context/AppContext'; // Импортируем хук контекста
 import Header from '../components/Header';
 
 const CategoriesScreen = ({ navigation }) => {
-  const [categories, setCategories] = useState([]);
-  const [loading, setLoading] = useState(true);
+  // Используем контекст вместо прямых вызовов сервисов
+  const { 
+    categories, 
+    tasks, 
+    deleteCategory,
+    refreshData,
+    isLoading 
+  } = useAppContext();
+  
   const [refreshing, setRefreshing] = useState(false);
   const [taskCounts, setTaskCounts] = useState({});
+  const [localLoading, setLocalLoading] = useState(true); // Добавляем локальное состояние загрузки
+  
+  // Инициализация при монтировании
+  useEffect(() => {
+    const initScreen = async () => {
+      try {
+        await refreshData();
+        setLocalLoading(false);
+      } catch (error) {
+        console.error('Ошибка при инициализации экрана категорий:', error);
+        setLocalLoading(false);
+      }
+    };
+    
+    initScreen();
+  }, []);
 
-  // Загрузка категорий при фокусе на экране
+  // Расчет количества задач для каждой категории
+  const calculateTaskCounts = useCallback(() => {
+    if (!categories || !tasks) return;
+    
+    const counts = {};
+    
+    // Для каждой категории считаем количество связанных задач
+    categories.forEach(category => {
+      counts[category.id] = tasks.filter(task => task.categoryId === category.id).length;
+    });
+    
+    setTaskCounts(counts);
+  }, [categories, tasks]);
+
+  // Обновляем счетчики задач при изменении категорий или задач
+  useEffect(() => {
+    calculateTaskCounts();
+  }, [categories, tasks, calculateTaskCounts]);
+
+  // Обновление при фокусе экрана (без повторной загрузки, если уже загружено)
   useFocusEffect(
     useCallback(() => {
-      loadCategories();
-    }, [])
+      const updateCategoriesData = async () => {
+        console.log('CategoriesScreen: Экран в фокусе, обновляем данные');
+        setLocalLoading(true);
+        
+        try {
+          // Безопасно обновляем задачи и категории
+          await refreshData();
+          
+          // Обновляем счетчики задач после обновления данных
+          calculateTaskCounts();
+        } catch (error) {
+          console.error('CategoriesScreen: Ошибка при обновлении данных:', error);
+        } finally {
+          setLocalLoading(false);
+        }
+      };
+      
+      // Запускаем обновление
+      updateCategoriesData();
+      
+      // Функция очистки
+      return () => {
+        console.log('CategoriesScreen: Выход из фокуса');
+      };
+    }, [])  // Пустой массив зависимостей для запуска только при фокусировке
   );
 
-  // Загрузка категорий из хранилища
-  const loadCategories = async () => {
+  // Обновление списка (pull-to-refresh)
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
     try {
-      setLoading(true);
-      const allCategories = await CategoryService.getAllCategories();
-      setCategories(allCategories || []);
-
-      // Получаем количество задач для каждой категории
-      const allTasks = await TaskService.getAllTasks();
-      const counts = {};
+      const refreshPromise = refreshData();
       
-      allCategories.forEach(category => {
-        counts[category.id] = allTasks.filter(task => task.categoryId === category.id).length;
-      });
+      if (refreshPromise && typeof refreshPromise.then === 'function') {
+        await refreshPromise;
+      }
       
-      setTaskCounts(counts);
+      calculateTaskCounts();
     } catch (error) {
-      console.error('Ошибка при загрузке категорий:', error);
-      Alert.alert('Ошибка', 'Не удалось загрузить категории');
+      console.error('Ошибка при обновлении данных:', error);
     } finally {
-      setLoading(false);
       setRefreshing(false);
     }
-  };
-
-  // Обновление списка (pull-to-refresh)
-  const onRefresh = () => {
-    setRefreshing(true);
-    loadCategories();
-  };
+  }, [refreshData, calculateTaskCounts]);
 
   // Обработка удаления категории
   const handleDeleteCategory = (categoryId, categoryName) => {
+    const tasksWithCategory = tasks.filter(task => task.categoryId === categoryId);
+    
+    let message = 'Вы уверены, что хотите удалить категорию?';
+    if (tasksWithCategory.length > 0) {
+      message += ` У вас есть ${tasksWithCategory.length} задач с этой категорией.`;
+    }
+    
     Alert.alert(
-      'Удалить категорию',
-      `Вы уверены, что хотите удалить категорию "${categoryName}"? Все связанные задачи будут перемещены в категорию "Другое".`,
+      `Удалить категорию "${categoryName}"`,
+      message,
       [
         { text: 'Отмена', style: 'cancel' },
         { 
@@ -70,12 +129,11 @@ const CategoriesScreen = ({ navigation }) => {
           style: 'destructive',
           onPress: async () => {
             try {
-              await CategoryService.deleteCategory(categoryId);
+              // Используем функцию из контекста
+              await deleteCategory(categoryId);
               
-              // Обновляем список категорий
-              setCategories(prevCategories => 
-                prevCategories.filter(cat => cat.id !== categoryId)
-              );
+              // Обновляем данные
+              refreshData();
             } catch (error) {
               console.error('Ошибка при удалении категории:', error);
               Alert.alert('Ошибка', 'Не удалось удалить категорию');
@@ -122,7 +180,7 @@ const CategoriesScreen = ({ navigation }) => {
 
   // Компонент для отображения пустого списка
   const renderEmptyList = () => {
-    if (loading) return null;
+    if (localLoading || isLoading) return null;
     
     return (
       <View style={styles.emptyContainer}>
@@ -140,42 +198,40 @@ const CategoriesScreen = ({ navigation }) => {
     );
   };
 
-  // Заголовок с кнопкой добавления
+  // Заголовок без кнопки добавления в верхнем углу
   const renderHeader = () => {
-    const rightComponent = (
-      <TouchableOpacity 
-        onPress={() => navigation.navigate('AddCategory')}
-        style={styles.headerButton}
-      >
-        <Ionicons name="add" size={24} color="#4E64EE" />
-      </TouchableOpacity>
-    );
-
     return (
       <Header 
         title="Категории" 
         hasBack={true}
         onBack={() => navigation.goBack()}
-        rightComponent={rightComponent} 
+        // Убрали rightComponent с кнопкой добавления
       />
     );
   };
 
-  if (loading && !refreshing) {
+  // Проверяем, загружаются ли данные (либо глобально, либо локально, но не при обновлении)
+  if ((isLoading || localLoading) && !refreshing) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#4E64EE" />
-        <Text style={styles.loadingText}>Загрузка категорий...</Text>
+      <View style={styles.container}>
+        {renderHeader()}
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#4E64EE" />
+          <Text style={styles.loadingText}>Загрузка категорий...</Text>
+        </View>
       </View>
     );
   }
+
+  // Проверяем, что категории существуют и это массив
+  const categoriesData = Array.isArray(categories) ? categories : [];
 
   return (
     <View style={styles.container}>
       {renderHeader()}
       
       <FlatList
-        data={categories}
+        data={categoriesData}
         renderItem={renderCategoryItem}
         keyExtractor={item => item.id}
         contentContainerStyle={styles.listContent}
@@ -185,7 +241,7 @@ const CategoriesScreen = ({ navigation }) => {
         }
       />
 
-      {/* FAB для быстрого добавления */}
+      {/* FAB для быстрого добавления - оставляем только эту кнопку */}
       <TouchableOpacity 
         style={styles.fab}
         onPress={() => navigation.navigate('AddCategory')}

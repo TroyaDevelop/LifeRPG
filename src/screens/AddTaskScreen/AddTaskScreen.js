@@ -32,7 +32,7 @@ export default function AddTaskScreen({ navigation, route }) {
   const [reminderEnabled, setReminderEnabled] = useState(false);
   const [reminderTime, setReminderTime] = useState(new Date());
   const [showReminderTimePicker, setShowReminderTimePicker] = useState(false);
-  const [taskType, setTaskType] = useState(isDaily ? 'daily' : 'regular'); // Тип задачи
+  const [taskType, setTaskType] = useState('daily'); // Тип задачи: по умолчанию ежедневная
 
   // Состояние ошибок
   const [titleError, setTitleError] = useState('');
@@ -91,38 +91,44 @@ export default function AddTaskScreen({ navigation, route }) {
     }
     
     try {
-      // Создаем объект задачи в зависимости от типа
+      // Создаем объект задачи
       const taskData = {
         title,
         description,
-        // Для ежедневных задач не устанавливаем срок выполнения
-        dueDate: taskType === 'daily' ? null : (hasDueDate ? dueDate.toISOString() : null),
+        dueDate: hasDueDate && dueDate ? new Date(dueDate).toISOString() : null,
         priority,
-        categoryId: category || 'Другое',
-        isCompleted: false,
-        // Для ежедневных задач отключаем напоминания
-        reminderEnabled: taskType === 'daily' ? false : (hasDueDate && reminderEnabled),
-        reminderTime: taskType === 'daily' ? null : (hasDueDate && reminderEnabled ? reminderTime.toISOString() : null),
+        categoryId: category, // Используем правильное поле
+        isDaily: taskType === 'daily', // Правильное преобразование типа в isDaily
+        reminderEnabled: reminderEnabled && hasDueDate,
+        reminderTime: reminderEnabled && reminderTime ? new Date(reminderTime).toISOString() : null,
         createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        isDaily: taskType === 'daily'
+        updatedAt: new Date().toISOString()
       };
       
-      // Сохраняем задачу через TaskService
+      console.log('Данные новой задачи:', taskData);
+      
+      // Сохранение через TaskService
       const savedTask = await TaskService.createTask(taskData);
       
       if (!savedTask) {
-        throw new Error('Ошибка при сохранении задачи');
+        throw new Error('Не удалось создать задачу');
+      }
+      
+      // Если успешно создана задача, запланируем уведомление
+      if (savedTask && hasDueDate && reminderEnabled) {
+        const reminderDateTime = new Date(reminderTime);
+        const notificationId = await NotificationService.scheduleTaskReminder(
+          savedTask,
+          reminderDateTime
+        );
+        
+        if (notificationId) {
+          await TaskService.updateTask(savedTask.id, { notificationId });
+        }
       }
       
       console.log('Новая задача создана:', savedTask);
-      
-      // Показываем сообщение об успехе
-      Alert.alert(
-        'Успех',
-        'Задача успешно создана!',
-        [{ text: 'OK', onPress: () => navigation.goBack() }]
-      );
+      navigation.goBack();
     } catch (error) {
       console.error('Ошибка при создании задачи:', error);
       Alert.alert('Ошибка', 'Не удалось создать задачу');

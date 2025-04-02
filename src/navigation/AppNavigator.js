@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { SchedulerService } from '../services/SchedulerService';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 // Импорт экранов
 import HomeScreen from '../screens/HomeScreen';
@@ -17,6 +18,7 @@ import { AchievementsScreen } from '../screens/AchievementsScreen';
 import AppSettingsScreen from '../screens/AppSettingsScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import AvatarCustomizationScreen from '../screens/AvatarCustomizationScreen';
+import AboutScreen from '../screens/AboutScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -32,9 +34,20 @@ export default function AppNavigator() {
         initialRouteName="Home"
         screenOptions={{
           headerShown: false,
+          contentStyle: {
+            backgroundColor: '#F5F7FA', // Устанавливаем фоновый цвет для всех экранов
+          },
+          // Добавляем опции для сохранения состояния экранов
+          detachInactiveScreens: false,
+          // Настройка анимации перехода для более плавной навигации
+          animation: 'slide_from_right',
         }}
       >
-        <Stack.Screen name="Home" component={HomeScreen} />
+        <Stack.Screen 
+          name="Home" 
+          component={HomeScreen} 
+          options={{ freezeOnBlur: false }} 
+        />
         <Stack.Screen name="AddTask" component={AddTaskScreen} />
         <Stack.Screen name="EditTask" component={EditTaskScreen} />
         <Stack.Screen name="NotificationSettings" component={NotificationSettingsScreen} />
@@ -47,6 +60,13 @@ export default function AppNavigator() {
         <Stack.Screen name="AppSettings" component={AppSettingsScreen} />
         <Stack.Screen name="Profile" component={ProfileScreen} />
         <Stack.Screen name="AvatarCustomization" component={AvatarCustomizationScreen} />
+        <Stack.Screen 
+          name="About" 
+          component={AboutScreen} 
+          options={{ 
+            headerShown: false 
+          }} 
+        />
       </Stack.Navigator>
     </NavigationContainer>
   );

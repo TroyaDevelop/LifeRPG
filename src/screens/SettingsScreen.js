@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Switch } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Header from '../components/Header';
-import ResetService from '../services/ResetService';
 import Modal from '../components/Modal';
+import { useAppContext } from '../context/AppContext'; // Импортируем хук контекста
 
 export default function SettingsScreen({ navigation }) {
   const [showResetModal, setShowResetModal] = useState(false);
@@ -15,6 +15,9 @@ export default function SettingsScreen({ navigation }) {
     resetCategories: true
   });
   const [isResetting, setIsResetting] = useState(false);
+  
+  // Корректно получаем функции из контекста
+  const { resetProgress, refreshData } = useAppContext();
 
   const menuItems = [
     {
@@ -85,39 +88,62 @@ export default function SettingsScreen({ navigation }) {
     </TouchableOpacity>
   );
 
+  // Обработчик изменения опции сброса
+  const handleResetOptionChange = (option) => {
+    setResetOptions(prev => ({
+      ...prev,
+      [option]: !prev[option]
+    }));
+  };
+
+  // Обработчик сброса данных
   const handleResetData = async () => {
     setIsResetting(true);
     try {
-      const result = await ResetService.resetAllData(resetOptions);
-      setIsResetting(false);
-      setShowResetModal(false);
+      console.log('SettingsScreen: Начинаем сброс данных с опциями:', resetOptions);
       
-      if (result) {
+      // Используем функцию из контекста для сброса данных
+      const success = await resetProgress(resetOptions);
+      
+      if (success) {
+        console.log('SettingsScreen: Сброс данных выполнен успешно');
+        
+        // Закрываем модальное окно
+        setShowResetModal(false);
+        
+        // Принудительно обновляем данные приложения
+        await refreshData();
+        
+        // Показываем уведомление об успешном сбросе
         Alert.alert(
-          'Данные сброшены',
-          'Все выбранные данные успешно сброшены',
-          [
-            { 
-              text: 'OK', 
-              onPress: () => navigation.reset({
+          "Сброс выполнен",
+          "Выбранные данные были успешно сброшены",
+          [{ 
+            text: "OK",
+            onPress: () => {
+              // Еще раз обновляем данные после закрытия уведомления
+              refreshData();
+              
+              // Для гарантированного обновления навигируем на домашний экран
+              navigation.reset({
                 index: 0,
                 routes: [{ name: 'Home' }],
-              }) 
+              });
             }
-          ]
+          }]
         );
       } else {
-        Alert.alert(
-          'Ошибка',
-          'Произошла ошибка при сбросе данных'
-        );
+        throw new Error('Сброс данных не выполнен');
       }
     } catch (error) {
-      setIsResetting(false);
+      console.error('Ошибка при сбросе данных:', error);
       Alert.alert(
-        'Ошибка',
-        'Произошла ошибка при сбросе данных: ' + error.message
+        "Ошибка",
+        "Не удалось выполнить сброс данных. Пожалуйста, попробуйте снова.",
+        [{ text: "OK" }]
       );
+    } finally {
+      setIsResetting(false);
     }
   };
 
@@ -459,5 +485,25 @@ const styles = StyleSheet.create({
   resetButtonText: {
     color: '#FFFFFF',
     fontWeight: '600',
+  },
+  settingItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
+  settingLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  settingIcon: {
+    marginRight: 16,
+  },
+  settingText: {
+    fontSize: 16,
+    color: '#333333',
   },
 });

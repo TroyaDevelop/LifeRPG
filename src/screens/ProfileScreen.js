@@ -51,8 +51,6 @@ const ProfileScreen = ({ navigation }) => {
     }, [])
   );
 
-  // Функции для вычисления контейнера в зависимости от размера аватара
-
   // Определяем размеры аватара
   const getAvatarSize = (size) => {
     switch (size) {
@@ -135,31 +133,9 @@ const ProfileScreen = ({ navigation }) => {
             style={styles.editAvatarButton}
           />
         </View>
-
-        {/* Дополнительная информация о персонаже */}
-        <View style={styles.statsSection}>
-          <Text style={styles.sectionTitle}>Статистика</Text>
-          
-          <View style={styles.statsGrid}>
-            <View style={styles.statGridItem}>
-              <Ionicons name="star-outline" size={22} color="#4E64EE" />
-              <Text style={styles.statGridValue}>{profile?.experience || 0}</Text>
-              <Text style={styles.statGridLabel}>Очки опыта</Text>
-            </View>
-            
-            <View style={styles.statGridItem}>
-              <Ionicons name="calendar-outline" size={22} color="#4E64EE" />
-              <Text style={styles.statGridValue}>{profile?.streakDays || 0}</Text>
-              <Text style={styles.statGridLabel}>Дней подряд</Text>
-            </View>
-            
-            <View style={styles.statGridItem}>
-              <Ionicons name="trophy-outline" size={22} color="#4E64EE" />
-              <Text style={styles.statGridValue}>{profile?.unlockedBonuses?.length || 0}</Text>
-              <Text style={styles.statGridLabel}>Бонусов</Text>
-            </View>
-          </View>
-        </View>
+        
+        {/* Удалена секция statsSection со статистикой */}
+        
       </ScrollView>
     </View>
   );
@@ -262,45 +238,8 @@ const styles = StyleSheet.create({
   editAvatarButton: {
     marginTop: 16,
     width: '100%',
-  },
-  statsSection: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    margin: 16,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333333',
-    marginBottom: 16,
-  },
-  statsGrid: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 8,
-  },
-  statGridItem: {
-    flex: 1,
-    alignItems: 'center',
-    paddingHorizontal: 4,
-  },
-  statGridValue: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333333',
-    marginVertical: 6,
-  },
-  statGridLabel: {
-    fontSize: 12,
-    color: '#888888',
-    textAlign: 'center',
   }
+  // Удалены стили для statsSection и связанных элементов
 });
 
 export default ProfileScreen;

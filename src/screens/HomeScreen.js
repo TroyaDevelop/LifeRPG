@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, memo } from 'react';
 import { 
   View, 
   Text, 
@@ -10,148 +10,71 @@ import {
   RefreshControl,
   ActivityIndicator
 } from 'react-native';
-import { useFocusEffect, useIsFocused } from '@react-navigation/native';
+import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import { TaskService } from '../services';
-// Добавляем новые импорты
-import { ProfileService } from '../services/ProfileService';
+import { useAppContext } from '../context/AppContext'; // Импортируем хук контекста
 import LevelProgressBar from '../components/LevelProgressBar';
 import LevelUpModal from '../components/LevelUpModal';
-// Исправляем путь к компонентам
 import { TaskCard, Modal, Button } from '../components/index';
 import Header from '../components/Header';
 import { formatDate } from '../utils/helpers';
 import { TASK_PRIORITIES, PRIORITY_COLORS } from '../utils/constants';
-import { SchedulerService } from '../services/SchedulerService';
-// Добавляем импорт компонента Avatar
 import Avatar from '../components/Avatar';
-// Добавляем импорт AvatarService
-import { AvatarService } from '../services/AvatarService';
+
+// Оптимизируем TaskCard с помощью memo
+const MemoizedTaskCard = memo(TaskCard);
 
 const HomeScreen = ({ navigation }) => {
-  const [tasks, setTasks] = useState([]);
-  const [filteredTasks, setFilteredTasks] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
+  // Используем контекст вместо локального состояния
+  const { 
+    tasks, 
+    profile, 
+    avatar, 
+    completeTask, 
+    deleteTask, 
+    refreshData, 
+    isLoading 
+  } = useAppContext();
+  
+  // Состояние для UI
+  const [filterType, setFilterType] = useState('all');
+  const [sortType, setSortType] = useState('date');
   const [searchQuery, setSearchQuery] = useState('');
-  const [sortType, setSortType] = useState('date'); // 'date', 'priority', 'title'
-  const [filterType, setFilterType] = useState('all'); // 'all', 'completed', 'active'
-  const [showSortModal, setShowSortModal] = useState(false);
   const [showFilterModal, setShowFilterModal] = useState(false);
-  // Добавляем новые состояния для профиля и модального окна повышения уровня
-  const [profile, setProfile] = useState(null);
+  const [showSortModal, setShowSortModal] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [levelUpData, setLevelUpData] = useState({ visible: false, level: 1, bonuses: [] });
   const [tabType, setTabType] = useState('regular'); // 'regular' или 'daily'
-  const isFocused = useIsFocused();
-  // Добавляем состояние для аватара
-  const [avatar, setAvatar] = useState(null);
 
-  // Загрузка задач при фокусе на экране
+  // Обновление данных при фокусе на экране
   useFocusEffect(
     useCallback(() => {
-      loadTasks();
-      loadProfile(); // Добавляем загрузку профиля
+      refreshData(); // Вызываем обновление из контекста
     }, [])
   );
 
-  // Применение фильтров и сортировки при изменении данных
-  useEffect(() => {
-    applyFiltersAndSort();
-  }, [tasks, searchQuery, sortType, filterType]);
-
-  // Загрузка задач при активации экрана
-  useEffect(() => {
-    if (isFocused) {
-      const initializeScreen = async () => {
-        // Проверяем и сбрасываем ежедневные задачи при каждом возвращении на главный экран
-        await SchedulerService.checkAndResetDailyTasks();
-        loadTasks();
-      };
-      
-      initializeScreen();
-    }
-  }, [isFocused, tabType]);
-
-  // Эффект для обновления данных при возвращении на экран
-  useEffect(() => {
-    if (isFocused) {
-      const updateAvatarOnFocus = async () => {
-        try {
-          const userAvatar = await AvatarService.getAvatar();
-          setAvatar(userAvatar);
-        } catch (error) {
-          console.error('Ошибка при обновлении аватара:', error);
-        }
-      };
-
-      updateAvatarOnFocus();
-    }
-  }, [isFocused]);
-
-  // Загрузка задач из хранилища
-  const loadTasks = async () => {
-    try {
-      setLoading(true);
-      let taskList;
-      
-      if (tabType === 'daily') {
-        taskList = await TaskService.getDailyTasks();
-      } else {
-        taskList = await TaskService.getRegularTasks();
-      }
-      
-      setTasks(taskList);
-    } catch (error) {
-      console.error('Ошибка при загрузке задач:', error);
-      Alert.alert('Ошибка', 'Не удалось загрузить задачи');
-      setTasks([]);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
-
-  // Загрузка профиля пользователя
-  const loadProfile = async () => {
-    try {
-      const profileService = ProfileService.getInstance();
-      const userProfile = await profileService.getProfile();
-      setProfile(userProfile);
-    } catch (error) {
-      console.error('Ошибка загрузки профиля:', error);
-    }
-  };
-
-  // Обновление списка (pull-to-refresh)
-  const onRefresh = () => {
+  // Обработка события pull-to-refresh
+  const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    loadTasks();
-    loadProfile(); // Добавляем загрузку профиля при обновлении
-  };
+    await refreshData();
+    setRefreshing(false);
+  }, [refreshData]);
 
-  // Применение фильтров и сортировки
-  const applyFiltersAndSort = () => {
-    if (!tasks || tasks.length === 0) {
-      setFilteredTasks([]);
-      return;
+  // Фильтрация и сортировка задач
+  const filteredTasks = React.useMemo(() => {
+    let result = [...tasks];
+    
+    // Фильтрация по типу задачи (обычная или ежедневная)
+    result = result.filter(task => task.type === tabType);
+    
+    // Фильтрация по статусу
+    if (filterType === 'active') {
+      result = result.filter(task => !task.isCompleted);
+    } else if (filterType === 'completed') {
+      result = result.filter(task => task.isCompleted);
     }
     
-    let result = [...tasks];
-
-    // Применение фильтра по статусу
-    switch (filterType) {
-      case 'completed':
-        result = result.filter(task => task.isCompleted);
-        break;
-      case 'active':
-        result = result.filter(task => !task.isCompleted);
-        break;
-      default:
-        // All tasks
-        break;
-    }
-
-    // Применение поиска по названию или описанию
+    // Поиск по тексту
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase().trim();
       result = result.filter(
@@ -160,159 +83,58 @@ const HomeScreen = ({ navigation }) => {
           (task.description && task.description.toLowerCase().includes(query))
       );
     }
-
-    // Применение сортировки
-    switch (sortType) {
-      case 'date':
-        result.sort((a, b) => {
-          if (!a.dueDate && !b.dueDate) return 0;
-          if (!a.dueDate) return 1;
-          if (!b.dueDate) return -1;
-          return new Date(a.dueDate) - new Date(b.dueDate);
-        });
-        break;
-      case 'priority':
-        const priorityWeight = { high: 3, medium: 2, low: 1 };
-        result.sort((a, b) => 
-          (priorityWeight[b.priority] || 0) - (priorityWeight[a.priority] || 0)
-        );
-        break;
-      case 'title':
-        result.sort((a, b) => a.title.localeCompare(b.title));
-        break;
-      default:
-        break;
+    
+    // Сортировка
+    if (sortType === 'date') {
+      result.sort((a, b) => {
+        if (!a.dueDate) return 1;
+        if (!b.dueDate) return -1;
+        return new Date(a.dueDate) - new Date(b.dueDate);
+      });
+    } else if (sortType === 'priority') {
+      const priorityOrder = { high: 1, medium: 2, low: 3 };
+      result.sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]);
+    } else if (sortType === 'alphabetical') {
+      result.sort((a, b) => a.title.localeCompare(b.title));
     }
+    
+    return result;
+  }, [tasks, filterType, sortType, searchQuery, tabType]);
 
-    setFilteredTasks(result);
+  // Обработчик выполнения задачи
+  const handleCompleteTask = async (taskId) => {
+    try {
+      const task = tasks.find(t => t.id === taskId);
+      if (!task) {
+        console.error('Задача не найдена:', taskId);
+        return;
+      }
+      
+      // Вызываем функцию из контекста только с ID задачи
+      const result = await completeTask(taskId);
+      
+      // Показываем модальное окно повышения уровня, если есть
+      if (result.levelUp) {
+        setLevelUpData({
+          visible: true,
+          level: result.levelUp.level,
+          bonuses: result.levelUp.bonuses || []
+        });
+      }
+      
+      // Обновляем данные в экране
+      refreshData();
+    } catch (error) {
+      console.error('Ошибка при выполнении задачи:', error);
+      Alert.alert('Ошибка', 'Не удалось изменить статус задачи.');
+    }
   };
 
-  // Модифицируем обработчик отмены выполнения задачи
-
-// Обработка отметки задачи как выполненной/невыполненной
-const handleCompleteTask = async (taskId) => {
-  try {
-    const task = tasks.find(t => t.id === taskId);
-    if (!task) {
-      console.warn(`Задача с ID ${taskId} не найдена в локальном состоянии`);
-      return;
-    }
-    
-    // Если задача уже выполнена, показываем диалог отмены
-    if (task.isCompleted) {
-      Alert.alert(
-        'Отменить выполнение?',
-        'Вы уверены, что хотите отменить выполнение задачи? Полученный опыт будет возвращен.',
-        [
-          { text: 'Нет' },
-          { 
-            text: 'Да', 
-            onPress: async () => {
-              try {
-                setLoading(true);
-                const result = await TaskService.uncompleteTask(taskId);
-                
-                if (!result.success) {
-                  throw new Error(result.error || 'Ошибка при отмене выполнения задачи');
-                }
-                
-                // Обновляем состояние задачи в списке
-                setTasks(prevTasks => 
-                  prevTasks.map(t => 
-                    t.id === taskId 
-                      ? { ...t, isCompleted: false, completedAt: null }
-                      : t
-                  )
-                );
-                
-                // Обновляем профиль
-                await loadProfile();
-                
-                // Сообщаем пользователю о возврате опыта
-                Alert.alert(
-                  'Выполнение отменено',
-                  `Возвращено ${result.experienceReturned} XP`,
-                  [{ text: 'OK' }]
-                );
-                
-                if (result.didLevelDown) {
-                  Alert.alert(
-                    'Уровень понижен',
-                    `Ваш уровень понижен до ${result.newLevel}`,
-                    [{ text: 'OK' }]
-                  );
-                }
-              } catch (error) {
-                console.error('Ошибка при отмене выполнения задачи:', error);
-                Alert.alert('Ошибка', 'Не удалось отменить выполнение задачи');
-                loadTasks();
-              } finally {
-                setLoading(false);
-              }
-            }
-          }
-        ]
-      );
-      return;
-    }
-    
-    // Выполняем задачу
-    setLoading(true);
-    
-    const result = await TaskService.completeTask(taskId);
-    
-    if (!result.success) {
-      throw new Error(result.error || 'Ошибка при выполнении задачи');
-    }
-    
-    // Обрабатываем случай, когда задача была удалена после выполнения
-    if (result.taskRemoved) {
-      // Удаляем задачу из локального состояния
-      setTasks(prevTasks => prevTasks.filter(t => t.id !== taskId));
-    } else {
-      // Обновляем статус задачи в локальном состоянии
-      setTasks(prevTasks => 
-        prevTasks.map(t => 
-          t.id === taskId 
-            ? { ...t, isCompleted: true, completedAt: new Date().toISOString() }
-            : t
-        )
-      );
-    }
-    
-    // Обновляем интерфейс и показываем результаты
-    await loadProfile();
-    
-    // Показываем уведомление о полученном опыте
-    Alert.alert(
-      'Задача выполнена!',
-      `Вы получили +${result.experienceGained} XP`,
-      [{ text: 'OK' }]
-    );
-    
-    // Показываем уведомление о повышении уровня
-    if (result.didLevelUp) {
-      setLevelUpData({
-        visible: true,
-        level: result.newLevel,
-        bonuses: result.newBonuses
-      });
-    }
-    
-    setLoading(false);
-  } catch (error) {
-    console.error('Ошибка при обновлении задачи:', error);
-    Alert.alert('Ошибка', 'Не удалось обновить статус задачи');
-    loadTasks();
-    setLoading(false);
-  }
-};
-
-  // Обработка удаления задачи
+  // Обработчик удаления задачи
   const handleDeleteTask = (taskId) => {
     Alert.alert(
-      'Удалить задачу',
-      'Вы уверены, что хотите удалить эту задачу?',
+      'Удаление задачи',
+      'Вы уверены, что хотите удалить задачу?',
       [
         { text: 'Отмена', style: 'cancel' },
         { 
@@ -320,16 +142,10 @@ const handleCompleteTask = async (taskId) => {
           style: 'destructive',
           onPress: async () => {
             try {
-              // Обновляем локальное состояние сразу для лучшего UX
-              setTasks(prevTasks => prevTasks.filter(t => t.id !== taskId));
-              
-              // Затем удаляем из хранилища
-              await TaskService.deleteTask(taskId);
+              await deleteTask(taskId);
             } catch (error) {
               console.error('Ошибка при удалении задачи:', error);
-              Alert.alert('Ошибка', 'Не удалось удалить задачу');
-              // Откатываем изменения, если произошла ошибка
-              loadTasks();
+              Alert.alert('Ошибка', 'Не удалось удалить задачу.');
             }
           }
         }
@@ -338,13 +154,13 @@ const handleCompleteTask = async (taskId) => {
   };
 
   // Закрытие модального окна повышения уровня
-  const handleCloseLevelUpModal = () => {
+  const closeLevelUpModal = () => {
     setLevelUpData({ ...levelUpData, visible: false });
   };
 
   // Компонент для отображения пустого списка
   const renderEmptyList = () => {
-    if (loading) return null;
+    if (isLoading) return null;
     
     return (
       <View style={styles.emptyContainer}>
@@ -577,7 +393,7 @@ const handleCompleteTask = async (taskId) => {
     }
   };
 
-  if (loading && !refreshing) {
+  if (isLoading && !refreshing) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#4E64EE" />
@@ -610,7 +426,7 @@ const handleCompleteTask = async (taskId) => {
       <FlatList
         data={filteredTasks}
         renderItem={({ item }) => (
-          <TaskCard
+          <MemoizedTaskCard
             task={item}
             onPress={() => navigation.navigate('EditTask', { taskId: item.id })}
             onComplete={handleCompleteTask}
@@ -624,6 +440,12 @@ const handleCompleteTask = async (taskId) => {
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#4E64EE']} />
         }
+        // Отключаем ненужные ререндеры
+        removeClippedSubviews={true}
+        maxToRenderPerBatch={10}
+        windowSize={10}
+        // Продолжаем показывать контент даже когда список не в фокусе
+        maintainVisibleContentPosition={{ minIndexForVisible: 0 }}
       />
 
       {/* Модальное окно повышения уровня */}
@@ -631,16 +453,18 @@ const handleCompleteTask = async (taskId) => {
         visible={levelUpData.visible}
         level={levelUpData.level}
         bonuses={levelUpData.bonuses}
-        onClose={handleCloseLevelUpModal}
+        onClose={closeLevelUpModal}
       />
 
-      {/* FAB для быстрого добавления */}
-      <TouchableOpacity 
-        style={styles.fab}
-        onPress={() => navigation.navigate('AddTask')}
-      >
-        <Ionicons name="add" size={24} color="#FFFFFF" />
-      </TouchableOpacity>
+      {/* FAB для быстрого добавления - показываем только если есть задачи */}
+      {filteredTasks.length > 0 && (
+        <TouchableOpacity 
+          style={styles.fab}
+          onPress={() => navigation.navigate('AddTask')}
+        >
+          <Ionicons name="add" size={24} color="#FFFFFF" />
+        </TouchableOpacity>
+      )}
 
       {renderSortModal()}
       {renderFilterModal()}

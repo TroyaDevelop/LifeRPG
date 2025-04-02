@@ -1,27 +1,29 @@
-import React, { useState, useEffect } from 'react';
-import { View, Image, StyleSheet } from 'react-native';
+import React, { useState, useEffect, memo } from 'react';
+import { View, Image, StyleSheet, Text } from 'react-native';
 import { AvatarService } from '../services/AvatarService';
+import { BODY_TYPES, HAIR_STYLES, HAIR_COLORS, EYE_SPRITE, EYE_COLORS } from '../constants/AvatarSprites'; 
 import LoadingIndicator from './LoadingIndicator';
-import { BODY_TYPES, HAIR_STYLES, HAIR_COLORS, FACE_EXPRESSIONS, EYE_SPRITE, EYE_COLORS } from '../constants/AvatarSprites';
 
 const Avatar = ({ size = 'medium', onPress, style, avatarData }) => {
-  const [avatar, setAvatar] = useState(null);
-  const [loading, setLoading] = useState(true);
+  // Используем переданные данные или загружаем, если их нет
+  const [avatar, setAvatar] = useState(avatarData || null);
+  const [loading, setLoading] = useState(!avatarData);
 
-  // Загружаем данные аватара при монтировании компонента или при изменении avatarData
+  // Загружаем данные аватара при монтировании компонента, если они не переданы
   useEffect(() => {
+    if (avatarData) {
+      setAvatar(avatarData);
+      setLoading(false);
+      return;
+    }
+    
     const loadAvatar = async () => {
       try {
-        if (avatarData) {
-          setAvatar(avatarData);
-          setLoading(false);
-        } else {
-          const userAvatar = await AvatarService.getAvatar();
-          setAvatar(userAvatar);
-          setLoading(false);
-        }
+        const userAvatar = await AvatarService.getAvatar();
+        setAvatar(userAvatar);
       } catch (error) {
         console.error('Ошибка при загрузке аватара:', error);
+      } finally {
         setLoading(false);
       }
     };
@@ -29,25 +31,20 @@ const Avatar = ({ size = 'medium', onPress, style, avatarData }) => {
     loadAvatar();
   }, [avatarData]);
 
-  // Определяем размеры аватара в зависимости от переданного параметра
+  // Определяем размеры аватара
   const getSize = () => {
     switch (size) {
-      case 'small':
-        return 64;
-      case 'medium':
-        return 120;
-      case 'large':
-        return 180;
-      case 'xlarge':
-        return 240;
-      default:
-        // Если передано числовое значение
-        return typeof size === 'number' ? size : 120;
+      case 'small': return 64;
+      case 'medium': return 120;
+      case 'large': return 180;
+      case 'xlarge': return 240;
+      default: return size; // Если передано числовое значение
     }
   };
 
   const avatarSize = getSize();
 
+  // Если загрузка, показываем индикатор
   if (loading) {
     return (
       <View style={[styles.container, { width: avatarSize, height: avatarSize }, style]}>
@@ -56,7 +53,15 @@ const Avatar = ({ size = 'medium', onPress, style, avatarData }) => {
     );
   }
 
-  // Определяем тип тела и тон кожи
+  // Если аватар не загрузился, показываем заглушку
+  if (!avatar) {
+    return (
+      <View style={[styles.container, { width: avatarSize, height: avatarSize, backgroundColor: '#F0F3FF' }, style]}>
+        <Text style={{ color: '#4E64EE', fontSize: 12 }}>Аватар недоступен</Text>
+      </View>
+    );
+  }
+
   const bodyType = avatar?.bodyType || 'typeA';
   const skinTone = avatar?.skinTone || 'normal';
   
@@ -67,9 +72,6 @@ const Avatar = ({ size = 'medium', onPress, style, avatarData }) => {
     HAIR_STYLES[avatar.hairStyle].sprite : null;
   
   const hairColor = avatar?.hairColor ? HAIR_COLORS[avatar.hairColor] : HAIR_COLORS.brown;
-
-  const faceExpression = avatar?.faceExpression && FACE_EXPRESSIONS[avatar.faceExpression]?.sprite ?
-    FACE_EXPRESSIONS[avatar.faceExpression].sprite : FACE_EXPRESSIONS.neutral.sprite;
     
   const eyeColor = avatar?.eyeColor ? EYE_COLORS[avatar.eyeColor] : EYE_COLORS.blue;
 
@@ -90,27 +92,34 @@ const Avatar = ({ size = 'medium', onPress, style, avatarData }) => {
           resizeMode="contain"
         />
         
-        {/* Выражение лица персонажа */}
-        <Image
-          source={faceExpression}
-          style={styles.faceExpression}
-          resizeMode="contain"
-        />
-        
-        {/* Прическа персонажа */}
+        {/* Прическа персонажа - в два слоя */}
         {hairStyle && (
-          <Image
-            source={hairStyle}
-            style={[styles.hairStyle, { tintColor: hairColor }]}
-            resizeMode="contain"
-          />
+          <>
+            {/* Базовая форма волос с применением цвета */}
+            <Image
+              source={hairStyle}
+              style={[styles.hairStyle, { tintColor: hairColor }]}
+              resizeMode="contain"
+            />
+            
+            {/* Детали волос (тени и блики) */}
+            {HAIR_STYLES[avatar.hairStyle]?.details && (
+              <Image
+                source={HAIR_STYLES[avatar.hairStyle].details}
+                style={styles.hairDetails}
+                resizeMode="contain"
+              />
+            )}
+          </>
         )}
+        
+        {/* Убираем выражение лица */}
       </View>
     </View>
   );
 };
 
-// Обновляем стили для аватара
+// Стили остаются без изменений
 const styles = StyleSheet.create({
   container: {
     justifyContent: 'center',
@@ -141,7 +150,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     width: '100%',
     height: '100%',
-    zIndex: 2,
+    zIndex: 4, // Поверх всех остальных элементов
     top: 0,
     left: 0,
   },
@@ -149,10 +158,18 @@ const styles = StyleSheet.create({
     position: 'absolute',
     width: '100%',
     height: '100%',
-    zIndex: 3,
+    zIndex: 2, // Под деталями волос, но выше базового спрайта
+    top: 0,
+    left: 0,
+  },
+  hairDetails: {
+    position: 'absolute',
+    width: '100%',
+    height: '100%',
+    zIndex: 3, // Поверх базовых волос
     top: 0,
     left: 0,
   },
 });
 
-export default Avatar;
+export default memo(Avatar);

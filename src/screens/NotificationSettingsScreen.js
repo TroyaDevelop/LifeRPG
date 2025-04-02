@@ -10,8 +10,6 @@ const NotificationSettingsScreen = ({ navigation }) => {
   const [settings, setSettings] = useState({
     enabled: true,
     taskReminders: true,
-    dailyDigest: false,
-    weeklyReport: true,
     soundEnabled: true,
     vibrationEnabled: true,
   });
@@ -103,8 +101,6 @@ const NotificationSettingsScreen = ({ navigation }) => {
           {settings.enabled && (
             <>
               {renderSwitchItem('Напоминания о задачах', 'taskReminders', 'Уведомления о приближающихся сроках')}
-              {renderSwitchItem('Ежедневная сводка', 'dailyDigest', 'Получать ежедневный отчет о задачах')}
-              {renderSwitchItem('Еженедельный отчет', 'weeklyReport', 'Получать еженедельную статистику')}
             </>
           )}
         </View>

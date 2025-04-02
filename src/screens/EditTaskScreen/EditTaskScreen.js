@@ -15,10 +15,20 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { TaskService, CategoryService } from '../../services';
+import { useAppContext } from '../../context/AppContext'; // Импортируем контекст
 
 const EditTaskScreen = ({ navigation, route }) => {
   const { taskId } = route.params;
+  
+  // Используем контекст вместо прямых вызовов сервисов
+  const { 
+    tasks, 
+    categories, 
+    getTaskById, 
+    updateTask, 
+    deleteTask,
+    refreshData 
+  } = useAppContext();
   
   // Состояние задачи
   const [loading, setLoading] = useState(true);
@@ -28,29 +38,24 @@ const EditTaskScreen = ({ navigation, route }) => {
   const [hasDueDate, setHasDueDate] = useState(false);
   const [dueDate, setDueDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const [priority, setPriority] = useState('medium'); // 'low', 'medium', 'high'
+  const [priority, setPriority] = useState('medium');
   const [category, setCategory] = useState('');
   const [isCompleted, setIsCompleted] = useState(false);
   const [showPriorityModal, setShowPriorityModal] = useState(false);
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [reminderEnabled, setReminderEnabled] = useState(false);
   const [reminderTime, setReminderTime] = useState(new Date());
   const [showReminderTimePicker, setShowReminderTimePicker] = useState(false);
-
+  
   // Состояние ошибок
   const [titleError, setTitleError] = useState('');
   
-  // Предустановленные категории (позже будут загружаться из хранилища)
-  const [categories, setCategories] = useState([]);
-  const [showCategoryModal, setShowCategoryModal] = useState(false);
-  
-  // Загрузка данных задачи
+  // Загрузка задачи
   useEffect(() => {
     const loadTask = async () => {
       try {
-        setLoading(true);
-        
-        // Загружаем задачу из TaskService
-        const taskData = await TaskService.getTaskById(taskId);
+        // Используем задачу из контекста или получаем по ID
+        let taskData = tasks.find(t => t.id === taskId);
         
         if (!taskData) {
           throw new Error(`Задача с ID ${taskId} не найдена`);
@@ -96,27 +101,12 @@ const EditTaskScreen = ({ navigation, route }) => {
     };
     
     loadTask();
-  }, [taskId]);
-
-  // Загрузка категорий
-  useEffect(() => {
-    const loadCategories = async () => {
-      try {
-        const allCategories = await CategoryService.getAllCategories();
-        setCategories(allCategories || []);
-      } catch (error) {
-        console.error('Ошибка при загрузке категорий:', error);
-      }
-    };
-    
-    loadCategories();
-  }, []);
+  }, [taskId, tasks]);
 
   // Валидация формы
   const validateForm = () => {
     let isValid = true;
     
-    // Проверка заголовка
     if (!title.trim()) {
       setTitleError('Название задачи обязательно');
       isValid = false;
@@ -148,44 +138,29 @@ const EditTaskScreen = ({ navigation, route }) => {
     }
     
     try {
-      // Показываем индикатор загрузки (если нужно)
-      // setIsSubmitting(true);
-      
-      // Создаем обновленный объект задачи
+      // Обновляем объект задачи только с теми полями, которые изменились
       const updatedTaskData = {
         title,
         description,
-        dueDate: hasDueDate ? dueDate.toISOString() : null,
+        dueDate: hasDueDate ? new Date(dueDate).toISOString() : null,
         priority,
-        categoryId: category || 'Другое',
+        categoryId: category,
         isCompleted,
-        reminderEnabled: hasDueDate && reminderEnabled,
-        reminderTime: hasDueDate && reminderEnabled ? reminderTime.toISOString() : null,
-        updatedAt: new Date().toISOString(),
-        completedAt: isCompleted ? (task.completedAt || new Date().toISOString()) : null
+        reminderEnabled: reminderEnabled && hasDueDate,
+        reminderTime: reminderEnabled && hasDueDate ? new Date(reminderTime).toISOString() : null,
+        updatedAt: new Date().toISOString()
       };
       
-      // Обновляем задачу через TaskService
-      const updatedTask = await TaskService.updateTask(taskId, updatedTaskData);
+      // Используем функцию из контекста
+      await updateTask(taskId, updatedTaskData);
       
-      if (!updatedTask) {
-        throw new Error('Ошибка при обновлении задачи');
-      }
+      // Обновляем данные в контексте
+      refreshData();
       
-      console.log('Задача обновлена:', updatedTask);
-      
-      // Показываем сообщение об успехе
-      Alert.alert(
-        'Успех',
-        'Задача успешно обновлена!',
-        [{ text: 'OK', onPress: () => navigation.goBack() }]
-      );
+      navigation.goBack();
     } catch (error) {
       console.error('Ошибка при обновлении задачи:', error);
       Alert.alert('Ошибка', 'Не удалось обновить задачу');
-    } finally {
-      // Скрываем индикатор загрузки
-      // setIsSubmitting(false);
     }
   };
 
@@ -201,16 +176,10 @@ const EditTaskScreen = ({ navigation, route }) => {
           style: 'destructive',
           onPress: async () => {
             try {
-              // Удаляем через TaskService
-              const success = await TaskService.deleteTask(taskId);
+              // Используем функцию из контекста
+              await deleteTask(taskId);
               
-              if (!success) {
-                throw new Error('Не удалось удалить задачу');
-              }
-              
-              console.log('Задача удалена, ID:', taskId);
-              
-              // Возвращаемся на предыдущий экран
+              // Возвращаемся назад
               navigation.goBack();
             } catch (error) {
               console.error('Ошибка при удалении задачи:', error);
