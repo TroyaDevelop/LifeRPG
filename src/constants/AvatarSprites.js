@@ -31,9 +31,21 @@ export const HAIR_STYLES = {
     sprite: require('../../assets/sprites/avatars/hair/short.png'),        // Базовая форма без деталей
     details: require('../../assets/sprites/avatars/hair/short_details.png'), // Детали (тени/блики)
   },
+  square: {
+    sprite: require('../../assets/sprites/avatars/hair/square.png'),
+    details: require('../../assets/sprites/avatars/hair/square_details.png'),
+  },
+  emo: {
+    sprite: require('../../assets/sprites/avatars/hair/emo.png'),
+    details: require('../../assets/sprites/avatars/hair/emo_details.png'),
+  },
   medium: {
     sprite: require('../../assets/sprites/avatars/hair/medium.png'),
     details: require('../../assets/sprites/avatars/hair/medium_details.png'),
+  },
+  straight: {
+    sprite: require('../../assets/sprites/avatars/hair/straight.png'),
+    details: require('../../assets/sprites/avatars/hair/straight_details.png'),
   },
   long: {
     sprite: require('../../assets/sprites/avatars/hair/long.png'),
@@ -42,10 +54,6 @@ export const HAIR_STYLES = {
   ponytail: {
     sprite: require('../../assets/sprites/avatars/hair/ponytail.png'),
     details: require('../../assets/sprites/avatars/hair/ponytail_details.png'),
-  },
-  emo: {
-    sprite: require('../../assets/sprites/avatars/hair/emo.png'),
-    details: require('../../assets/sprites/avatars/hair/emo_details.png'),
   },
   afro: {
     sprite: require('../../assets/sprites/avatars/hair/afro.png'),

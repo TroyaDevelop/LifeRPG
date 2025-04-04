@@ -9,7 +9,8 @@ import {
   Alert
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useAppContext } from '../context/AppContext'; // Добавляем контекст
+import { useAppContext } from '../context/AppContext';
+import { AvatarService } from '../services/AvatarService'; // Добавляем импорт
 import Header from '../components/Header';
 import Avatar from '../components/Avatar';
 import LoadingIndicator from '../components/LoadingIndicator';
@@ -40,27 +41,17 @@ const AvatarCustomizationScreen = ({ navigation }) => {
     }
   }, [avatar]);
 
-  // Обработчик обновления аватара - модифицируем для использования контекста
-  const handleUpdateAvatar = async (field, value) => {
-    try {
-      // Обновляем локальное состояние
-      const updatedAvatar = {
-        ...localAvatar,
-        [field]: value
-      };
-      setLocalAvatar(updatedAvatar);
-
-      // Используем функцию из контекста вместо прямого вызова сервиса
-      await updateAvatar({ [field]: value });
-    } catch (error) {
-      console.error('Ошибка при обновлении аватара:', error);
-      Alert.alert('Ошибка', 'Не удалось обновить аватар');
-    }
+  // Обновленная функция обработки изменений
+  const handleUpdateAvatar = (field, value) => {
+    // Обновляем ТОЛЬКО локальное состояние, без вызова updateAvatar из контекста
+    setLocalAvatar(prevAvatar => ({
+      ...prevAvatar,
+      [field]: value
+    }));
   };
 
   // Обработчик отмены изменений
   const handleCancel = () => {
-    // Спрашиваем пользователя, хочет ли он отменить изменения
     Alert.alert(
       'Отменить изменения?',
       'Все внесённые изменения будут потеряны. Вы уверены?',
@@ -68,16 +59,9 @@ const AvatarCustomizationScreen = ({ navigation }) => {
         { text: 'Нет', style: 'cancel' },
         { 
           text: 'Да', 
-          onPress: async () => {
-            try {
-              // Восстанавливаем оригинальный аватар
-              if (originalAvatarData) {
-                await updateAvatar(originalAvatarData);
-                navigation.goBack();
-              }
-            } catch (error) {
-              console.error('Ошибка при восстановлении аватара:', error);
-            }
+          onPress: () => {
+            // Возвращаемся к начальному состоянию и переходим назад
+            navigation.goBack();
           }
         }
       ]
@@ -92,13 +76,13 @@ const AvatarCustomizationScreen = ({ navigation }) => {
           key={`body-${type}`}
           style={[
             styles.bodyTypeOption,
-            avatar?.bodyType === type && styles.selectedBodyTypeOption
+            localAvatar?.bodyType === type && styles.selectedBodyTypeOption
           ]}
           onPress={() => handleUpdateAvatar('bodyType', type)}
         >
           <Text style={[
             styles.bodyTypeOptionText,
-            avatar?.bodyType === type && styles.selectedBodyTypeText
+            localAvatar?.bodyType === type && styles.selectedBodyTypeText // Заменить avatar на localAvatar
           ]}>
             {BODY_TYPES[type]?.name || type}
           </Text>
@@ -118,7 +102,7 @@ const renderHairStyleSelection = () => {
           key={`hair-${style}`}
           style={[
             styles.spriteItem,
-            avatar?.hairStyle === style && styles.selectedSpriteItem
+            localAvatar?.hairStyle === style && styles.selectedSpriteItem
           ]}
           onPress={() => handleUpdateAvatar('hairStyle', style)}
         >
@@ -132,12 +116,12 @@ const renderHairStyleSelection = () => {
           ) : (
             // Для обычных причесок используем AvatarPreview с передачей тона кожи
             <AvatarPreview
-              bodyType={avatar?.bodyType || 'typeA'}
-              skinTone={avatar?.skinTone || 'normal'} // Добавляем передачу тона кожи
-              faceExpression={avatar?.faceExpression || 'neutral'}
+              bodyType={localAvatar?.bodyType || 'typeA'}
+              skinTone={localAvatar?.skinTone || 'normal'}
+              faceExpression={localAvatar?.faceExpression || 'neutral'}
               hairStyle={style}
-              hairColor={hairColor}
-              eyeColor={eyeColor} // Также добавляем цвет глаз
+              hairColor={HAIR_COLORS[localAvatar?.hairColor] || HAIR_COLORS.brown}
+              eyeColor={EYE_COLORS[localAvatar?.eyeColor] || EYE_COLORS.blue}
               style={styles.hairPreview}
             />
           )}
@@ -165,7 +149,7 @@ const renderHairColorSelection = () => (
           // Добавляем дополнительную тень для светлых цветов
           HAIR_COLORS[color] === '#FFFFFF' || HAIR_COLORS[color] === '#F0F0F0' ? 
             styles.lightColorOption : null,
-          avatar?.hairColor === color && styles.selectedColorOption
+          localAvatar?.hairColor === color && styles.selectedColorOption
         ]}
         onPress={() => handleUpdateAvatar('hairColor', color)}
       />
@@ -185,7 +169,7 @@ const renderEyeColorSelection = () => (
           // Добавляем дополнительную тень для светлых цветов
           EYE_COLORS[color] === '#FFFFFF' || EYE_COLORS[color] === '#F0F0F0' ? 
             styles.lightColorOption : null,
-          avatar?.eyeColor === color && styles.selectedColorOption
+          localAvatar?.eyeColor === color && styles.selectedColorOption
         ]}
         onPress={() => handleUpdateAvatar('eyeColor', color)}
       />
@@ -202,7 +186,7 @@ const renderEyeColorSelection = () => (
           style={[
             styles.colorOption,
             { backgroundColor: SKIN_TONES[tone].color },
-            avatar?.skinTone === tone && styles.selectedColorOption
+            localAvatar?.skinTone === tone && styles.selectedColorOption
           ]}
           onPress={() => handleUpdateAvatar('skinTone', tone)}
         />
@@ -233,9 +217,12 @@ const renderEyeColorSelection = () => (
     );
   };
 
-  // Обновим функцию сохранения и возврата
+  // Обновленная функция сохранения изменений
   const handleSaveAndGoBack = async () => {
     try {
+      // Применяем все накопленные изменения сразу при сохранении
+      await updateAvatar(localAvatar);
+      
       // Инвалидируем кэш аватара перед возвратом
       if (typeof AvatarService.invalidateCache === 'function') {
         AvatarService.invalidateCache();
@@ -245,6 +232,7 @@ const renderEyeColorSelection = () => (
       navigation.goBack();
     } catch (error) {
       console.error('Ошибка при сохранении настроек аватара:', error);
+      Alert.alert('Ошибка', 'Не удалось сохранить изменения аватара');
     }
   };
 
@@ -283,7 +271,7 @@ const renderEyeColorSelection = () => (
           <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
             <View style={styles.avatarPreviewSection}>
               <View style={styles.avatarFrame}>
-                <Avatar size="large" style={styles.avatar} avatarData={avatar} />
+                <Avatar size="large" style={styles.avatar} avatarData={localAvatar} />
               </View>
               <Text style={styles.previewLabel}>Предпросмотр персонажа</Text>
             </View>
@@ -323,7 +311,7 @@ const renderEyeColorSelection = () => (
           <View style={styles.buttonsContainer}>
             <Button
               title="Сохранить"
-              onPress={() => navigation.goBack()}
+              onPress={handleSaveAndGoBack} // Используем функцию для сохранения
               style={styles.doneButton}
             />
           </View>

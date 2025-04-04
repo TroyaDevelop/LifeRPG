@@ -94,11 +94,14 @@ const TaskCard = ({ task, onPress, onComplete, onDelete }) => {
                 {categoryInfo.name}
               </Text>
             </View>
-          ) : task.categoryId ? (
+          ) : (
             <View style={styles.category}>
-              <Text style={styles.categoryText}>{task.categoryId}</Text>
+              <Ionicons name="folder-outline" size={12} color="#888888" />
+              <Text style={styles.categoryText}>
+                Другое
+              </Text>
             </View>
-          ) : null}
+          )}
           
           {task.dueDate ? (
             <Text style={styles.date}>

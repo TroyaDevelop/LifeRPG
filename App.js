@@ -3,10 +3,12 @@ import { StatusBar } from 'expo-status-bar';
 import { Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { NavigationContainer } from '@react-navigation/native';
 import AppNavigator from './src/navigation/AppNavigator';
 import SplashScreen from './src/screens/SplashScreen';
 import { NotificationService } from './src/services';
 import { AppProvider } from './src/context/AppContext';
+import { NotificationProvider } from './src/context/NotificationContext'; // Импортируем провайдер уведомлений
 
 // Настройка обработчика уведомлений
 Notifications.setNotificationHandler({
@@ -56,12 +58,14 @@ export default function App() {
       {isLoading ? (
         <SplashScreen onFinish={handleSplashFinish} />
       ) : (
-        <AppProvider>
-          <SafeAreaProvider>
-            <StatusBar style="auto" />
-            <AppNavigator />
-          </SafeAreaProvider>
-        </AppProvider>
+        <SafeAreaProvider>
+          <NotificationProvider>
+            <AppProvider>
+                <StatusBar style="auto" />
+                <AppNavigator />
+            </AppProvider>
+          </NotificationProvider>
+        </SafeAreaProvider>
       )}
     </>
   );

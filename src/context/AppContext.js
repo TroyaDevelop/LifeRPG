@@ -6,12 +6,21 @@ import { AvatarService } from '../services/AvatarService';
 import { AchievementService } from '../services/AchievementService';
 import { StatisticsService } from '../services/StatisticsService';
 import ResetService from '../services/ResetService';
+import { useNotification } from './NotificationContext'; // Импортируем хук уведомлений
 
 // Создаем контекст
 export const AppContext = createContext();
 
+// Хук для использования контекста
+export const useApp = () => {
+  return useContext(AppContext);
+};
+
 // Провайдер контекста
 export const AppProvider = ({ children }) => {
+  // Используем хук уведомлений внутри провайдера
+  const { showExperienceGained, showExperienceLost, showError } = useNotification();
+  
   // Добавляем ref для отслеживания загрузки
   const isLoadingRef = useRef(false);
   
@@ -179,13 +188,19 @@ export const AppProvider = ({ children }) => {
       if (newIsCompleted) {
         // Выполнение задачи
         result = await TaskService.completeTask(taskId);
+        
+        // Показываем уведомление с информацией о полученном опыте
+        if (result.success && result.experienceGained) {
+          showExperienceGained(result.experienceGained);
+        }
       } else {
         // Отмена выполнения задачи
         result = await TaskService.uncompleteTask(taskId);
-      }
-      
-      if (!result.success) {
-        throw new Error(result.error || 'Не удалось изменить статус задачи');
+        
+        // Показываем уведомление с информацией о потерянном опыте
+        if (result.success && result.experienceReturned) {
+          showExperienceLost(result.experienceReturned);
+        }
       }
       
       // Обновляем список задач
@@ -232,6 +247,7 @@ export const AppProvider = ({ children }) => {
       return result;
     } catch (error) {
       console.error('Ошибка при изменении статуса задачи:', error);
+      showError('Ошибка при изменении статуса задачи');
       throw error;
     }
   };

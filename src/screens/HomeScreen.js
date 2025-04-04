@@ -44,7 +44,7 @@ const HomeScreen = ({ navigation }) => {
   const [showSortModal, setShowSortModal] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [levelUpData, setLevelUpData] = useState({ visible: false, level: 1, bonuses: [] });
-  const [tabType, setTabType] = useState('regular'); // 'regular' или 'daily'
+  const [tabType, setTabType] = useState('daily'); // 'regular' или 'daily'
 
   // Обновление данных при фокусе на экране
   useFocusEffect(
