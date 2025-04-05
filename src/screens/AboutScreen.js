@@ -42,14 +42,14 @@ const AboutScreen = ({ navigation }) => {
               resizeMode="contain" 
             />
           </TouchableOpacity>
-          <Text style={styles.appName}>LifeRPG</Text>
+          <Text style={styles.appName}>Taskovia</Text>
           <Text style={styles.versionText}>Версия {appVersion}</Text>
         </View>
         
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>О приложении</Text>
           <Text style={styles.descriptionText}>
-            LifeRPG — это приложение для управления задачами с элементами геймификации. 
+            Taskovia — это приложение для управления задачами с элементами геймификации. 
             Превратите свои повседневные задачи в увлекательное приключение, 
             повышайте уровень своего персонажа, получайте опыт и достижения за
             выполнение реальных целей.
@@ -108,22 +108,14 @@ const AboutScreen = ({ navigation }) => {
             onPress={() => handleOpenLink('mailto:support@liferpg.app')}
           >
             <Ionicons name="mail-outline" size={24} color="#4E64EE" style={styles.contactIcon} />
-            <Text style={styles.contactText}>support@liferpg.app</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={styles.contactItem}
-            onPress={() => handleOpenLink('https://github.com/liferpg')}
-          >
-            <Ionicons name="logo-github" size={24} color="#4E64EE" style={styles.contactIcon} />
-            <Text style={styles.contactText}>GitHub</Text>
+            <Text style={styles.contactText}>goddys777@icloud.com</Text>
           </TouchableOpacity>
         </View>
         
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Правовая информация</Text>
           
-          <TouchableOpacity 
+          {/* <TouchableOpacity 
             style={styles.legalItem}
             onPress={() => handleOpenLink('https://liferpg.app/privacy')}
           >
@@ -137,11 +129,11 @@ const AboutScreen = ({ navigation }) => {
           >
             <Text style={styles.legalText}>Условия использования</Text>
             <Ionicons name="chevron-forward" size={20} color="#888888" />
-          </TouchableOpacity>
+          </TouchableOpacity> */}
         </View>
         
         <Text style={styles.copyrightText}>
-          © {new Date().getFullYear()} LifeRPG. Все права защищены.
+          © {new Date().getFullYear()} Taskovia. Все права защищены.
         </Text>
       </ScrollView>
     </View>

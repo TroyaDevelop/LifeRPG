@@ -135,25 +135,7 @@ const ProfileScreen = ({ navigation }) => {
               />
             </View>
             
-            <View style={styles.statsContainer}>
-              <View style={styles.statItem}>
-                <Ionicons name="star" size={20} color="#4E64EE" />
-                <Text style={styles.statValue}>{profile.experience}</Text>
-                <Text style={styles.statLabel}>Опыт</Text>
-              </View>
-              
-              <View style={styles.statItem}>
-                <Ionicons name="checkbox" size={20} color="#4E64EE" />
-                <Text style={styles.statValue}>{profile.tasksCompleted || 0}</Text>
-                <Text style={styles.statLabel}>Выполнено задач</Text>
-              </View>
-              
-              <View style={styles.statItem}>
-                <Ionicons name="flame" size={20} color="#4E64EE" />
-                <Text style={styles.statValue}>{profile.streakDays || 0}</Text>
-                <Text style={styles.statLabel}>Серия дней</Text>
-              </View>
-            </View>
+            {/* Блок статистики удален */}
           </View>
 
           {/* Добавляем кнопку для перехода на экран редактирования аватара */}
@@ -283,25 +265,7 @@ const styles = StyleSheet.create({
   resourceBar: {
     marginBottom: 8,
   },
-  statsContainer: {
-    justifyContent: 'center',
-    width: '100%',
-    marginTop: 10,
-  },
-  statItem: {
-    alignItems: 'center',
-    paddingVertical: 10,
-  },
-  statValue: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#333333',
-    marginVertical: 6,
-  },
-  statLabel: {
-    fontSize: 14,
-    color: '#888888',
-  },
+  // Стили для блока статистики удалены
   editAvatarButton: {
     marginTop: 16,
     width: '100%',
