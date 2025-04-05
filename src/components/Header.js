@@ -34,6 +34,7 @@ const Header = ({
     <View style={{ width: 32 }} />
   );
 
+  // Внутри компонента Header:
   return (
     <View style={[
       styles.container,

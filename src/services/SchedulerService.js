@@ -1,12 +1,13 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { TaskService } from './TaskService';
+import TaskService from './TaskService';
+import ProfileService from './ProfileService';
 
 /**
  * Сервис для управления периодическими задачами и расписанием
  */
 export class SchedulerService {
   // Ключи для хранения данных
-  static LAST_DAILY_RESET_KEY = 'LAST_DAILY_RESET_DATE';
+  static LAST_DAILY_RESET_KEY = '@LifeRPG:lastDailyReset';
   
   /**
    * Инициализирует планировщик и выполняет первоначальные проверки
@@ -34,15 +35,22 @@ export class SchedulerService {
    */
   static async checkAndResetDailyTasks() {
     try {
-      const today = new Date().toISOString().split('T')[0];
-      const lastResetDate = await AsyncStorage.getItem(this.LAST_DAILY_RESET_KEY);
+      const lastResetStr = await AsyncStorage.getItem(this.LAST_DAILY_RESET_KEY);
+      const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
       
-      // Если дата последнего сброса отличается от сегодняшней, выполняем сброс
-      if (!lastResetDate || lastResetDate !== today) {
-        console.log('Выполняем сброс ежедневных задач...');
-        const result = await TaskService.resetDailyTasks();
+      if (!lastResetStr || lastResetStr !== today) {
+        console.log('SchedulerService: Выполняем ежедневный сброс задач');
+        
+        // Сначала восстанавливаем энергию
+        const profileService = new ProfileService();
+        await profileService.restoreEnergy();
+        
+        // Затем сбрасываем ежедневные задачи (там же обрабатывается здоровье)
+        await TaskService.resetDailyTasks();
+        
+        // Обновляем дату последнего сброса
         await AsyncStorage.setItem(this.LAST_DAILY_RESET_KEY, today);
-        return result;
+        return true;
       }
       
       return false;

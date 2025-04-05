@@ -51,6 +51,7 @@ export class TaskService {
       const newTask = new TaskModel({
         ...taskData,
         id: uuidv4(),
+        isCompleted: false, // Явно устанавливаем задачу как невыполненную
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       });
@@ -112,16 +113,34 @@ export class TaskService {
 
   // Удаление задачи
   static async deleteTask(taskId) {
-    const tasks = await this.getAllTasks();
-    const task = tasks.find(t => t.id === taskId);
-    
-    // Если задача имеет уведомление, отменяем его
-    if (task && task.notificationId) {
-      await NotificationService.cancelTaskReminder(task.notificationId);
+    try {
+      const tasks = await this.getAllTasks();
+      const task = tasks.find(t => t.id === taskId);
+      
+      if (!task) {
+        console.warn('TaskService: Задача с ID', taskId, 'не найдена');
+        return false;
+      }
+      
+      // Если задача имеет уведомление, отменяем его
+      if (task.notificationId) {
+        await NotificationService.cancelTaskReminder(task.notificationId);
+      }
+      
+      const updatedTasks = tasks.filter(t => t.id !== taskId);
+      
+      // Сохраняем напрямую в AsyncStorage
+      await AsyncStorage.setItem(TASKS_STORAGE_KEY, JSON.stringify(updatedTasks));
+      
+      // Инвалидируем кэш после удаления
+      this.invalidateCache();
+      
+      console.log('TaskService: Задача успешно удалена, ID:', taskId);
+      return true;
+    } catch (error) {
+      console.error('TaskService: Ошибка при удалении задачи:', error);
+      return false;
     }
-    
-    const updatedTasks = tasks.filter(task => task.id !== taskId);
-    return await StorageService.setTasks(updatedTasks);
   }
 
   // Получение задач по категории
@@ -202,85 +221,51 @@ export class TaskService {
    * @param {object|string} taskOrId - задача или ее ID
    * @returns {Promise<object>} - результат операции
    */
-  static async uncompleteTask(taskOrId) {
+  static async uncompleteTask(taskId) {
     try {
-      const taskId = typeof taskOrId === 'string' ? taskOrId : taskOrId.id;
-      const tasks = await this.getAllTasks();
-      const taskIndex = tasks.findIndex(t => t.id === taskId);
-      
-      if (taskIndex === -1) {
-        return { success: false, error: 'Задача не найдена' };
+      const task = await this.getTaskById(taskId);
+      if (!task) {
+        throw new Error('Задача не найдена');
       }
-      
-      const task = tasks[taskIndex];
-      
-      // Проверяем, что задача была выполнена
+
       if (!task.isCompleted) {
-        return { success: false, error: 'Задача не была выполнена' };
+        return { success: false, message: 'Задача не была выполнена' };
       }
+
+      const profileService = new ProfileService();
       
-      // Определяем, сколько опыта нужно вернуть
-      let experienceToReturn = 10; // базовый опыт
-      if (task.priority === 'medium') experienceToReturn = 20;
-      if (task.priority === 'high') experienceToReturn = 30;
+      // Используем сохраненное значение фактически потраченной энергии
+      const energyReturn = task.energySpent || 0;
       
-      // Сбрасываем статус выполнения
+      // Возвращаем опыт, только если он был начислен
+      const experienceReturn = !task.noExperienceGained ? this.calculateExperience(task) : 0;
+      
+      // Снимаем метку выполнения и очищаем связанные данные
       task.isCompleted = false;
       task.completedAt = null;
+      task.noExperienceGained = undefined;
+      task.energySpent = 0; // Сбрасываем сохраненную энергию
+      await this.updateTask(taskId, task);
       
-      if (task.isDaily) {
-        task.lastCompletedDate = null;
+      // Возвращаем энергию только если она была потрачена
+      if (energyReturn > 0) {
+        await profileService.updateEnergy(energyReturn);
       }
       
-      // Обновляем задачу в списке
-      tasks[taskIndex] = task;
-      const success = await StorageService.setTasks(tasks);
-      
-      if (!success) {
-        return { success: false, error: 'Не удалось сохранить изменения' };
+      // Забираем опыт, если он был начислен
+      if (experienceReturn > 0) {
+        await profileService.addExperience(-experienceReturn);
       }
       
-      // Обновление статистики при отмене выполнения
-      await StatisticsService.updateStatisticsOnTaskUncompletion(task, experienceToReturn);
-      
-      // Получаем экземпляр ProfileService
-      const profileService = ProfileService.getInstance();
-      
-      // Обновление статистики профиля
-      await profileService.updateStatsOnTaskUncomplete();
-      
-      // Снимаем опыт у пользователя
-      const result = await profileService.subtractExperience(experienceToReturn);
-      
-      // Инвалидируем кэш
-      this.invalidateCache();
-      
-      return { 
-        success: true, 
-        task, 
-        experienceReturned: experienceToReturn, // Используем experienceToReturn вместо experienceReturned
-        profile: result.profile,
-        levelDown: result.didLevelDown ? {
-          level: result.newLevel
-        } : null
+      return {
+        success: true,
+        task,
+        experienceReturned: experienceReturn,
+        energyReturned: energyReturn
       };
     } catch (error) {
       console.error('Ошибка при отмене выполнения задачи:', error);
-      return { success: false, error: error.message };
-    }
-  }
-
-  /**
-   * Получение ежедневных задач
-   * @returns {Promise<Array>} - массив ежедневных задач
-   */
-  static async getDailyTasks() {
-    try {
-      const allTasks = await this.getAllTasks();
-      return allTasks.filter(task => task.isDaily);
-    } catch (error) {
-      console.error('Ошибка при получении ежедневных задач:', error);
-      return [];
+      throw error;
     }
   }
   
@@ -304,26 +289,25 @@ export class TaskService {
    */
   static async resetDailyTasks() {
     try {
-      const dailyTasks = await this.getDailyTasks();
-      const today = new Date().toISOString().split('T')[0];
-      let updatedCount = 0;
+      const allTasks = await this.getAllTasks();
+      const dailyTasks = allTasks.filter(task => task.type === 'daily');
       
-      for (const task of dailyTasks) {
-        // Сбрасываем только те задачи, которые были выполнены не сегодня
-        if (task.isCompleted && (!task.lastCompletedDate || task.lastCompletedDate !== today)) {
-          // Обновляем задачу: сбрасываем статус выполнения, но сохраняем историю
-          const updatedTask = {
-            ...task,
-            isCompleted: false,
-            completedAt: null
-          };
-          
-          await this.updateTask(updatedTask.id, updatedTask);
-          updatedCount++;
-        }
+      // Подсчет невыполненных задач для штрафа здоровья
+      const missedTasks = dailyTasks.filter(task => !task.isCompleted);
+      
+      if (missedTasks.length > 0) {
+        // Отнимаем здоровье за пропущенные задачи
+        const profileService = new ProfileService();
+        await profileService.processDailyHealthUpdate(false, missedTasks.length);
       }
       
-      console.log(`Сброшено ${updatedCount} из ${dailyTasks.length} ежедневных задач`);
+      // Сбрасываем статус всех ежедневных задач
+      for (const task of dailyTasks) {
+        task.isCompleted = false;
+        task.completedAt = null;
+        await this.updateTask(task.id, task);
+      }
+      
       return true;
     } catch (error) {
       console.error('Ошибка при сбросе ежедневных задач:', error);
@@ -336,105 +320,96 @@ export class TaskService {
    * @param {object|string} taskOrId - задача или ее ID
    * @returns {Promise<object>} - результат операции
    */
-  static async completeTask(taskOrId) {
+  static async completeTask(taskId) {
     try {
-      const taskId = typeof taskOrId === 'string' ? taskOrId : taskOrId.id;
-      const tasks = await this.getAllTasks();
-      const taskIndex = tasks.findIndex(t => t.id === taskId);
-      
-      if (taskIndex === -1) {
-        return { success: false, error: 'Задача не найдена' };
+      const task = await this.getTaskById(taskId);
+      if (!task) {
+        throw new Error('Задача не найдена');
       }
-      
-      const task = tasks[taskIndex];
-      const now = new Date();
-      
-      // Если задача уже выполнена, просто возвращаем её
+
       if (task.isCompleted) {
-        return { success: true, task, alreadyCompleted: true };
+        return { success: false, message: 'Задача уже выполнена' };
       }
+
+      const profileService = new ProfileService();
+      const profile = await profileService.getProfile();
       
-      // Устанавливаем выполнение задачи
+      // Вычисляем затраты энергии и потенциальный опыт
+      const energyCost = TaskService.calculateEnergyCost(task);
+      const experienceGain = TaskService.calculateExperience(task);
+      
+      // Проверяем, достаточно ли энергии
+      const hasEnoughEnergy = profile.energy >= energyCost;
+      
+      // Фактически полученный опыт
+      const actualExperienceGain = hasEnoughEnergy ? experienceGain : 0;
+      
+      // Отмечаем задачу как выполненную
       task.isCompleted = true;
-      task.completedAt = now.toISOString();
+      task.completedAt = new Date().toISOString();
       
-      // Для ежедневных задач записываем дату выполнения
-      if (task.isDaily) {
-        task.lastCompletedDate = now.toISOString().split('T')[0];
-      }
+      // Помечаем, получил ли игрок опыт за задачу и сколько потратил энергии
+      task.noExperienceGained = !hasEnoughEnergy;
+      const energySpent = hasEnoughEnergy ? energyCost : Math.min(energyCost, profile.energy);
+      task.energySpent = energySpent; // Сохраняем фактически потраченную энергию
       
-      // Создаем новый массив задач для сохранения
-      let updatedTasks = [...tasks];
-      updatedTasks[taskIndex] = task;
-      
-      // Расчет опыта в зависимости от приоритета задачи
-      let experienceGained = 10; // базовый опыт
-      if (task.priority === 'medium') experienceGained = 20;
-      if (task.priority === 'high') experienceGained = 30;
-      
-      // Отменяем уведомление, если оно было
-      if (task.notificationId) {
-        await NotificationService.cancelTaskReminder(task.notificationId);
-      }
-      
-      // Обновление статистики
-      await StatisticsService.updateStatisticsOnTaskCompletion(task, experienceGained);
-      
-      // Получаем экземпляр ProfileService
-      const profileService = ProfileService.getInstance();
-      
-      // Обновление статистики профиля
-      await profileService.updateStatsOnTaskComplete();
-      
-      // Добавление опыта пользователю
-      const result = await profileService.addExperience(experienceGained);
-      
-      // Обновление достижений при выполнении задачи
-      const achievementsResult = await AchievementService.updateAchievementsOnTaskComplete(task, result.profile);
-      
+      // Проверяем настройку автоудаления
+      const autoDeleteEnabled = profile.settings?.autoDeleteCompletedTasks;
       let taskRemoved = false;
       
-      // Проверяем настройку автоудаления для обычных задач
-      if (!task.isDaily) {
-        try {
-          const profile = await profileService.getProfile();
-          const autoDeleteCompletedTasks = profile.settings?.autoDeleteCompletedTasks ?? true;
-          
-          // Если включено автоудаление, удаляем задачу из массива перед сохранением
-          if (autoDeleteCompletedTasks) {
-            updatedTasks = updatedTasks.filter(t => t.id !== taskId);
-            taskRemoved = true;
-          }
-        } catch (error) {
-          console.error('Ошибка при проверке настройки автоудаления:', error);
+      // Если это обычная задача (не ежедневная) и автоудаление включено
+      if (autoDeleteEnabled && task.type === 'regular') {
+        // Удаляем задачу
+        await this.deleteTask(taskId);
+        taskRemoved = true;
+        
+        // Удаляем напоминание, если есть
+        if (task.notificationId) {
+          await NotificationService.cancelTaskReminder(task.notificationId);
+        }
+      } else {
+        // Иначе просто обновляем задачу
+        await this.updateTask(taskId, task);
+      }
+      
+      // Расходуем энергию
+      if (energySpent > 0) {
+        await profileService.updateEnergy(-energySpent);
+      }
+      
+      // Начисляем опыт если хватило энергии
+      let levelUp = null;
+      if (actualExperienceGain > 0) {
+        levelUp = await profileService.addExperience(actualExperienceGain);
+      }
+      
+      // Обновляем счетчики в профиле
+      await profileService.updateStatsOnTaskComplete();
+      
+      // Проверяем, все ли ежедневные задачи выполнены
+      if (task.type === 'daily') {
+        const allTasks = await this.getAllTasks();
+        const dailyTasks = allTasks.filter(t => t.type === 'daily');
+        const allDailyCompleted = dailyTasks.every(t => t.isCompleted);
+        
+        // Если все ежедневные задачи выполнены, восстанавливаем часть здоровья
+        if (allDailyCompleted) {
+          await profileService.processDailyHealthUpdate(true, 0);
         }
       }
       
-      // Сохраняем обновленные задачи
-      const success = await StorageService.setTasks(updatedTasks);
-      
-      if (!success) {
-        return { success: false, error: 'Не удалось сохранить изменения' };
-      }
-      
-      // Инвалидируем кэш
-      this.invalidateCache();
-      
       return {
-        success: true, 
-        task, 
-        experienceGained, 
-        taskRemoved,
-        profile: result.profile,
-        levelUp: result.didLevelUp ? {
-          level: result.newLevel,
-          bonuses: result.bonuses || []
-        } : null,
-        achievements: achievementsResult
+        success: true,
+        task,
+        taskRemoved,  // Добавляем флаг удаления задачи
+        experienceGained: actualExperienceGain,
+        energySpent,
+        insufficientEnergy: !hasEnoughEnergy,
+        levelUp
       };
     } catch (error) {
       console.error('Ошибка при выполнении задачи:', error);
-      return { success: false, error: error.message };
+      throw error;
     }
   }
 
@@ -465,6 +440,26 @@ export class TaskService {
     } catch (error) {
       console.error('TaskService: Ошибка при сбросе задач:', error);
       return false;
+    }
+  }
+
+  // Расчет стоимости энергии для задачи
+  static calculateEnergyCost(task) {
+    switch (task.priority) {
+      case 'high': return 15;
+      case 'medium': return 10;
+      case 'low': return 5;
+      default: return 10;
+    }
+  }
+
+  // Расчет опыта за выполнение задачи
+  static calculateExperience(task) {
+    switch (task.priority) {
+      case 'high': return 30;
+      case 'medium': return 20;
+      case 'low': return 10;
+      default: return 20;
     }
   }
 }

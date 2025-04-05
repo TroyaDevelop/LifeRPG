@@ -29,7 +29,7 @@ const AboutScreen = ({ navigation }) => {
     <View style={styles.container}>
       <Header 
         title="О приложении" 
-        showBackButton 
+        hasBack={true}
         onBack={() => navigation.goBack()} 
       />
       

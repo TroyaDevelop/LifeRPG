@@ -49,7 +49,7 @@ const AppSettingsScreen = ({ navigation }) => {
   // Компонент для отображения элемента настройки
   const renderSettingItem = (label, setting, description) => (
     <View style={styles.settingItem}>
-      <View style={styles.settingInfo}>
+      <View style={styles.settingTextContainer}>
         <Text style={styles.settingLabel}>{label}</Text>
         <Text style={styles.settingDescription}>{description}</Text>
       </View>

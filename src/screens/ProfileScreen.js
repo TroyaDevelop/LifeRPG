@@ -8,13 +8,19 @@ import Avatar from '../components/Avatar';
 import Header from '../components/Header';
 import LevelProgressBar from '../components/LevelProgressBar';
 import LoadingIndicator from '../components/LoadingIndicator';
-import { Button } from '../components';
+// Добавьте импорт компонентов
+import { Button, HealthBar, EnergyBar } from '../components';
+// Добавьте импорт useAppContext
+import { useAppContext } from '../context/AppContext';
 
 const ProfileScreen = ({ navigation }) => {
   const [profile, setProfile] = useState(null);
   const [avatar, setAvatar] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [avatarSize, setAvatarSize] = useState('large'); // По умолчанию большой
+  const [avatarSize, setAvatarSize] = useState('large');
+  
+  // Добавьте извлечение параметров из контекста
+  const { health, maxHealth, energy, maxEnergy } = useAppContext();
 
   // Функция для переключения размера аватара
   const toggleAvatarSize = () => {
@@ -116,11 +122,36 @@ const ProfileScreen = ({ navigation }) => {
             <Text style={styles.profileName}>Уровень {profile?.level}</Text>
             {profile && <LevelProgressBar profile={profile} style={styles.levelProgress} />}
             
+            <View style={styles.resourcesContainer}>
+              <HealthBar 
+                health={health} 
+                maxHealth={maxHealth} 
+                style={styles.resourceBar} 
+              />
+              <EnergyBar 
+                energy={energy} 
+                maxEnergy={maxEnergy} 
+                style={styles.resourceBar} 
+              />
+            </View>
+            
             <View style={styles.statsContainer}>
               <View style={styles.statItem}>
-                <Ionicons name="checkbox" size={24} color="#4E64EE" />
-                <Text style={styles.statValue}>{profile?.tasksCompleted || 0}</Text>
+                <Ionicons name="star" size={20} color="#4E64EE" />
+                <Text style={styles.statValue}>{profile.experience}</Text>
+                <Text style={styles.statLabel}>Опыт</Text>
+              </View>
+              
+              <View style={styles.statItem}>
+                <Ionicons name="checkbox" size={20} color="#4E64EE" />
+                <Text style={styles.statValue}>{profile.tasksCompleted || 0}</Text>
                 <Text style={styles.statLabel}>Выполнено задач</Text>
+              </View>
+              
+              <View style={styles.statItem}>
+                <Ionicons name="flame" size={20} color="#4E64EE" />
+                <Text style={styles.statValue}>{profile.streakDays || 0}</Text>
+                <Text style={styles.statLabel}>Серия дней</Text>
               </View>
             </View>
           </View>
@@ -134,7 +165,35 @@ const ProfileScreen = ({ navigation }) => {
           />
         </View>
         
-        {/* Удалена секция statsSection со статистикой */}
+        <View style={styles.resourcesInfoSection}>
+          <Text style={styles.sectionTitle}>Ресурсы персонажа</Text>
+          
+          <View style={styles.resourceInfo}>
+            <View style={styles.resourceIconContainer}>
+              <Ionicons name="heart" size={24} color="#FF3B30" />
+            </View>
+            <View style={styles.resourceTextContainer}>
+              <Text style={styles.resourceTitle}>Здоровье</Text>
+              <Text style={styles.resourceDescription}>
+                Снижается при невыполнении ежедневных задач. 
+                Восстанавливается медленно при выполнении всех ежедневных задач.
+              </Text>
+            </View>
+          </View>
+          
+          <View style={styles.resourceInfo}>
+            <View style={styles.resourceIconContainer}>
+              <Ionicons name="flash" size={24} color="#5AC8FA" />
+            </View>
+            <View style={styles.resourceTextContainer}>
+              <Text style={styles.resourceTitle}>Энергия</Text>
+              <Text style={styles.resourceDescription}>
+                Тратится при выполнении задач для получения опыта. 
+                Полностью восстанавливается каждый день.
+              </Text>
+            </View>
+          </View>
+        </View>
         
       </ScrollView>
     </View>
@@ -216,6 +275,14 @@ const styles = StyleSheet.create({
     width: '100%',
     marginBottom: 16,
   },
+  resourcesContainer: {
+    width: '100%',
+    marginTop: 8,
+    marginBottom: 16,
+  },
+  resourceBar: {
+    marginBottom: 8,
+  },
   statsContainer: {
     justifyContent: 'center',
     width: '100%',
@@ -238,8 +305,51 @@ const styles = StyleSheet.create({
   editAvatarButton: {
     marginTop: 16,
     width: '100%',
+  },
+  resourcesInfoSection: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    margin: 16,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333333',
+    marginBottom: 16,
+  },
+  resourceInfo: {
+    flexDirection: 'row',
+    marginBottom: 16,
+  },
+  resourceIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#F0F3FF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  resourceTextContainer: {
+    flex: 1,
+  },
+  resourceTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333333',
+    marginBottom: 4,
+  },
+  resourceDescription: {
+    fontSize: 14,
+    color: '#666666',
+    lineHeight: 20,
   }
-  // Удалены стили для statsSection и связанных элементов
 });
 
 export default ProfileScreen;

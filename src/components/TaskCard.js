@@ -1,48 +1,70 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { CategoryService } from '../services'; // Исправленный импорт
+import { useAppContext } from '../context/AppContext';
+import { CategoryService, TaskService } from '../services';
 
-/**
- * Компонент карточки задачи
- * @param {object} task - Объект задачи
- * @param {function} onPress - Функция при нажатии на карточку
- * @param {function} onComplete - Функция для отметки выполнения
- * @param {function} onDelete - Функция удаления задачи
- */
 const TaskCard = ({ task, onPress, onComplete, onDelete }) => {
   const [categoryInfo, setCategoryInfo] = useState(null);
+  const { energy } = useAppContext(); // Получаем энергию из контекста
+  
+  // Расчет стоимости энергии
+  const energyCost = TaskService.calculateEnergyCost(task);
+  
+  // Проверка, достаточно ли энергии
+  const hasEnoughEnergy = energy >= energyCost;
 
-  // Загрузка информации о категории
+  // Загрузка категории
   useEffect(() => {
     const loadCategoryInfo = async () => {
       if (task.categoryId) {
         try {
           const category = await CategoryService.getCategoryById(task.categoryId);
-          if (category) {
-            setCategoryInfo(category);
-          } else {
-            console.log(`Категория с ID ${task.categoryId} не найдена`);
-          }
+          setCategoryInfo(category);
         } catch (error) {
-          console.error('Ошибка при загрузке информации о категории:', error);
+          console.error('Ошибка при загрузке категории:', error);
+          setCategoryInfo(null);
         }
+      } else {
+        setCategoryInfo(null);
       }
     };
     
     loadCategoryInfo();
   }, [task.categoryId]);
 
-  const priorityColors = {
-    high: '#FF4D4F',
-    medium: '#FAAD14',
-    low: '#52C41A',
+  // Форматирование даты
+  const formatDate = (dateString) => {
+    if (!dateString) return '';
+    
+    const date = new Date(dateString);
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const hours = date.getHours().toString().padStart(2, '0');
+    const minutes = date.getMinutes().toString().padStart(2, '0');
+    
+    return `${day}.${month} ${hours}:${minutes}`;
   };
 
-  const formatDate = (date) => {
-    if (!date) return '';
-    const d = new Date(date);
-    return d.toLocaleDateString('ru-RU');
+  // Отображение категории
+  const renderCategory = () => {
+    if (categoryInfo) {
+      // Если категория есть, показываем её с цветом и иконкой
+      return (
+        <View style={[styles.category, { backgroundColor: categoryInfo.color }]}>
+          <Ionicons name={categoryInfo.icon} size={12} color="#FFFFFF" />
+          <Text style={styles.categoryText}>{categoryInfo.name}</Text>
+        </View>
+      );
+    } else {
+      // Если категории нет, показываем "Другое"
+      return (
+        <View style={[styles.category, { backgroundColor: '#888888' }]}>
+          <Ionicons name="help-circle-outline" size={12} color="#FFFFFF" />
+          <Text style={styles.categoryText}>Другое</Text>
+        </View>
+      );
+    }
   };
 
   return (
@@ -51,118 +73,136 @@ const TaskCard = ({ task, onPress, onComplete, onDelete }) => {
       onPress={() => onPress(task)}
       activeOpacity={0.7}
     >
-      <TouchableOpacity 
-        style={styles.completeButton} 
-        onPress={() => onComplete(task.id)}
-      >
-        <Ionicons 
-          name={task.isCompleted ? "checkmark-circle" : "ellipse-outline"} 
-          size={24} 
-          color={task.isCompleted ? "#4CAF50" : "#AAAAAA"} 
-        />
-      </TouchableOpacity>
-      
-      <View style={styles.content}>
-        <View style={styles.header}>
-          <Text 
-            style={[styles.title, task.isCompleted && styles.completedText]} 
-            numberOfLines={2}
-          >
-            {task.title}
-          </Text>
-          <View style={[styles.priority, { backgroundColor: priorityColors[task.priority] || '#BBBBBB' }]}>
-            <Text style={styles.priorityText}>
-              {task.priority && task.priority.charAt(0).toUpperCase()}
-            </Text>
+      <View style={styles.cardContent}>
+        {/* Чекбокс слева внутри карточки */}
+        <TouchableOpacity
+          style={styles.checkboxContainer}
+          onPress={() => onComplete(task.id)}
+        >
+          <Ionicons 
+            name={task.isCompleted ? "checkmark-circle" : "ellipse-outline"} 
+            size={28} 
+            color={task.isCompleted ? "#4E64EE" : "#AAAAAA"} 
+          />
+        </TouchableOpacity>
+        
+        {/* Основное содержимое карточки */}
+        <View style={styles.mainContent}>
+          <View style={styles.header}>
+            <View style={styles.titleContainer}>
+              <Text style={[styles.title, task.isCompleted && styles.completedTitle]}>
+                {task.title}
+              </Text>
+              {/* Удаляем индикатор ежедневной задачи
+              {task.type === 'daily' && (
+                <View style={styles.dailyIndicator}>
+                  <Ionicons name="refresh" size={14} color="#FFFFFF" />
+                </View>
+              )}
+              */}
+            </View>
+            
+            {/* Используем renderCategory */}
+            {renderCategory()}
           </View>
-        </View>
-        
-        {task.description ? (
-          <Text 
-            style={[styles.description, task.isCompleted && styles.completedText]} 
-            numberOfLines={2}
-          >
-            {task.description}
-          </Text>
-        ) : null}
-        
-        <View style={styles.footer}>
-          {categoryInfo ? (
-            <View style={[styles.category, { backgroundColor: categoryInfo.color + '20' }]}>
-              <Ionicons name={categoryInfo.icon} size={12} color={categoryInfo.color} />
-              <Text style={[styles.categoryText, { color: categoryInfo.color }]}>
-                {categoryInfo.name}
-              </Text>
-            </View>
-          ) : (
-            <View style={styles.category}>
-              <Ionicons name="folder-outline" size={12} color="#888888" />
-              <Text style={styles.categoryText}>
-                Другое
-              </Text>
-            </View>
-          )}
           
-          {task.dueDate ? (
-            <Text style={styles.date}>
-              <Ionicons name="calendar-outline" size={12} />
-              {' ' + formatDate(task.dueDate)}
+          {task.description ? (
+            <Text style={[styles.description, task.isCompleted && styles.completedText]}>
+              {task.description}
             </Text>
           ) : null}
+          
+          <View style={styles.footer}>
+            <View style={styles.metaInfo}>
+              {task.dueDate && (
+                <View style={styles.dueDate}>
+                  <Ionicons name="calendar-outline" size={14} color="#888888" />
+                  <Text style={styles.metaText}>{formatDate(task.dueDate)}</Text>
+                </View>
+              )}
+              
+              {task.priority && (
+                <View style={styles.priority}>
+                  <Ionicons 
+                    name={
+                      task.priority === 'high' ? 'alert-circle' : 
+                      task.priority === 'medium' ? 'alert' : 'alert-outline'
+                    } 
+                    size={14} 
+                    color={
+                      task.priority === 'high' ? '#FF9500' : 
+                      task.priority === 'medium' ? '#5AC8FA' : '#4CD964'
+                    } 
+                  />
+                  <Text style={styles.metaText}>
+                    {task.priority === 'high' ? 'Высокий' : 
+                     task.priority === 'medium' ? 'Средний' : 'Низкий'}
+                  </Text>
+                </View>
+              )}
+            </View>
+            
+            <View style={styles.actionsContainer}>
+              {/* Показываем информацию о стоимости энергии для невыполненных задач */}
+              {!task.isCompleted && (
+                <View style={styles.energyContainer}>
+                  <Ionicons 
+                    name="flash" 
+                    size={16} 
+                    color={hasEnoughEnergy ? "#5AC8FA" : "#FF3B30"} 
+                  />
+                  <Text style={[
+                    styles.energyText,
+                    { color: hasEnoughEnergy ? "#5AC8FA" : "#FF3B30" }
+                  ]}>
+                    {energyCost}
+                  </Text>
+                  {!hasEnoughEnergy && (
+                    <Text style={styles.noXpText}>Без XP</Text>
+                  )}
+                </View>
+              )}
+              
+              <TouchableOpacity
+                style={styles.actionButton}
+                onPress={() => onDelete(task.id)}
+              >
+                <Ionicons name="trash-outline" size={20} color="#FF3B30" />
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
       </View>
-      
-      <TouchableOpacity 
-        style={styles.deleteButton} 
-        onPress={() => onDelete(task.id)}
-      >
-        <Ionicons name="trash-outline" size={20} color="#FF4D4F" />
-      </TouchableOpacity>
     </TouchableOpacity>
   );
 };
 
 const styles = StyleSheet.create({
+  // Оставляем все стили без изменений, даже неиспользуемый стиль dailyIndicator
+  // можно оставить для возможного использования в будущем
   card: {
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
-    padding: 16,
     marginBottom: 12,
-    flexDirection: 'row',
-    alignItems: 'flex-start',
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowRadius: 2,
     elevation: 2,
   },
   completedCard: {
-    opacity: 0.7,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#F8F8F8',
   },
-  completeButton: {
-    marginRight: 10,
-    width: 24, // Задаем фиксированную ширину
-    height: 24, // и высоту для элемента
+  cardContent: {
+    flexDirection: 'row',
+    padding: 16,
+  },
+  checkboxContainer: {
+    marginRight: 12,
     justifyContent: 'center',
-    alignItems: 'center',
+    alignSelf: 'center',
   },
-  checkbox: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: '#4E64EE',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  checkboxCompleted: {
-    backgroundColor: '#4E64EE',
-  },
-  content: {
+  mainContent: {
     flex: 1,
   },
   header: {
@@ -171,60 +211,93 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     marginBottom: 8,
   },
+  titleContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   title: {
     fontSize: 16,
-    fontWeight: '600',
-    flex: 1,
+    fontWeight: 'bold',
     color: '#333333',
+    marginRight: 8,
   },
-  completedText: {
+  completedTitle: {
     textDecorationLine: 'line-through',
     color: '#888888',
   },
-  priority: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
+  dailyIndicator: {
+    backgroundColor: '#4E64EE',
+    borderRadius: 4,
+    paddingHorizontal: 4,
+    paddingVertical: 2,
     marginLeft: 8,
   },
-  priorityText: {
-    color: '#FFFFFF',
-    fontWeight: 'bold',
+  category: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    marginLeft: 8,
+  },
+  categoryText: {
     fontSize: 12,
+    color: '#FFFFFF',
+    marginLeft: 4,
   },
   description: {
     fontSize: 14,
     color: '#666666',
     marginBottom: 12,
   },
+  completedText: {
+    color: '#999999',
+  },
   footer: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    flexWrap: 'wrap',
   },
-  category: {
-    backgroundColor: '#E6F7FF',
-    borderRadius: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    marginRight: 8,
+  metaInfo: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  categoryText: {
-    fontSize: 12,
-    color: '#0091FF',
-    marginLeft: 4,
+  dueDate: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 12,
   },
-  date: {
+  priority: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  metaText: {
     fontSize: 12,
     color: '#888888',
+    marginLeft: 4,
   },
-  deleteButton: {
-    padding: 8,
+  actionsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  actionButton: {
+    padding: 6,
     marginLeft: 8,
+  },
+  energyContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 8,
+  },
+  energyText: {
+    fontSize: 12,
+    marginLeft: 4,
+  },
+  noXpText: {
+    fontSize: 10,
+    color: '#FF3B30',
+    marginLeft: 4,
   },
 });
 

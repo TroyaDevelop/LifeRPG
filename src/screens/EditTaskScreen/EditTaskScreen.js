@@ -16,6 +16,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useAppContext } from '../../context/AppContext'; // Импортируем контекст
+import Header from '../../components/Header';
 
 const EditTaskScreen = ({ navigation, route }) => {
   const { taskId } = route.params;
@@ -350,15 +351,16 @@ const EditTaskScreen = ({ navigation, route }) => {
     >
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         {/* Заголовок */}
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color="#333333" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Редактирование задачи</Text>
-          <TouchableOpacity onPress={handleDeleteTask} style={styles.deleteButton}>
-            <Ionicons name="trash-outline" size={22} color="#FF6B6B" />
-          </TouchableOpacity>
-        </View>
+        <Header 
+          title="Редактирование задачи" 
+          hasBack={true}
+          onBack={() => navigation.goBack()}
+          rightElement={
+            <TouchableOpacity onPress={handleDeleteTask} style={styles.deleteButton}>
+              <Ionicons name="trash-outline" size={22} color="#FF6B6B" />
+            </TouchableOpacity>
+          }
+        />
         
         {/* Форма задачи */}
         <View style={styles.formContainer}>
@@ -554,20 +556,6 @@ const styles = StyleSheet.create({
   },
   scrollContainer: {
     padding: 16,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 24,
-  },
-  backButton: {
-    padding: 8,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#333333',
   },
   deleteButton: {
     padding: 8,

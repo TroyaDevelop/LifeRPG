@@ -28,7 +28,26 @@ export class ProfileService {
     try {
       const data = await AsyncStorage.getItem(PROFILE_STORAGE_KEY);
       if (data) {
-        return new UserProfile(JSON.parse(data));
+        // Правильно парсим данные
+        const parsedData = JSON.parse(data);
+        
+        // Создаем экземпляр UserProfile
+        const profile = new UserProfile(parsedData);
+        
+        // Рассчитываем актуальный уровень и опыт
+        const calculatedLevel = this.calculateLevelFromExperience(profile.experience);
+        
+        // Если уровень не соответствует опыту, корректируем его
+        if (calculatedLevel.level !== profile.level) {
+          console.log(`Корректировка уровня: ${profile.level} -> ${calculatedLevel.level}`);
+          profile.level = calculatedLevel.level;
+        }
+        
+        // Убедимся, что experienceToNextLevel вычислен корректно
+        profile.experienceToNextLevel = UserProfile.getExperienceForNextLevel(profile.level);
+        
+        await this.saveProfile(profile);
+        return profile;
       }
       // Если профиля нет, создаем новый
       const newProfile = new UserProfile();
@@ -104,15 +123,31 @@ export class ProfileService {
     }
   }
 
+  // Исправить метод addExperience
   async addExperience(amount) {
     try {
+      console.log(`Добавление опыта: ${amount}`);
+      
+      // Получаем текущий профиль
       const profile = await this.getProfile();
-      const result = profile.addExperience(amount);
+      
+      // Логируем начальные значения
+      console.log(`До добавления: Уровень ${profile.level}, Опыт ${profile.experience}/${profile.experienceToNextLevel}`);
+      
+      // Добавляем опыт через метод модели
+      const levelUpInfo = profile.addExperience(amount);
+      
+      // Логируем конечные значения
+      console.log(`После добавления: Уровень ${profile.level}, Опыт ${profile.experience}/${profile.experienceToNextLevel}`);
+      
+      // Сохраняем обновленный профиль
       await this.saveProfile(profile);
-      return { ...result, profile };
+      
+      // Возвращаем информацию о повышении уровня, если оно произошло
+      return levelUpInfo;
     } catch (error) {
       console.error('Ошибка при добавлении опыта:', error);
-      return { didLevelUp: false, newLevel: 0, newBonuses: [], profile: null };
+      return null;
     }
   }
 
@@ -303,18 +338,22 @@ export class ProfileService {
    */
   calculateLevelFromExperience(experience) {
     let level = 1;
-    let experienceToNextLevel = 0;
     
-    // Используем метод из класса UserProfile для расчета уровня
+    // Вычисляем уровень на основе опыта
     while (experience >= UserProfile.getExperienceForNextLevel(level)) {
-      level += 1;
+      level++;
     }
     
-    experienceToNextLevel = UserProfile.getExperienceForNextLevel(level) - experience;
+    const expForNextLevel = UserProfile.getExperienceForNextLevel(level);
+    const expForCurrentLevel = UserProfile.getExperienceForNextLevel(level - 1) || 0;
+    const progressExp = experience - expForCurrentLevel;
+    const expNeeded = expForNextLevel - expForCurrentLevel;
     
     return {
       level,
-      experienceToNextLevel
+      experienceToNextLevel: expForNextLevel,
+      progressExp,
+      expNeeded
     };
   }
 
@@ -355,6 +394,81 @@ export class ProfileService {
       return defaultProfile;
     } catch (error) {
       console.error('ProfileService: Ошибка при сбросе профиля:', error);
+      throw error;
+    }
+  }
+
+  // Метод для обновления здоровья
+  async updateHealth(delta) {
+    try {
+      const profile = await this.getProfile();
+      profile.updateHealth(delta);
+      await this.saveProfile(profile);
+      return profile;
+    } catch (error) {
+      console.error('Ошибка при обновлении здоровья:', error);
+      throw error;
+    }
+  }
+
+  // Метод для обновления энергии
+  async updateEnergy(delta) {
+    try {
+      const profile = await this.getProfile();
+      profile.updateEnergy(delta);
+      await this.saveProfile(profile);
+      return profile;
+    } catch (error) {
+      console.error('Ошибка при обновлении энергии:', error);
+      throw error;
+    }
+  }
+
+  // Метод для восстановления энергии
+  async restoreEnergy() {
+    try {
+      const profile = await this.getProfile();
+      const lastRefill = new Date(profile.lastEnergyRefill);
+      const now = new Date();
+      
+      // Устанавливаем время на начало дня для сравнения
+      lastRefill.setHours(0, 0, 0, 0);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      // Если с последнего восстановления прошел хотя бы день, восстанавливаем энергию
+      if (today > lastRefill) {
+        profile.restoreFullEnergy();
+        await this.saveProfile(profile);
+        return true;
+      }
+      
+      return false;
+    } catch (error) {
+      console.error('Ошибка при восстановлении энергии:', error);
+      return false;
+    }
+  }
+
+  // Метод для обработки здоровья при ежедневном сбросе
+  async processDailyHealthUpdate(completedAllDailyTasks, missedTasksCount) {
+    try {
+      const profile = await this.getProfile();
+      
+      if (completedAllDailyTasks) {
+        // Восстанавливаем небольшое количество здоровья за выполнение всех ежедневных задач
+        const healthBonus = 5; // 5 HP в день восстановления
+        profile.updateHealth(healthBonus);
+      } else if (missedTasksCount > 0) {
+        // Отнимаем здоровье за каждую пропущенную ежедневную задачу
+        const healthPenalty = -5 * missedTasksCount;
+        profile.updateHealth(healthPenalty);
+      }
+      
+      await this.saveProfile(profile);
+      return profile;
+    } catch (error) {
+      console.error('Ошибка при обновлении здоровья за ежедневные задачи:', error);
       throw error;
     }
   }

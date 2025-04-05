@@ -1,10 +1,11 @@
 import React, { createContext, useState, useEffect, useContext, useCallback, useRef } from 'react';
 import TaskService from '../services/TaskService';
-import { ProfileService } from '../services/ProfileService';
-import CategoryService from '../services/CategoryService';
-import { AvatarService } from '../services/AvatarService';
-import { AchievementService } from '../services/AchievementService';
+import { CategoryService } from '../services/CategoryService';
 import { StatisticsService } from '../services/StatisticsService';
+import SchedulerService from '../services/SchedulerService';
+import ProfileService from '../services/ProfileService';
+import { AchievementService } from '../services/AchievementService';
+import { AvatarService } from '../services/AvatarService';
 import ResetService from '../services/ResetService';
 import { useNotification } from './NotificationContext'; // Импортируем хук уведомлений
 
@@ -38,6 +39,12 @@ export const AppProvider = ({ children }) => {
   const [achievements, setAchievements] = useState([]);
   const [statistics, setStatistics] = useState(null);
   
+  // Добавляем состояния для ресурсов
+  const [health, setHealth] = useState(100);
+  const [maxHealth, setMaxHealth] = useState(100);
+  const [energy, setEnergy] = useState(100);
+  const [maxEnergy, setMaxEnergy] = useState(100);
+  
   // Флаг обновления данных
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
@@ -63,6 +70,12 @@ export const AppProvider = ({ children }) => {
       const profile = await profileService.getProfile();
       setProfile(profile || null);
       
+      // Устанавливаем значения здоровья и энергии
+      setHealth(profile.health);
+      setMaxHealth(profile.maxHealth);
+      setEnergy(profile.energy);
+      setMaxEnergy(profile.maxEnergy);
+      
       // 2. Загружаем аватар
       const avatar = await AvatarService.getAvatar();
       setAvatar(avatar || null);
@@ -83,7 +96,7 @@ export const AppProvider = ({ children }) => {
       try {
         const statistics = await StatisticsService.getAllStatistics();
         setStatistics(statistics || null);
-      } catch (statsError) {W
+      } catch (statsError) {
         console.error('AppContext: Ошибка при загрузке статистики:', statsError);
         // Не обновляем состояние при ошибке статистики, чтобы избежать рендера с некорректными данными
       }
@@ -100,28 +113,23 @@ export const AppProvider = ({ children }) => {
   }, []);
 
   // Обеспечим, чтобы refreshData всегда возвращала Promise
-  const refreshData = useCallback(() => {
-    console.log('AppContext: Запрос на обновление данных');
-    
-    // Проверяем, не выполняется ли уже загрузка
-    if (isLoadingRef.current) {
-      console.log('AppContext: Загрузка данных уже выполняется, пропускаем обновление');
-      return Promise.resolve(false);
+  const refreshData = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      
+      // Проверяем, нужно ли сбросить ежедневные задачи и восстановить энергию
+      await SchedulerService.checkAndResetDailyTasks();
+      
+      // Загружаем профиль с обновленными ресурсами
+      await loadAllData();
+      
+      return true;
+    } catch (error) {
+      console.error('Ошибка при обновлении данных:', error);
+      return false;
+    } finally {
+      setIsLoading(false);
     }
-    
-    // Увеличиваем счетчик для запуска эффекта обновления данных
-    setRefreshTrigger(prev => prev + 1);
-    
-    // Возвращаем Promise, который разрешится после загрузки данных
-    return new Promise((resolve) => {
-      // Используем setTimeout чтобы дать время эффекту запуститься
-      setTimeout(() => {
-        loadAllData().then(resolve).catch(error => {
-          console.error('Ошибка при обновлении данных:', error);
-          resolve(); // Всегда резолвим Promise, даже при ошибке
-        });
-      }, 0);
-    });
   }, [loadAllData]);
 
   useEffect(() => {
@@ -163,8 +171,15 @@ export const AppProvider = ({ children }) => {
 
   const deleteTask = async (taskId) => {
     try {
-      await TaskService.deleteTask(taskId);
-      setTasks(prevTasks => prevTasks.filter(task => task.id !== taskId));
+      const success = await TaskService.deleteTask(taskId);
+      
+      if (success) {
+        setTasks(prevTasks => prevTasks.filter(task => task.id !== taskId));
+        return true;
+      } else {
+        console.error('Не удалось удалить задачу:', taskId);
+        return false;
+      }
     } catch (error) {
       console.error('Ошибка при удалении задачи:', error);
       throw error;
@@ -353,6 +368,31 @@ export const AppProvider = ({ children }) => {
     }
   };
 
+  // Функции для работы с ресурсами
+  const updateHealth = async (delta) => {
+    try {
+      const updatedProfile = await profileService.updateHealth(delta);
+      setHealth(updatedProfile.health);
+      setProfile(updatedProfile);
+      return updatedProfile;
+    } catch (error) {
+      console.error('Ошибка при обновлении здоровья:', error);
+      throw error;
+    }
+  };
+  
+  const updateEnergy = async (delta) => {
+    try {
+      const updatedProfile = await profileService.updateEnergy(delta);
+      setEnergy(updatedProfile.energy);
+      setProfile(updatedProfile);
+      return updatedProfile;
+    } catch (error) {
+      console.error('Ошибка при обновлении энергии:', error);
+      throw error;
+    }
+  };
+
   const value = {
     isLoading,
     tasks,
@@ -361,6 +401,10 @@ export const AppProvider = ({ children }) => {
     categories,
     achievements,
     statistics,
+    health,
+    maxHealth,
+    energy,
+    maxEnergy,
     refreshData,
     addTask,
     updateTask,
@@ -372,6 +416,8 @@ export const AppProvider = ({ children }) => {
     updateCategory,
     deleteCategory,
     resetProgress,
+    updateHealth,
+    updateEnergy,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

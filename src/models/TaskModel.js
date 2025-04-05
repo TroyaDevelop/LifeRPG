@@ -2,13 +2,16 @@ import { v4 as uuidv4 } from 'uuid';
 
 export class TaskModel {
   constructor(data = {}) {
-    this.id = data.id || uuidv4();
+    this.id = data.id || Date.now().toString();
     this.title = data.title || '';
     this.description = data.description || '';
     this.dueDate = data.dueDate || null;
     this.priority = data.priority || 'medium';
     this.categoryId = data.categoryId || null; // Убедимся, что используется именно categoryId
-    this.isCompleted = data.isCompleted || false;
+    
+    // Явно устанавливаем false, если не передано true
+    this.isCompleted = data.isCompleted === true;
+    
     this.completedAt = data.completedAt || null;
     
     // Устранение конфликта между type и isDaily
@@ -22,21 +25,11 @@ export class TaskModel {
     this.reminderEnabled = data.reminderEnabled || false;
     this.reminderTime = data.reminderTime || null;
     this.notificationId = data.notificationId || null;
-    this.xpReward = this.calculateXpReward(this.priority);
-  }
-
-  calculateXpReward(priority) {
-    const baseXp = 10;
-    switch (priority) {
-      case 'low':
-        return baseXp;
-      case 'medium':
-        return baseXp * 2;
-      case 'high':
-        return baseXp * 3;
-      default:
-        return baseXp;
-    }
+    
+    // Хранение информации о фактически потраченной энергии 
+    // и полученном опыте при выполнении задачи
+    this.noExperienceGained = data.noExperienceGained || false;
+    this.energySpent = data.energySpent || 0; // Добавляем фактические траты энергии
   }
 
   // Метод для преобразования объекта задачи в обычный объект
@@ -59,6 +52,8 @@ export class TaskModel {
       notificationId: this.notificationId,
       xpReward: this.xpReward,
       lastCompletedDate: this.lastCompletedDate, // Для отслеживания выполнения ежедневных задач
+      noExperienceGained: this.noExperienceGained,
+      energySpent: this.energySpent, // Сохраняем фактические траты энергии
     };
   }
 

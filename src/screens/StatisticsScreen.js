@@ -619,7 +619,7 @@ export default function StatisticsScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
-      <Header title="Статистика" showBackButton onBack={() => navigation.goBack()} />
+      <Header title="Статистика" hasBack={true} onBack={() => navigation.goBack()} />
       
       {renderPeriodSelector()}
       

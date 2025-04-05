@@ -75,7 +75,7 @@ const NotificationSettingsScreen = ({ navigation }) => {
       <View style={styles.container}>
         <Header 
           title="Настройки уведомлений" 
-          showBackButton 
+          hasBack={true}
           onBack={() => navigation.goBack()} 
         />
         <View style={styles.loadingContainer}>
@@ -89,7 +89,7 @@ const NotificationSettingsScreen = ({ navigation }) => {
     <View style={styles.container}>
       <Header 
         title="Настройки уведомлений" 
-        showBackButton 
+        hasBack={true}
         onBack={() => navigation.goBack()} 
       />
       

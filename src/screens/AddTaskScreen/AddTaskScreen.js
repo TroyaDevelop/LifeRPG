@@ -15,6 +15,9 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { TaskService, CategoryService } from '../../services';
+import Header from '../../components/Header';
+// Добавляем импорт NotificationService
+import NotificationService from '../../services/NotificationService';
 
 export default function AddTaskScreen({ navigation, route }) {
   // Получаем параметр isDaily из навигации
@@ -99,6 +102,7 @@ export default function AddTaskScreen({ navigation, route }) {
         priority,
         categoryId: category, // Используем правильное поле
         isDaily: taskType === 'daily', // Правильное преобразование типа в isDaily
+        type: taskType, // Добавляем тип задачи
         reminderEnabled: reminderEnabled && hasDueDate,
         reminderTime: reminderEnabled && reminderTime ? new Date(reminderTime).toISOString() : null,
         createdAt: new Date().toISOString(),
@@ -283,13 +287,11 @@ export default function AddTaskScreen({ navigation, route }) {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <ScrollView contentContainerStyle={styles.scrollContainer}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color="#333333" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Новая задача</Text>
-          <View style={{ width: 24 }} />
-        </View>
+        <Header 
+          title="Новая задача" 
+          hasBack={true}
+          onBack={() => navigation.goBack()}
+        />
         
         {/* Форма задачи */}
         <View style={styles.formContainer}>
@@ -496,20 +498,6 @@ const styles = StyleSheet.create({
   },
   scrollContainer: {
     padding: 16,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 24,
-  },
-  backButton: {
-    padding: 8,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#333333',
   },
   formContainer: {
     backgroundColor: '#FFFFFF',

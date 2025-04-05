@@ -15,7 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAppContext } from '../context/AppContext'; // Импортируем хук контекста
 import LevelProgressBar from '../components/LevelProgressBar';
 import LevelUpModal from '../components/LevelUpModal';
-import { TaskCard, Modal, Button } from '../components/index';
+import { TaskCard, Modal, Button, HealthBar, EnergyBar } from '../components/index'; // Добавляем импорт HealthBar и EnergyBar
 import Header from '../components/Header';
 import { formatDate } from '../utils/helpers';
 import { TASK_PRIORITIES, PRIORITY_COLORS } from '../utils/constants';
@@ -33,7 +33,12 @@ const HomeScreen = ({ navigation }) => {
     completeTask, 
     deleteTask, 
     refreshData, 
-    isLoading 
+    isLoading,
+    // Добавляем следующие переменные:
+    health,
+    maxHealth,
+    energy,
+    maxEnergy
   } = useAppContext();
   
   // Состояние для UI
@@ -179,22 +184,37 @@ const HomeScreen = ({ navigation }) => {
     );
   };
 
-  // Компонент фильтра и сортировки
+  // Обновляем renderHeaderComponent
   const renderHeaderComponent = () => (
     <View style={styles.headerContainer}>
-      {/* Показываем аватар и прогресс уровня */}
+      {/* Показываем аватар и прогресс ресурсов */}
       <View style={styles.profileContainer}>
         <TouchableOpacity 
           style={styles.avatarContainer}
           onPress={() => navigation.navigate('Profile')}
         >
-          <Avatar size="small" style={styles.avatar} avatarData={avatar} />
+          <Avatar size="medium" style={styles.avatar} avatarData={avatar} />
         </TouchableOpacity>
-        {profile && (
-          <LevelProgressBar profile={profile} style={styles.levelProgressBar} />
-        )}
+        <View style={styles.resourceBars}>
+          {profile && (
+            <>
+              <LevelProgressBar profile={profile} style={styles.progressBar} />
+              <HealthBar 
+                health={health} 
+                maxHealth={maxHealth} 
+                style={styles.resourceBar} 
+              />
+              <EnergyBar 
+                energy={energy} 
+                maxEnergy={maxEnergy} 
+                style={styles.resourceBar} 
+              />
+            </>
+          )}
+        </View>
       </View>
       
+      {/* Поле поиска, фильтры и сортировка - оставляем без изменений */}
       <View style={styles.searchContainer}>
         <Ionicons name="search" size={20} color="#AAAAAA" style={styles.searchIcon} />
         <TextInput
@@ -650,32 +670,24 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 16,
-    paddingHorizontal: 16,
   },
   avatarContainer: {
-    marginRight: 8,
-    // Добавим немного отступа сверху и снизу
-    marginVertical: 6,
+    marginRight: 12,
+    borderRadius: 10, // Обновляем радиус для соответствия аватару
   },
   avatar: {
     borderWidth: 2,
     borderColor: '#4E64EE',
-    borderRadius: 8, // Изменяем на квадрат с закругленными углами
-    backgroundColor: '#E9EDF5', // Соответствует цвету фона в Avatar
-    // Добавим небольшую тень
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 3,
-    width: 110, // Явно задаем размер
-    height: 110, // Явно задаем размер
+    borderRadius: 10, // Обновляем радиус для соответствия контейнеру
   },
-  levelProgressBar: {
+  resourceBars: {
     flex: 1,
+  },
+  progressBar: {
+    marginBottom: 4,
+  },
+  resourceBar: {
+    marginBottom: 4,
   },
 });
 
