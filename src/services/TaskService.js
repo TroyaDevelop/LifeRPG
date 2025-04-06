@@ -385,6 +385,8 @@ export class TaskService {
       // Обновляем счетчики в профиле
       await profileService.updateStatsOnTaskComplete();
       
+      await StatisticsService.updateStatisticsOnTaskCompletion(task, actualExperienceGain);
+      
       // Проверяем, все ли ежедневные задачи выполнены
       if (task.type === 'daily') {
         const allTasks = await this.getAllTasks();
