@@ -17,8 +17,6 @@ import LevelProgressBar from '../components/LevelProgressBar';
 import LevelUpModal from '../components/LevelUpModal';
 import { TaskCard, Modal, Button, HealthBar, EnergyBar } from '../components/index'; // Добавляем импорт HealthBar и EnergyBar
 import Header from '../components/Header';
-import { formatDate } from '../utils/helpers';
-import { TASK_PRIORITIES, PRIORITY_COLORS } from '../utils/constants';
 import Avatar from '../components/Avatar';
 
 // Оптимизируем TaskCard с помощью memo

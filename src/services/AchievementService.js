@@ -3,7 +3,6 @@ import { AchievementModel } from '../models/AchievementModel';
 import { ProfileService } from './ProfileService';
 import { StatisticsService } from './StatisticsService';
 import TaskService from './TaskService'; // Правильный импорт - без фигурных скобок
-import { CategoryService } from './CategoryService';
 
 const ACHIEVEMENTS_STORAGE_KEY = '@LifeRPG:achievements';
 

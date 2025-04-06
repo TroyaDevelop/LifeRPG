@@ -1,7 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import 'react-native-get-random-values'; // Импортируем перед uuid
-import { v4 as uuidv4 } from 'uuid';
-import StorageService from './StorageService';
 
 const CATEGORIES_STORAGE_KEY = '@LifeRPG:categories';
 

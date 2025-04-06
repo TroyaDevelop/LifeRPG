@@ -6,7 +6,6 @@ import StorageService from './StorageService';
 import NotificationService from './NotificationService';
 import { ProfileService } from './ProfileService';
 import { StatisticsService } from './StatisticsService';
-import { AchievementService } from './AchievementService';
 
 let tasksCache = null;
 let lastFetchTime = 0;

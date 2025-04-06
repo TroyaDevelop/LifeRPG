@@ -14,9 +14,6 @@
       "credentialsSource": "remote",
       "cache": {
         "disabled": true
-      },
-      "env": {
-        "EXPO_NO_GIT": "1"
       }
     }
   },

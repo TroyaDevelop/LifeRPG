@@ -1,9 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { NavigationContainer } from '@react-navigation/native';
 import AppNavigator from './src/navigation/AppNavigator';
 import SplashScreen from './src/screens/SplashScreen';
 import { NotificationService } from './src/services';
