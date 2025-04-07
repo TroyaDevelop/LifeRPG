@@ -1,12 +1,13 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Linking, Platform } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useAppContext } from '../context/AppContext'; // Импортируем контекст
 import Header from '../components/Header';
-import Constants from 'expo-constants';
+import { version as appVersion } from '../../package.json';
 
 const AboutScreen = ({ navigation }) => {
-  const appVersion = Constants.manifest?.version || '1.0.0';
+  // Используем версию из package.json вместо Constants.manifest.version
+  // const appVersion = Constants.manifest?.version || '1.0.0';
   const { refreshData } = useAppContext(); // Используем контекст для обновления данных
   
   const handleOpenLink = (url) => {

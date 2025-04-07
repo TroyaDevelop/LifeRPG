@@ -11,7 +11,7 @@ import {
   ActivityIndicator
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useAppContext } from '../context/AppContext'; // Импортируем хук контекста
 import LevelProgressBar from '../components/LevelProgressBar';
 import LevelUpModal from '../components/LevelUpModal';

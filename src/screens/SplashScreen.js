@@ -1,6 +1,5 @@
 import React, { useEffect } from 'react';
-import { View, Image, StyleSheet, Text, Animated } from 'react-native';
-import { StatusBar } from 'expo-status-bar';
+import { View, Image, StyleSheet, Text, Animated, StatusBar } from 'react-native';
 
 // Компонент загрузочного экрана
 const SplashScreen = ({ onFinish }) => {
@@ -23,6 +22,9 @@ const SplashScreen = ({ onFinish }) => {
       })
     ]).start();
 
+    // Скрываем статус-бар при монтировании
+    StatusBar.setHidden(true);
+
     // Таймер для завершения загрузочного экрана
     const timer = setTimeout(() => {
       // Сначала анимация исчезновения
@@ -36,13 +38,15 @@ const SplashScreen = ({ onFinish }) => {
       });
     }, 2500); // 2.5 секунды отображения
 
-    // Очистка таймера при размонтировании
-    return () => clearTimeout(timer);
+    // Очистка таймера и возвращение статус-бара при размонтировании
+    return () => {
+      clearTimeout(timer);
+      StatusBar.setHidden(false);
+    };
   }, []);
 
   return (
     <View style={styles.container}>
-      <StatusBar hidden />
       <Animated.View 
         style={[
           styles.content,

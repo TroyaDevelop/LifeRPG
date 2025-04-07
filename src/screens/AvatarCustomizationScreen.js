@@ -8,7 +8,7 @@ import {
   Image,
   Alert
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useAppContext } from '../context/AppContext';
 import { AvatarService } from '../services/AvatarService'; // Добавляем импорт
 import Header from '../components/Header';

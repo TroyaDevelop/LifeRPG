@@ -12,7 +12,7 @@ import {
   KeyboardAvoidingView,
   ActivityIndicator
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import { CategoryService } from '../services';
 import { CATEGORY_COLORS, CATEGORY_ICONS } from '../utils/constants';
 

@@ -13,7 +13,7 @@ import {
   KeyboardAvoidingView,
   ActivityIndicator
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useAppContext } from '../../context/AppContext'; // Импортируем контекст
 import Header from '../../components/Header';

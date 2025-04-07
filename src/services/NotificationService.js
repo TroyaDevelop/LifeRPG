@@ -1,53 +1,68 @@
-import * as Notifications from 'expo-notifications';
-import * as Device from 'expo-device';
+import PushNotification from 'react-native-push-notification';
+import PushNotificationIOS from '@react-native-community/push-notification-ios';
 import { Platform } from 'react-native';
-
-// Конфигурация отображения уведомлений в приложении
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: true,
-  }),
-});
+import DeviceInfo from 'react-native-device-info';
 
 class NotificationService {
+  // Инициализация уведомлений
+  static init() {
+    PushNotification.configure({
+      // (обязательно) Вызывается когда токен регистрации получен
+      onRegister: function(token) {
+        console.log("TOKEN:", token);
+      },
+      
+      // (требуется) Вызывается когда получено уведомление
+      onNotification: function(notification) {
+        console.log("NOTIFICATION:", notification);
+        
+        // Требуется для iOS
+        notification.finish(PushNotificationIOS.FetchResult.NoData);
+      },
+      
+      // Должен ли уведомления показываться когда приложение на переднем плане
+      // default: true
+      popInitialNotification: true,
+      requestPermissions: true,
+    });
+    
+    // Создание Android канала
+    if (Platform.OS === 'android') {
+      PushNotification.createChannel(
+        {
+          channelId: 'default', // (required)
+          channelName: 'default', // (required)
+          channelDescription: 'Основной канал для уведомлений', // (optional)
+          importance: 4, // (optional) default: 4. Важность: Int значение от 0 до 4
+          vibrate: true, // (optional) Значение по умолчанию: true. Создает вибрацию для уведомлений
+          vibration: 300, // vibration length in milliseconds, ignored if vibrate=false
+          playSound: true, // (optional) Значение по умолчанию: true
+          soundName: 'default', // (optional) Sound to play when the notification is shown
+          lightColor: '#4E64EE', // (optional) Значение по умолчанию: 'white'
+        },
+        (created) => console.log(`Канал уведомлений создан: '${created}'`)
+      );
+    }
+  }
+
   // Регистрация устройства для уведомлений
   static async registerForPushNotificationsAsync() {
     try {
-      // Для Android настраиваем канал уведомлений
-      if (Platform.OS === 'android') {
-        await Notifications.setNotificationChannelAsync('default', {
-          name: 'default',
-          importance: Notifications.AndroidImportance.MAX,
-          vibrationPattern: [0, 250, 250, 250],
-          lightColor: '#4E64EE',
-        });
-      }
-
       // Проверяем, на реальном ли устройстве запущено приложение
-      if (!Device.isDevice) {
+      if (DeviceInfo.isEmulator()) {
         console.log('Push-уведомления недоступны в эмуляторе');
         return null;
       }
 
       // Запрашиваем разрешения на уведомления
-      const { status: existingStatus } = await Notifications.getPermissionsAsync();
-      let finalStatus = existingStatus;
-      
-      if (existingStatus !== 'granted') {
-        const { status } = await Notifications.requestPermissionsAsync();
-        finalStatus = status;
+      if (Platform.OS === 'ios') {
+        PushNotificationIOS.requestPermissions().then((data) => {
+          return data.alert;
+        });
+      } else {
+        // На Android разрешения запрашиваются при инициализации
+        return true;
       }
-      
-      if (finalStatus !== 'granted') {
-        console.log('Разрешение на уведомления не получено!');
-        return null;
-      }
-      
-      // Для локальных уведомлений нам не нужен токен,
-      // поэтому возвращаем true, если разрешение получено
-      return true;
     } catch (error) {
       console.error('Ошибка при регистрации для уведомлений:', error);
       return null;
@@ -85,16 +100,23 @@ class NotificationService {
         await this.cancelTaskReminder(task.notificationId);
       }
 
+      // Создаем уникальный ID для уведомления
+      const notificationId = task.id.toString();
+
       // Планируем новое уведомление
-      const notificationId = await Notifications.scheduleNotificationAsync({
-        content: {
-          title: 'Напоминание о задаче',
-          body: task.title,
-          data: { taskId: task.id },
-          sound: true,
-          priority: Notifications.AndroidNotificationPriority.HIGH,
-        },
-        trigger: triggerTime,
+      PushNotification.localNotificationSchedule({
+        channelId: 'default',
+        id: notificationId,
+        title: 'Напоминание о задаче',
+        message: task.title,
+        userInfo: { taskId: task.id },
+        date: triggerTime,
+        allowWhileIdle: true, // (optional) разрешить уведомление даже при режиме Doze
+        importance: 'high',
+        playSound: true,
+        soundName: 'default',
+        vibrate: true,
+        vibration: 300,
       });
 
       console.log('Уведомление запланировано с ID:', notificationId);
@@ -108,7 +130,7 @@ class NotificationService {
   // Отмена запланированного уведомления
   static async cancelTaskReminder(notificationId) {
     try {
-      await Notifications.cancelScheduledNotificationAsync(notificationId);
+      PushNotification.cancelLocalNotification(notificationId);
       console.log('Уведомление отменено:', notificationId);
       return true;
     } catch (error) {
@@ -119,19 +141,17 @@ class NotificationService {
 
   // Получение всех запланированных уведомлений
   static async getAllScheduledNotifications() {
-    try {
-      const notifications = await Notifications.getAllScheduledNotificationsAsync();
-      return notifications;
-    } catch (error) {
-      console.error('Ошибка при получении запланированных уведомлений:', error);
-      return [];
-    }
+    return new Promise((resolve) => {
+      PushNotification.getScheduledLocalNotifications((notifications) => {
+        resolve(notifications);
+      });
+    });
   }
 
   // Удаление всех уведомлений
   static async cancelAllNotifications() {
     try {
-      await Notifications.cancelAllScheduledNotificationsAsync();
+      PushNotification.cancelAllLocalNotifications();
       return true;
     } catch (error) {
       console.error('Ошибка при отмене всех уведомлений:', error);

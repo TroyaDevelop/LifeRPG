@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Switch } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import Header from '../components/Header';
 import Modal from '../components/Modal';
 import { useAppContext } from '../context/AppContext'; // Импортируем хук контекста

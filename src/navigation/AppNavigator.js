@@ -2,7 +2,6 @@ import React, { useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { SchedulerService } from '../services/SchedulerService';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 // Импорт экранов
 import HomeScreen from '../screens/HomeScreen';

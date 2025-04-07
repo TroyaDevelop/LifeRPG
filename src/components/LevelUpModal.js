@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { Modal, View, Text, StyleSheet, TouchableOpacity, Animated, Easing } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 
 const LevelUpModal = ({ visible, level, bonuses = [], onClose }) => {
   const scaleAnim = useRef(new Animated.Value(0.5)).current;

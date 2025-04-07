@@ -12,7 +12,7 @@ import {
   Platform,
   KeyboardAvoidingView
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { TaskService, CategoryService } from '../../services';
 import Header from '../../components/Header';

@@ -1,39 +1,4 @@
 {
-  "expo": {
-    "name": "LifeRPG",
-    "slug": "liferpg",
-    "version": "1.0.0",
-    "orientation": "portrait",
-    "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
-    "newArchEnabled": true,
-    "splash": {
-      "image": "./assets/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#991199"
-    },
-    "ios": {
-      "supportsTablet": true
-    },
-    "android": {
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
-      },
-      "permissions": [
-        "android.permission.RECORD_AUDIO",
-        "android.permission.MODIFY_AUDIO_SETTINGS"
-      ],
-      "package": "com.anonymous.liferpg"
-    },
-    "web": {
-      "favicon": "./assets/favicon.png"
-    },
-    "extra": {
-      "eas": {
-        "projectId": "0bb4b146-73a9-47ef-9194-2b573cce7434"
-      }
-    },
-    "jsEngine": "hermes"
-  }
+  "name": "LifeRPGNew",
+  "displayName": "LifeRPGNew"
 }
