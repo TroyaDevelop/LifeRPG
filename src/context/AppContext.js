@@ -197,6 +197,12 @@ export const AppProvider = ({ children }) => {
         if (result.success && result.experienceGained) {
           showExperienceGained(result.experienceGained);
         }
+        
+        // Обновляем достижения после выполнения задачи
+        const achievementsResult = await AchievementService.updateAchievementsOnTaskComplete(result.task, profile);
+        if (achievementsResult) {
+          result.achievements = achievementsResult;
+        }
       } else {
         // Отмена выполнения задачи
         result = await TaskService.uncompleteTask(taskId);

@@ -80,37 +80,14 @@ class AchievementModel {
     // Обработка разных типов условий
     if (this.condition.type === 'taskCompleted') {
       targetValue = this.condition.value;
-      // Только увеличиваем прогресс (не устанавливаем его напрямую)
-      this.progress += 1;
+      // Устанавливаем прогресс равным переданному значению (количеству выполненных задач)
+      this.progress = value;
       shouldUpdate = true;
     } else if (this.condition.type === 'streak') {
       targetValue = this.condition.days;
       // Устанавливаем прогресс равным значению (для полос)
       this.progress = value; 
       shouldUpdate = true;
-    } else if (this.condition.type === 'efficiency') {
-      // Для эффективности, прогресс равен проценту эффективности
-      targetValue = this.condition.percentage;
-      
-      // Для достижений по эффективности устанавливаем прогресс,
-      // но разблокируем только если период совпадает и мы на проверке конца периода
-      if (this.condition.period === 'week') {
-        // Для недельных достижений, мы должны проверить, что это конец недели
-        const isEndOfWeek = new Date().getDay() === 0; // 0 = воскресенье
-        
-        if (isEndOfWeek) {
-          // Обновляем прогресс только в конце недели
-          this.progress = value;
-          shouldUpdate = true;
-        } else {
-          // Не обновляем прогресс, если не конец недели
-          return false;
-        }
-      } else {
-        // Для других периодов (день, месяц) - обновляем прогресс как обычно
-        this.progress = value;
-        shouldUpdate = true;
-      }
     } else {
       // Для остальных типов достижений просто устанавливаем значение
       targetValue = this.progressTarget;
@@ -203,53 +180,6 @@ class AchievementModel {
         category: 'organization'
       }),
       
-      // Достижения по эффективности
-      new AchievementModel({
-        id: 'efficiency_beginner',
-        title: 'Новичок продуктивности',
-        description: 'Достигните 50% эффективности за неделю',
-        icon: 'trending-up-outline',
-        rarity: 'common',
-        condition: { type: 'efficiency', percentage: 50, period: 'week' },
-        progressTarget: 50,
-        rewards: { experience: 100, coins: 50 },
-        category: 'efficiency'
-      }),
-      new AchievementModel({
-        id: 'efficiency_advanced',
-        title: 'Продуктивный работник',
-        description: 'Достигните 70% эффективности за неделю',
-        icon: 'trending-up-outline',
-        rarity: 'uncommon',
-        condition: { type: 'efficiency', percentage: 70, period: 'week' },
-        progressTarget: 70,
-        rewards: { experience: 200, coins: 100 },
-        category: 'efficiency'
-      }),
-      new AchievementModel({
-        id: 'efficiency_master',
-        title: 'Эффективный работник',
-        description: 'Достигните 90% эффективности за неделю',
-        icon: 'trending-up-outline',
-        rarity: 'rare',
-        condition: { type: 'efficiency', percentage: 90, period: 'week' },
-        progressTarget: 90,
-        rewards: { experience: 400, coins: 200 },
-        category: 'efficiency'
-      }),
-
-      new AchievementModel({
-        id: 'efficiency_legend',
-        title: 'Рожденный стать героем',
-        description: 'Достигните 100% эффективности за неделю',
-        icon: 'trending-up-outline',
-        rarity: 'legendary',
-        condition: { type: 'efficiency', percentage: 100, period: 'week' },
-        progressTarget: 100,
-        rewards: { experience: 800, coins: 300 },
-        category: 'efficiency'
-      }),
-
       // Достижения по приоритетам
       new AchievementModel({
         id: 'priority_master',

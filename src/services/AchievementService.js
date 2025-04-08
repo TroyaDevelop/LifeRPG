@@ -82,7 +82,6 @@ export class AchievementService {
       const tasks = await TaskService.getAllTasks();
       console.log('Получено задач:', tasks.length);
       
-      // ИСПРАВЛЕНИЕ: Используем isCompleted вместо completed
       const completedTasks = tasks.filter(t => t.isCompleted).length;
       const highPriorityCompleted = tasks.filter(t => t.isCompleted && t.priority === 'high').length;
       
@@ -145,7 +144,6 @@ export class AchievementService {
                 progress = achievement.progress; // Оставляем как есть
               }
               break;
-              // Убираем обработку достижений по эффективности
           }
           
           // Обновляем прогресс достижения
@@ -189,8 +187,8 @@ export class AchievementService {
             achievementsUnlocked,
             totalExperience,
             totalCoins,
-            levelUp: result.didLevelUp,
-            newLevel: result.newLevel
+            levelUp: result?.didLevelUp || false,
+            newLevel: result?.newLevel || profile.level
           };
         }
         
