@@ -1,7 +1,6 @@
 import React, { createContext, useState, useEffect, useContext, useCallback, useRef } from 'react';
 import TaskService from '../services/TaskService';
 import { CategoryService } from '../services/CategoryService';
-import { StatisticsService } from '../services/StatisticsService';
 import SchedulerService from '../services/SchedulerService';
 import ProfileService from '../services/ProfileService';
 import { AchievementService } from '../services/AchievementService';
@@ -37,7 +36,6 @@ export const AppProvider = ({ children }) => {
   const [avatar, setAvatar] = useState(null);
   const [categories, setCategories] = useState([]);
   const [achievements, setAchievements] = useState([]);
-  const [statistics, setStatistics] = useState(null);
   
   // Добавляем состояния для ресурсов
   const [health, setHealth] = useState(100);
@@ -91,15 +89,6 @@ export const AppProvider = ({ children }) => {
       // 5. Загружаем достижения
       const achievements = await AchievementService.getAllAchievements();
       setAchievements(achievements || []);
-      
-      // 6. Загружаем статистику
-      try {
-        const statistics = await StatisticsService.getAllStatistics();
-        setStatistics(statistics || null);
-      } catch (statsError) {
-        console.error('AppContext: Ошибка при загрузке статистики:', statsError);
-        // Не обновляем состояние при ошибке статистики, чтобы избежать рендера с некорректными данными
-      }
       
       console.log('AppContext: Все данные успешно загружены');
       return true;
@@ -255,9 +244,6 @@ export const AppProvider = ({ children }) => {
         }
       }
       
-      // Обновляем статистику
-      refreshData();
-      
       // Возвращаем результат для показа UI уведомлений (например, о повышении уровня)
       return result;
     } catch (error) {
@@ -400,7 +386,6 @@ export const AppProvider = ({ children }) => {
     avatar,
     categories,
     achievements,
-    statistics,
     health,
     maxHealth,
     energy,

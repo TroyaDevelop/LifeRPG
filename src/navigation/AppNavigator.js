@@ -11,7 +11,6 @@ import NotificationSettingsScreen from '../screens/NotificationSettingsScreen';
 import CategoriesScreen from '../screens/CategoriesScreen';
 import AddCategoryScreen from '../screens/AddCategoryScreen';
 import EditCategoryScreen from '../screens/EditCategoryScreen';
-import StatisticsScreen from '../screens/StatisticsScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import { AchievementsScreen } from '../screens/AchievementsScreen';
 import AppSettingsScreen from '../screens/AppSettingsScreen';
@@ -53,7 +52,6 @@ export default function AppNavigator() {
         <Stack.Screen name="Categories" component={CategoriesScreen} />
         <Stack.Screen name="AddCategory" component={AddCategoryScreen} />
         <Stack.Screen name="EditCategory" component={EditCategoryScreen} />
-        <Stack.Screen name="Statistics" component={StatisticsScreen} />
         <Stack.Screen name="Settings" component={SettingsScreen} />
         <Stack.Screen name="Achievements" component={AchievementsScreen} />
         <Stack.Screen name="AppSettings" component={AppSettingsScreen} />

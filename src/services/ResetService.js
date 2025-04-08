@@ -2,7 +2,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ProfileService } from './ProfileService';
 import { TaskService } from './TaskService';
 import { AchievementService } from './AchievementService';
-import { StatisticsService } from './StatisticsService';
 import CategoryService from './CategoryService';
 
 // Ключи хранилища
@@ -10,7 +9,6 @@ const TASKS_STORAGE_KEY = '@LifeRPG:tasks';
 const PROFILE_STORAGE_KEY = '@LifeRPG:profile';
 const CATEGORIES_STORAGE_KEY = '@LifeRPG:categories';
 const ACHIEVEMENTS_STORAGE_KEY = '@LifeRPG:achievements';
-const STATISTICS_STORAGE_KEY = '@LifeRPG:statistics';
 const AVATAR_STORAGE_KEY = '@LifeRPG:avatar';
 
 class ResetService {
@@ -78,12 +76,6 @@ class ResetService {
           resetPromises.push(AsyncStorage.removeItem(ACHIEVEMENTS_STORAGE_KEY));
           console.log('ResetService: Внимание! AchievementService.resetAllAchievements не найден, используем прямое удаление');
         }
-      }
-      
-      // Сброс статистики
-      if (options.resetStatistics) {
-        console.log('ResetService: Сбрасываем статистику');
-        resetPromises.push(StatisticsService.resetAllStatistics());
       }
       
       // Ждем завершения всех операций

@@ -79,9 +79,6 @@ export const APP_EVENTS = {
   // События аватара
   AVATAR_UPDATED: 'avatar:updated',
   
-  // События статистики
-  STATISTICS_UPDATED: 'statistics:updated',
-  
   // События достижений
   ACHIEVEMENTS_UPDATED: 'achievements:updated',
   ACHIEVEMENT_UNLOCKED: 'achievement:unlocked',

@@ -5,7 +5,6 @@ import { TaskModel } from '../models';
 import StorageService from './StorageService';
 import NotificationService from './NotificationService';
 import { ProfileService } from './ProfileService';
-import { StatisticsService } from './StatisticsService';
 
 let tasksCache = null;
 let lastFetchTime = 0;
@@ -62,9 +61,6 @@ export class TaskService {
       
       // Инвалидируем кэш после создания
       this.invalidateCache();
-      
-      // Обновление статистики при создании задачи
-      await StatisticsService.updateStatisticsOnTaskCreation(newTask);
       
       return success ? newTask.toJSON() : null;
     } catch (error) {
@@ -384,8 +380,6 @@ export class TaskService {
       
       // Обновляем счетчики в профиле
       await profileService.updateStatsOnTaskComplete();
-      
-      await StatisticsService.updateStatisticsOnTaskCompletion(task, actualExperienceGain);
       
       // Проверяем, все ли ежедневные задачи выполнены
       if (task.type === 'daily') {

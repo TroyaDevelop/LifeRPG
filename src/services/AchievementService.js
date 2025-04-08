@@ -1,7 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AchievementModel } from '../models/AchievementModel';
 import { ProfileService } from './ProfileService';
-import { StatisticsService } from './StatisticsService';
 import TaskService from './TaskService'; // Правильный импорт - без фигурных скобок
 
 const ACHIEVEMENTS_STORAGE_KEY = '@LifeRPG:achievements';
@@ -96,13 +95,6 @@ export class AchievementService {
       const isNight = currentHour >= 22 || currentHour < 5;
       const isMorning = currentHour >= 5 && currentHour < 9;
       
-      // Получаем статистику для еженедельной эффективности
-      let weeklyEfficiency = 0;
-      const statistics = await StatisticsService.getWeeklyStatistics();
-      if (statistics && statistics.length > 0) {
-        weeklyEfficiency = StatisticsService.calculateEfficiency(statistics);
-      }
-      
       let achievementsUnlocked = [];
       
       // Для отладки
@@ -153,9 +145,7 @@ export class AchievementService {
                 progress = achievement.progress; // Оставляем как есть
               }
               break;
-            case 'efficiency':
-              progress = weeklyEfficiency;
-              break;
+              // Убираем обработку достижений по эффективности
           }
           
           // Обновляем прогресс достижения
@@ -214,110 +204,6 @@ export class AchievementService {
       return null;
     } catch (error) {
       console.error('Ошибка при обновлении достижений:', error);
-      return null;
-    }
-  }
-  
-  // Метод для проверки и обновления достижений на основе эффективности
-  static async updateAchievementsForEfficiency() {
-    try {
-      const achievements = await this.getAllAchievements();
-      
-      // Проверяем, что достижения были успешно загружены
-      if (!Array.isArray(achievements) || achievements.length === 0) {
-        console.error('Не удалось загрузить достижения или список пуст');
-        return null;
-      }
-      
-      const weeklyStats = await StatisticsService.getWeeklyStatistics();
-      
-      // Минимальное количество дней для точного расчета эффективности
-      const MIN_DAYS_REQUIRED = 3;
-      
-      // Проверка минимального количества дней для определения эффективности
-      if (!weeklyStats || weeklyStats.length < MIN_DAYS_REQUIRED) {
-        console.log(`Недостаточно дней для расчета достижения по эффективности. Нужно минимум ${MIN_DAYS_REQUIRED}, текущее: ${weeklyStats ? weeklyStats.length : 0}`);
-        return null;
-      }
-      
-      // Проверяем, что сегодня действительно конец недели (воскресенье)
-      const currentDay = new Date().getDay();
-      const isEndOfWeek = currentDay === 0; // 0 = воскресенье
-      
-      // Если сейчас не конец недели, пропускаем проверку достижений эффективности
-      if (!isEndOfWeek) {
-        console.log('Сегодня не конец недели. Проверка достижений эффективности отложена до воскресенья.');
-        return null;
-      }
-      
-      // Проверяем общее количество задач за неделю
-      let totalTasks = 0;
-      let completedTasks = 0;
-      
-      weeklyStats.forEach(stats => {
-        if (stats && stats.dailyStats) {
-          totalTasks += stats.dailyStats.tasksCreated + (stats.dailyStats.tasksPlanned || 0);
-          completedTasks += stats.dailyStats.tasksCompleted;
-        }
-      });
-      
-      // Минимальное количество задач для точного расчета эффективности
-      const MIN_TASKS_REQUIRED = 5;
-      
-      if (totalTasks < MIN_TASKS_REQUIRED) {
-        console.log(`Недостаточно задач для расчета достижения по эффективности. Нужно минимум ${MIN_TASKS_REQUIRED}, текущее: ${totalTasks}`);
-        return null;
-      }
-      
-      const weeklyEfficiency = StatisticsService.calculateEfficiency(weeklyStats);
-      console.log(`Текущая эффективность за неделю: ${weeklyEfficiency}%`);
-      console.log(`Всего задач: ${totalTasks}, выполнено: ${completedTasks}`);
-      
-      let achievementsUnlocked = [];
-      
-      // Обрабатываем достижения по эффективности
-      for (const achievement of achievements) {
-        if (achievement && achievement.condition && achievement.condition.type === 'efficiency') {
-          const targetPercentage = achievement.condition.percentage || 90;
-          const targetPeriod = achievement.condition.period || 'week';
-          
-          // Проверяем достижение требуемого уровня эффективности
-          if (targetPeriod === 'week' && weeklyEfficiency >= targetPercentage) {
-            // Безопасное обновление прогресса
-            if (typeof achievement.updateProgress === 'function') {
-              const updated = achievement.updateProgress(targetPercentage);
-              if (updated && achievement.unlocked) {
-                achievementsUnlocked.push(achievement);
-              }
-            } else {
-              console.error('Объект achievement не имеет метода updateProgress:', achievement);
-            }
-          }
-        }
-      }
-      
-      if (achievementsUnlocked.length > 0) {
-        await this.saveAchievements(achievements);
-        
-        // Возвращаем информацию о разблокированных достижениях
-        let totalExperience = 0;
-        let totalCoins = 0;
-        
-        for (const achievement of achievementsUnlocked) {
-          totalExperience += achievement.rewards?.experience || 0;
-          totalCoins += achievement.rewards?.coins || 0;
-        }
-        
-        return {
-          achievementsUnlocked,
-          totalExperience,
-          totalCoins
-        };
-      }
-      
-      return null;
-    } catch (error) {
-      console.error('Ошибка при обновлении достижений по эффективности:', error);
       return null;
     }
   }

@@ -11,7 +11,6 @@ export default function SettingsScreen({ navigation }) {
     resetProfile: true,
     resetTasks: true,
     resetAchievements: true,
-    resetStatistics: true,
     resetCategories: true
   });
   const [isResetting, setIsResetting] = useState(false);
@@ -20,13 +19,6 @@ export default function SettingsScreen({ navigation }) {
   const { resetProgress, refreshData } = useAppContext();
 
   const menuItems = [
-    {
-      id: 'statistics',
-      title: 'Статистика',
-      icon: 'bar-chart-outline',
-      description: 'Просмотр статистики выполнения задач',
-      onPress: () => navigation.navigate('Statistics')
-    },
     {
       id: 'achievements',
       title: 'Достижения',
@@ -218,21 +210,6 @@ export default function SettingsScreen({ navigation }) {
           
           <TouchableOpacity 
             style={styles.optionItem} 
-            onPress={() => toggleOption('resetStatistics')}
-          >
-            <View style={[
-              styles.optionCheckbox, 
-              { backgroundColor: resetOptions.resetStatistics ? '#4E66F1' : 'transparent' }
-            ]}>
-              {resetOptions.resetStatistics && (
-                <Ionicons name="checkmark" size={18} color="#FFFFFF" />
-              )}
-            </View>
-            <Text style={styles.optionText}>Статистика</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={styles.optionItem} 
             onPress={() => toggleOption('resetCategories')}
           >
             <View style={[
@@ -263,7 +240,6 @@ export default function SettingsScreen({ navigation }) {
               !(resetOptions.resetProfile || 
                 resetOptions.resetTasks || 
                 resetOptions.resetAchievements || 
-                resetOptions.resetStatistics || 
                 resetOptions.resetCategories)}
           >
             <Text style={styles.resetButtonText}>
@@ -299,7 +275,7 @@ export default function SettingsScreen({ navigation }) {
             <Text style={styles.dangerButtonText}>Сбросить все данные</Text>
           </TouchableOpacity>
           <Text style={styles.dangerDescription}>
-            При сбросе данных будут удалены все ваши задачи, достижения, статистика и настройки. 
+            При сбросе данных будут удалены все ваши задачи, достижения и настройки. 
             Это действие необратимо.
           </Text>
         </View>
