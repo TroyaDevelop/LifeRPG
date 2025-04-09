@@ -170,8 +170,8 @@ const TaskCard = ({ task, onPress, onComplete, onDelete, onArchive }) => {
                 <Ionicons name="trash-outline" size={20} color="#FF3B30" />
               </TouchableOpacity>
 
-              {/* Кнопка архивирования для выполненных задач */}
-              {task.isCompleted && (
+              {/* Кнопка архивирования только для выполненных обычных задач */}
+              {task.isCompleted && task.type !== 'daily' && (
                 <TouchableOpacity
                   style={styles.actionButton}
                   onPress={() => onArchive(task.id)}

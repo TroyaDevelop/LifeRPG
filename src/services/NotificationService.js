@@ -6,43 +6,72 @@ import DeviceInfo from 'react-native-device-info';
 class NotificationService {
   // Инициализация уведомлений
   static init() {
+    // Настраиваем общие параметры уведомлений
     PushNotification.configure({
-      // (обязательно) Вызывается когда токен регистрации получен
+      // Вызывается когда токен регистрации получен
       onRegister: function(token) {
         console.log("TOKEN:", token);
       },
       
-      // (требуется) Вызывается когда получено уведомление
+      // Вызывается когда получено уведомление
       onNotification: function(notification) {
         console.log("NOTIFICATION:", notification);
+        
+        // Если пользователь нажал на уведомление
+        if (notification.userInteraction) {
+          console.log('Пользователь нажал на уведомление:', notification);
+          
+          // Здесь можно добавить навигацию к задаче по ID
+          // если notification.data && notification.data.taskId
+        }
         
         // Требуется для iOS
         notification.finish(PushNotificationIOS.FetchResult.NoData);
       },
       
-      // Должен ли уведомления показываться когда приложение на переднем плане
-      // default: true
+      // ANDROID ONLY: GCM или FCM Sender ID (product_number) (необязательно - не указывайте, если не используете FCM)
+      // senderID: 'YOUR_GCM_SENDER_ID',
+      
+      // Должны ли уведомления показываться когда приложение на переднем плане
+      foreground: true,
+      
+      // Отключает автоматический clear уведомлений, когда на них нажали
       popInitialNotification: true,
-      requestPermissions: true,
+      
+      // Запрашивать разрешения для iOS
+      requestPermissions: Platform.OS === 'ios',
+      
+      // Разрешения для iOS
+      permissions: {
+        alert: true,
+        badge: true,
+        sound: true,
+      },
     });
     
-    // Создание Android канала
+    // Создание канала для Android
     if (Platform.OS === 'android') {
+      // Удаляем старый канал перед созданием нового для обновления настроек
+      PushNotification.deleteChannel('default');
+      
       PushNotification.createChannel(
         {
-          channelId: 'default', // (required)
-          channelName: 'default', // (required)
-          channelDescription: 'Основной канал для уведомлений', // (optional)
-          importance: 4, // (optional) default: 4. Важность: Int значение от 0 до 4
-          vibrate: true, // (optional) Значение по умолчанию: true. Создает вибрацию для уведомлений
-          vibration: 300, // vibration length in milliseconds, ignored if vibrate=false
-          playSound: true, // (optional) Значение по умолчанию: true
-          soundName: 'default', // (optional) Sound to play when the notification is shown
-          lightColor: '#4E64EE', // (optional) Значение по умолчанию: 'white'
+          channelId: 'default',
+          channelName: 'Основной канал',
+          channelDescription: 'Основной канал для уведомлений Taskovia', 
+          importance: 4, // Высокая важность
+          vibrate: true,
+          vibration: 300,
+          playSound: true,
+          soundName: 'default',
+          lightColor: '#4E64EE',
+          enableLights: true,
         },
         (created) => console.log(`Канал уведомлений создан: '${created}'`)
       );
     }
+    
+    console.log('NotificationService: Инициализация завершена');
   }
 
   // Регистрация устройства для уведомлений

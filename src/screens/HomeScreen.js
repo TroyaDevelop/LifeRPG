@@ -399,12 +399,6 @@ const HomeScreen = ({ navigation }) => {
     const rightComponent = (
       <View style={{ flexDirection: 'row' }}>
         <TouchableOpacity 
-          onPress={() => navigation.navigate('ArchivedTasks')}
-          style={styles.headerButton}
-        >
-          <Ionicons name="archive-outline" size={24} color="#4E64EE" />
-        </TouchableOpacity>
-        <TouchableOpacity 
           onPress={() => navigation.navigate('NotificationSettings')}
           style={styles.headerButton}
         >
