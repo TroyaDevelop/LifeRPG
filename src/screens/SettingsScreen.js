@@ -34,6 +34,13 @@ export default function SettingsScreen({ navigation }) {
       onPress: () => navigation.navigate('Categories')
     },
     {
+      id: 'archivedTasks',
+      title: 'Архив задач',
+      icon: 'archive-outline',
+      description: 'Просмотр выполненных и архивированных задач',
+      onPress: () => navigation.navigate('ArchivedTasks')
+    },
+    {
       id: 'notifications',
       title: 'Уведомления',
       icon: 'notifications-outline',

@@ -1,4 +1,3 @@
-
 export class TaskModel {
   constructor(data = {}) {
     this.id = data.id || Date.now().toString();
@@ -10,6 +9,9 @@ export class TaskModel {
     
     // Явно устанавливаем false, если не передано true
     this.isCompleted = data.isCompleted === true;
+    
+    // Добавляем поле isArchived
+    this.isArchived = data.isArchived === true;
     
     this.completedAt = data.completedAt || null;
     
@@ -41,6 +43,7 @@ export class TaskModel {
       priority: this.priority,
       categoryId: this.categoryId, // Проверим обработку categoryId
       isCompleted: this.isCompleted,
+      isArchived: this.isArchived, // Добавляем флаг архива в сериализацию
       completedAt: this.completedAt,
       isDaily: this.isDaily, // Добавляем флаг ежедневной задачи
       type: this.isDaily ? 'daily' : 'regular',

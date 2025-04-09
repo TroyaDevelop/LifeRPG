@@ -20,7 +20,7 @@ export class UserProfile {
     this.createdAt = data.createdAt || new Date().toISOString();
     this.updatedAt = data.updatedAt || new Date().toISOString();
     this.settings = data.settings || {
-      autoDeleteCompletedTasks: false,
+      autoArchiveCompletedTasks: true,
       reminderEnabled: true,
     };
   }

@@ -32,6 +32,7 @@ export const AppProvider = ({ children }) => {
   
   // Состояние данных
   const [tasks, setTasks] = useState([]);
+  const [archivedTasks, setArchivedTasks] = useState([]); // Добавляем состояние для архивированных задач
   const [profile, setProfile] = useState(null);
   const [avatar, setAvatar] = useState(null);
   const [categories, setCategories] = useState([]);
@@ -82,11 +83,15 @@ export const AppProvider = ({ children }) => {
       const categories = await CategoryService.getAllCategories();
       setCategories(categories || []);
       
-      // 4. Загружаем задачи
-      const tasks = await TaskService.getAllTasks();
-      setTasks(tasks || []);
+      // 4. Загружаем активные задачи
+      const activeTasks = await TaskService.getAllActiveNonArchivedTasks();
+      setTasks(activeTasks || []);
       
-      // 5. Загружаем достижения
+      // 5. Загружаем архивированные задачи
+      const archivedTasksList = await TaskService.getArchivedTasks();
+      setArchivedTasks(archivedTasksList || []);
+      
+      // 6. Загружаем достижения
       const achievements = await AchievementService.getAllAchievements();
       setAchievements(achievements || []);
       
@@ -385,9 +390,49 @@ export const AppProvider = ({ children }) => {
     }
   };
 
+  // Функции для работы с архивом задач
+  const archiveTask = async (taskId) => {
+    try {
+      const task = await TaskService.archiveTask(taskId);
+      
+      if (task) {
+        // Удаляем задачу из активных и добавляем в архивированные
+        setTasks(prevTasks => prevTasks.filter(t => t.id !== taskId));
+        setArchivedTasks(prevArchivedTasks => [...prevArchivedTasks, task]);
+        return task;
+      } else {
+        console.error('Не удалось архивировать задачу:', taskId);
+        return null;
+      }
+    } catch (error) {
+      console.error('Ошибка при архивировании задачи:', error);
+      throw error;
+    }
+  };
+
+  const restoreTask = async (taskId) => {
+    try {
+      const task = await TaskService.restoreTask(taskId);
+      
+      if (task) {
+        // Удаляем задачу из архива и добавляем в активные
+        setArchivedTasks(prevArchivedTasks => prevArchivedTasks.filter(t => t.id !== taskId));
+        setTasks(prevTasks => [...prevTasks, task]);
+        return task;
+      } else {
+        console.error('Не удалось восстановить задачу из архива:', taskId);
+        return null;
+      }
+    } catch (error) {
+      console.error('Ошибка при восстановлении задачи из архива:', error);
+      throw error;
+    }
+  };
+
   const value = {
     isLoading,
     tasks,
+    archivedTasks,
     profile,
     avatar,
     categories,
@@ -409,6 +454,8 @@ export const AppProvider = ({ children }) => {
     resetProgress,
     updateHealth,
     updateEnergy,
+    archiveTask,
+    restoreTask,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

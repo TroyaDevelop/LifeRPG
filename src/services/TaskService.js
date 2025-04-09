@@ -348,24 +348,24 @@ export class TaskService {
       const energySpent = hasEnoughEnergy ? energyCost : Math.min(energyCost, profile.energy);
       task.energySpent = energySpent; // Сохраняем фактически потраченную энергию
       
-      // Проверяем настройку автоудаления
-      const autoDeleteEnabled = profile.settings?.autoDeleteCompletedTasks;
-      let taskRemoved = false;
+      // Проверяем настройку автоархивирования
+      const autoArchiveEnabled = profile.settings?.autoArchiveCompletedTasks;
+      let taskArchived = false;
       
-      // Если это обычная задача (не ежедневная) и автоудаление включено
-      if (autoDeleteEnabled && task.type === 'regular') {
-        // Удаляем задачу
-        await this.deleteTask(taskId);
-        taskRemoved = true;
+      // Если это обычная задача (не ежедневная) и автоархивирование включено
+      if (autoArchiveEnabled && task.type === 'regular') {
+        // Перемещаем задачу в архив
+        task.isArchived = true;
+        taskArchived = true;
         
         // Удаляем напоминание, если есть
         if (task.notificationId) {
           await NotificationService.cancelTaskReminder(task.notificationId);
         }
-      } else {
-        // Иначе просто обновляем задачу
-        await this.updateTask(taskId, task);
       }
+      
+      // Обновляем задачу
+      await this.updateTask(taskId, task);
       
       // Расходуем энергию
       if (energySpent > 0) {
@@ -396,7 +396,7 @@ export class TaskService {
       return {
         success: true,
         task,
-        taskRemoved,  // Добавляем флаг удаления задачи
+        taskArchived,  // Изменяем на флаг архивирования
         experienceGained: actualExperienceGain,
         energySpent,
         insufficientEnergy: !hasEnoughEnergy,
@@ -455,6 +455,60 @@ export class TaskService {
       case 'medium': return 20;
       case 'low': return 10;
       default: return 20;
+    }
+  }
+
+  // Получение всех неархивированных активных задач
+  static async getAllActiveNonArchivedTasks() {
+    try {
+      const tasks = await this.getAllTasks();
+      return tasks.filter(task => !task.isArchived);
+    } catch (error) {
+      console.error('Ошибка при получении неархивированных задач:', error);
+      return [];
+    }
+  }
+
+  // Получение всех архивированных задач
+  static async getArchivedTasks() {
+    try {
+      const tasks = await this.getAllTasks();
+      return tasks.filter(task => task.isArchived);
+    } catch (error) {
+      console.error('Ошибка при получении архивированных задач:', error);
+      return [];
+    }
+  }
+
+  // Архивирование задачи
+  static async archiveTask(taskId) {
+    try {
+      const task = await this.getTaskById(taskId);
+      if (!task) return null;
+      
+      task.isArchived = true;
+      task.updatedAt = new Date().toISOString();
+      
+      return await this.updateTask(taskId, task);
+    } catch (error) {
+      console.error('Ошибка при архивировании задачи:', error);
+      return null;
+    }
+  }
+
+  // Восстановление задачи из архива
+  static async restoreTask(taskId) {
+    try {
+      const task = await this.getTaskById(taskId);
+      if (!task) return null;
+      
+      task.isArchived = false;
+      task.updatedAt = new Date().toISOString();
+      
+      return await this.updateTask(taskId, task);
+    } catch (error) {
+      console.error('Ошибка при восстановлении задачи из архива:', error);
+      return null;
     }
   }
 }

@@ -8,7 +8,7 @@ const AppSettingsScreen = ({ navigation }) => {
   const { profile, updateProfile, refreshData, isLoading } = useAppContext();
   
   const [settings, setSettings] = useState({
-    autoDeleteCompletedTasks: true,
+    autoArchiveCompletedTasks: true,
     // Другие настройки...
   });
   
@@ -16,7 +16,7 @@ const AppSettingsScreen = ({ navigation }) => {
   useEffect(() => {
     if (profile && profile.settings) {
       setSettings({
-        autoDeleteCompletedTasks: profile.settings.autoDeleteCompletedTasks ?? true,
+        autoArchiveCompletedTasks: profile.settings.autoArchiveCompletedTasks ?? true,
         // Загружаем другие настройки...
       });
     }
@@ -74,9 +74,9 @@ const AppSettingsScreen = ({ navigation }) => {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Задачи</Text>
           {renderSettingItem(
-            "Автоудаление выполненных задач", 
-            "autoDeleteCompletedTasks",
-            "Автоматическое удаление обычных задач после их выполнения"
+            "Автоархивирование выполненных задач", 
+            "autoArchiveCompletedTasks",
+            "Автоматическое перемещение выполненных задач в архив"
           )}
         </View>
         

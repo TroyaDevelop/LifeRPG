@@ -32,6 +32,7 @@ const HomeScreen = ({ navigation }) => {
     deleteTask, 
     refreshData, 
     isLoading,
+    archiveTask,
     // Добавляем следующие переменные:
     health,
     maxHealth,
@@ -149,6 +150,29 @@ const HomeScreen = ({ navigation }) => {
             } catch (error) {
               console.error('Ошибка при удалении задачи:', error);
               Alert.alert('Ошибка', 'Не удалось удалить задачу.');
+            }
+          }
+        }
+      ]
+    );
+  };
+
+  // Обработчик архивирования задачи
+  const handleArchiveTask = (taskId) => {
+    Alert.alert(
+      'Архивирование задачи',
+      'Переместить эту задачу в архив?',
+      [
+        { text: 'Отмена', style: 'cancel' },
+        { 
+          text: 'Архивировать', 
+          onPress: async () => {
+            try {
+              await archiveTask(taskId);
+              refreshData();
+            } catch (error) {
+              console.error('Ошибка при архивировании задачи:', error);
+              Alert.alert('Ошибка', 'Не удалось архивировать задачу.');
             }
           }
         }
@@ -375,6 +399,12 @@ const HomeScreen = ({ navigation }) => {
     const rightComponent = (
       <View style={{ flexDirection: 'row' }}>
         <TouchableOpacity 
+          onPress={() => navigation.navigate('ArchivedTasks')}
+          style={styles.headerButton}
+        >
+          <Ionicons name="archive-outline" size={24} color="#4E64EE" />
+        </TouchableOpacity>
+        <TouchableOpacity 
           onPress={() => navigation.navigate('NotificationSettings')}
           style={styles.headerButton}
         >
@@ -400,6 +430,7 @@ const HomeScreen = ({ navigation }) => {
         title="Мои задачи" 
         hasSettings={true}
         onSettingsPress={() => navigation.navigate('Settings')}
+        rightElement={rightComponent}
       />
     );
   };
@@ -449,6 +480,7 @@ const HomeScreen = ({ navigation }) => {
             onPress={() => navigation.navigate('EditTask', { taskId: item.id })}
             onComplete={handleCompleteTask}
             onDelete={handleDeleteTask}
+            onArchive={handleArchiveTask}
           />
         )}
         keyExtractor={item => item.id}

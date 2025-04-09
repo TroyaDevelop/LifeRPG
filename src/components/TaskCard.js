@@ -4,7 +4,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useAppContext } from '../context/AppContext';
 import { CategoryService, TaskService } from '../services';
 
-const TaskCard = ({ task, onPress, onComplete, onDelete }) => {
+const TaskCard = ({ task, onPress, onComplete, onDelete, onArchive }) => {
   const [categoryInfo, setCategoryInfo] = useState(null);
   const { energy } = useAppContext(); // Получаем энергию из контекста
   
@@ -169,6 +169,16 @@ const TaskCard = ({ task, onPress, onComplete, onDelete }) => {
               >
                 <Ionicons name="trash-outline" size={20} color="#FF3B30" />
               </TouchableOpacity>
+
+              {/* Кнопка архивирования для выполненных задач */}
+              {task.isCompleted && (
+                <TouchableOpacity
+                  style={styles.actionButton}
+                  onPress={() => onArchive(task.id)}
+                >
+                  <Ionicons name="archive-outline" size={20} color="#4E64EE" />
+                </TouchableOpacity>
+              )}
             </View>
           </View>
         </View>
