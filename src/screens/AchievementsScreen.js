@@ -6,13 +6,15 @@ import {
   FlatList,
   TouchableOpacity,
   ScrollView,
-  ActivityIndicator
+  ActivityIndicator,
+  Image
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useAppContext } from '../context/AppContext'; // Импортируем контекст
 import Header from '../components/Header';
 import Modal from '../components/Modal';
+import { CurrencyBar, PremiumCurrencyBar } from '../components/Currency'; // Импортируем компоненты валют
 
 export function AchievementsScreen({ navigation }) {
   const [showModal, setShowModal] = useState(false);
@@ -281,32 +283,52 @@ export function AchievementsScreen({ navigation }) {
                 <View style={styles.rewardItems}>
                   {selectedAchievement.rewards.experience > 0 && (
                     <View style={styles.rewardItem}>
-                      <Ionicons name="star" size={20} color="#FF9500" />
-                      <Text style={styles.rewardText}>
-                        {selectedAchievement.rewards.experience} опыта
-                      </Text>
+                      <View style={styles.rewardIconWrapper}>
+                        <Image 
+                          source={require('../../assets/sprites/currency/exp_icon.png')} 
+                          style={styles.experienceSprite} 
+                        />
+                      </View>
+                      <View style={styles.rewardTextContainer}>
+                        <Text style={styles.rewardAmount}>
+                          {selectedAchievement.rewards.experience}
+                        </Text>
+                        <Text style={styles.rewardText}> опыта</Text>
+                      </View>
                     </View>
                   )}
                   {selectedAchievement.rewards.actus > 0 && (
                     <View style={styles.rewardItem}>
-                      <Ionicons name="cash" size={20} color="#4CD964" />
-                      <Text style={styles.rewardText}>
-                        {selectedAchievement.rewards.actus} Актусов
-                      </Text>
+                      <View style={styles.rewardIconWrapper}>
+                        <CurrencyBar compact={true} />
+                      </View>
+                      <View style={styles.rewardTextContainer}>
+                        <Text style={styles.rewardAmount}>
+                          {selectedAchievement.rewards.actus}
+                        </Text>
+                        <Text style={styles.rewardText}> Актусов</Text>
+                      </View>
                     </View>
                   )}
                   {selectedAchievement.rewards.taskCoins > 0 && (
                     <View style={styles.rewardItem}>
-                      <Ionicons name="diamond" size={20} color="#FF9500" />
-                      <Text style={styles.rewardText}>
-                        {selectedAchievement.rewards.taskCoins} TaskCoin
-                      </Text>
+                      <View style={styles.rewardIconWrapper}>
+                        <PremiumCurrencyBar compact={true} />
+                      </View>
+                      <View style={styles.rewardTextContainer}>
+                        <Text style={styles.rewardAmount}>
+                          {selectedAchievement.rewards.taskCoins}
+                        </Text>
+                        <Text style={styles.rewardText}> TaskCoin</Text>
+                      </View>
                     </View>
                   )}
                   {selectedAchievement.rewards.items && selectedAchievement.rewards.items.length > 0 && (
                     selectedAchievement.rewards.items.map((item, index) => (
                       <View key={index} style={styles.rewardItem}>
-                        <Ionicons name="gift" size={20} color="#AF52DE" />
+                        <View style={styles.rewardIconWrapper}>
+                          <Ionicons name="gift" size={20} color="#AF52DE" />
+                        </View>
                         <Text style={styles.rewardText}>
                           {item.name}
                         </Text>
@@ -583,10 +605,33 @@ const styles = StyleSheet.create({
   rewardItem: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginVertical: 4,
+  },
+  rewardIconWrapper: {
+    width: 28,
+    height: 28,
+    alignItems: 'center', 
+    justifyContent: 'center',
+    marginRight: 8,
+  },
+  rewardTextContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  rewardAmount: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333333',
   },
   rewardText: {
-    marginLeft: 8,
     fontSize: 14,
     color: '#666666',
+    marginLeft: 4,
+    paddingLeft: 4,
+  },
+  experienceSprite: {
+    width: 20,
+    height: 20,
+    resizeMode: 'contain',
   },
 });

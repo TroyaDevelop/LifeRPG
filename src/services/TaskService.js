@@ -256,10 +256,10 @@ export class TaskService {
         await profileService.addExperience(-experienceReturn);
       }
       
-      // Забираем Актусы, если они были начислены
+      // Забираем Актусы, если они были начислены - ИСПРАВЛЕНО
       if (actusReturn > 0) {
         await profileService.updateProfile({
-          actus: Math.max(0, profile.actus - actusReturn)
+          actus: -actusReturn // Теперь передаем только величину вычета со знаком минус
         });
       }
       
@@ -391,10 +391,10 @@ export class TaskService {
         levelUp = await profileService.addExperience(actualExperienceGain);
       }
       
-      // Начисляем валюту (Актусы) за выполнение задачи
+      // Начисляем валюту (Актусы) за выполнение задачи - ИСПРАВЛЕНО
       if (hasEnoughEnergy) {
         await profileService.updateProfile({
-          actus: Math.max(0, profile.actus + actusReward)
+          actus: actusReward // Теперь передаем только величину прибавки
         });
       }
       

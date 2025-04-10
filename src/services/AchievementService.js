@@ -191,16 +191,12 @@ export class AchievementService {
         
         // Начисляем валюту (Актусы)
         if (totalActus > 0) {
-          await profileService.updateProfile({
-            actus: (profile.actus || 0) + totalActus
-          });
+          await profileService.updateProfile({ actus: totalActus });
         }
         
         // Начисляем премиум-валюту (TaskCoin)
         if (totalTaskCoins > 0) {
-          await profileService.updateProfile({
-            taskCoins: (profile.taskCoins || 0) + totalTaskCoins
-          });
+          await profileService.updateProfile({ taskCoins: totalTaskCoins });
         }
         
         return {

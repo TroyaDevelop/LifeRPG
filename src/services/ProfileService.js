@@ -86,6 +86,9 @@ export class ProfileService {
     try {
       const profile = await this.getProfile();
       
+      // Особые поля, которые нужно суммировать, а не заменять
+      const additiveFields = ['actus', 'taskCoins'];
+      
       // Обновляем поля профиля
       Object.keys(updateData).forEach(key => {
         if (key === 'settings' && updateData.settings) {
@@ -94,6 +97,10 @@ export class ProfileService {
             ...profile.settings,
             ...updateData.settings
           };
+        } else if (additiveFields.includes(key) && typeof updateData[key] === 'number') {
+          // Для числовых полей из additiveFields выполняем суммирование
+          const currentValue = profile[key] || 0;
+          profile[key] = currentValue + updateData[key];
         } else if (profile.hasOwnProperty(key)) {
           profile[key] = updateData[key];
         }
