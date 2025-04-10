@@ -30,6 +30,39 @@ export class AchievementService {
           console.warn(`Сгенерирован ID для достижения без идентификатора: ${data.id}`);
         }
         
+        // Миграция старой структуры наград на новую
+        if (data.rewards) {
+          // Если в наградах есть coins, но нет actus, переименовываем поле
+          if (data.rewards.coins !== undefined && data.rewards.actus === undefined) {
+            data.rewards.actus = data.rewards.coins;
+          }
+          
+          // Убедимся что taskCoins существует
+          if (data.rewards.taskCoins === undefined) {
+            // Добавляем TaskCoin на основе редкости достижения и наличия обычной валюты
+            if (data.rewards.actus > 0) {
+              switch(data.rarity) {
+                case 'legendary':
+                  data.rewards.taskCoins = Math.ceil(data.rewards.actus / 250);
+                  break;
+                case 'epic':
+                  data.rewards.taskCoins = Math.ceil(data.rewards.actus / 500);
+                  break;
+                case 'rare':
+                  data.rewards.taskCoins = Math.ceil(data.rewards.actus / 750);
+                  break;
+                case 'uncommon':
+                  data.rewards.taskCoins = Math.ceil(data.rewards.actus / 1000);
+                  break;
+                case 'common':
+                default:
+                  data.rewards.taskCoins = data.rewards.actus > 500 ? 1 : 0;
+                  break;
+              }
+            }
+          }
+        }
+        
         try {
           return new AchievementModel(data);
         } catch (err) {
@@ -170,32 +203,45 @@ export class AchievementService {
       if (achievementsUnlocked.length > 0) {
         console.log('Разблокировано достижений:', achievementsUnlocked.length);
         let totalExperience = 0;
-        let totalCoins = 0;
+        let totalActus = 0;
+        let totalTaskCoins = 0;
         
         for (const achievement of achievementsUnlocked) {
           totalExperience += achievement.rewards?.experience || 0;
-          totalCoins += achievement.rewards?.coins || 0;
+          totalActus += achievement.rewards?.actus || 0;
+          totalTaskCoins += achievement.rewards?.taskCoins || 0;
         }
         
         const profileService = ProfileService.getInstance();
+        let levelUpData = null;
         
+        // Начисляем награды
         if (totalExperience > 0) {
           // Добавляем опыт от достижений
           const result = await profileService.addExperience(totalExperience);
-          
-          return {
-            achievementsUnlocked,
-            totalExperience,
-            totalCoins,
-            levelUp: result?.didLevelUp || false,
-            newLevel: result?.newLevel || profile.level
-          };
+          levelUpData = result?.didLevelUp ? { didLevelUp: result.didLevelUp, newLevel: result.newLevel } : null;
+        }
+        
+        // Начисляем валюту (Актусы)
+        if (totalActus > 0) {
+          await profileService.updateProfile({
+            actus: (profile.actus || 0) + totalActus
+          });
+        }
+        
+        // Начисляем премиум-валюту (TaskCoin)
+        if (totalTaskCoins > 0) {
+          await profileService.updateProfile({
+            taskCoins: (profile.taskCoins || 0) + totalTaskCoins
+          });
         }
         
         return {
           achievementsUnlocked,
           totalExperience,
-          totalCoins
+          totalActus,
+          totalTaskCoins,
+          levelUp: levelUpData
         };
       }
       
