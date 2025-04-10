@@ -35,6 +35,15 @@ export const NotificationProvider = ({ children }) => {
     showNotification(`Выполнение отменено. -${experience} опыта`, 'warning');
   };
 
+  // Добавляем уведомления для валюты
+  const showActusGained = (actus) => {
+    showNotification(`Получено ${actus} Актусов`, 'success');
+  };
+
+  const showActusLost = (actus) => {
+    showNotification(`Потеряно ${actus} Актусов`, 'warning');
+  };
+
   const showError = (message) => {
     showNotification(message || 'Произошла ошибка', 'error');
   };
@@ -56,6 +65,8 @@ export const NotificationProvider = ({ children }) => {
     showNotification,
     showExperienceGained,
     showExperienceLost,
+    showActusGained,
+    showActusLost,
     showError,
     showSuccess,
     showInfo,

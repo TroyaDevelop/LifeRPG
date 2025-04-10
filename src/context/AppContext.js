@@ -19,7 +19,7 @@ export const useApp = () => {
 // Провайдер контекста
 export const AppProvider = ({ children }) => {
   // Используем хук уведомлений внутри провайдера
-  const { showExperienceGained, showExperienceLost, showError } = useNotification();
+  const { showExperienceGained, showExperienceLost, showActusGained, showActusLost, showError } = useNotification();
   
   // Добавляем ref для отслеживания загрузки
   const isLoadingRef = useRef(false);
@@ -43,6 +43,8 @@ export const AppProvider = ({ children }) => {
   const [maxHealth, setMaxHealth] = useState(100);
   const [energy, setEnergy] = useState(100);
   const [maxEnergy, setMaxEnergy] = useState(100);
+  const [actus, setActus] = useState(0); // Добавляем состояние для обычной валюты
+  const [taskCoins, setTaskCoins] = useState(0); // Добавляем состояние для премиум валюты
   
   // Флаг обновления данных
   const [refreshTrigger, setRefreshTrigger] = useState(0);
@@ -74,6 +76,10 @@ export const AppProvider = ({ children }) => {
       setMaxHealth(profile.maxHealth);
       setEnergy(profile.energy);
       setMaxEnergy(profile.maxEnergy);
+      
+      // Устанавливаем значения валюты
+      setActus(profile.actus || 0);
+      setTaskCoins(profile.taskCoins || 0);
       
       // 2. Загружаем аватар
       const avatar = await AvatarService.getAvatar();
@@ -203,6 +209,11 @@ export const AppProvider = ({ children }) => {
           showExperienceGained(result.experienceGained);
         }
         
+        // Показываем уведомление о полученных Актусах
+        if (result.success && result.actusGained) {
+          showActusGained(result.actusGained);
+        }
+        
         // Обновляем достижения после выполнения задачи
         const achievementsResult = await AchievementService.updateAchievementsOnTaskComplete(result.task, profile);
         if (achievementsResult) {
@@ -215,6 +226,11 @@ export const AppProvider = ({ children }) => {
         // Показываем уведомление с информацией о потерянном опыте
         if (result.success && result.experienceReturned) {
           showExperienceLost(result.experienceReturned);
+        }
+        
+        // Показываем уведомление о потерянных Актусах
+        if (result.success && result.actusReturned) {
+          showActusLost(result.actusReturned);
         }
       }
       
@@ -390,6 +406,35 @@ export const AppProvider = ({ children }) => {
     }
   };
 
+  // Функции для работы с валютой
+  const updateActus = async (delta) => {
+    try {
+      const updatedProfile = await profileService.updateProfile({
+        actus: Math.max(0, (profile.actus || 0) + delta)
+      });
+      setActus(updatedProfile.actus);
+      setProfile(updatedProfile);
+      return updatedProfile;
+    } catch (error) {
+      console.error('Ошибка при обновлении Актусов:', error);
+      throw error;
+    }
+  };
+  
+  const updateTaskCoins = async (delta) => {
+    try {
+      const updatedProfile = await profileService.updateProfile({
+        taskCoins: Math.max(0, (profile.taskCoins || 0) + delta)
+      });
+      setTaskCoins(updatedProfile.taskCoins);
+      setProfile(updatedProfile);
+      return updatedProfile;
+    } catch (error) {
+      console.error('Ошибка при обновлении TaskCoin:', error);
+      throw error;
+    }
+  };
+
   // Функции для работы с архивом задач
   const archiveTask = async (taskId) => {
     try {
@@ -441,6 +486,8 @@ export const AppProvider = ({ children }) => {
     maxHealth,
     energy,
     maxEnergy,
+    actus,
+    taskCoins,
     refreshData,
     addTask,
     updateTask,
@@ -454,6 +501,8 @@ export const AppProvider = ({ children }) => {
     resetProgress,
     updateHealth,
     updateEnergy,
+    updateActus,
+    updateTaskCoins,
     archiveTask,
     restoreTask,
   };

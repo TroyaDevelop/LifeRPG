@@ -9,7 +9,7 @@ import Header from '../components/Header';
 import LevelProgressBar from '../components/LevelProgressBar';
 import LoadingIndicator from '../components/LoadingIndicator';
 // Добавьте импорт компонентов
-import { Button, HealthBar, EnergyBar } from '../components';
+import { Button, HealthBar, EnergyBar, CurrencyBar, PremiumCurrencyBar } from '../components';
 // Добавьте импорт useAppContext
 import { useAppContext } from '../context/AppContext';
 
@@ -20,7 +20,7 @@ const ProfileScreen = ({ navigation }) => {
   const [avatarSize, setAvatarSize] = useState('large');
   
   // Добавьте извлечение параметров из контекста
-  const { health, maxHealth, energy, maxEnergy } = useAppContext();
+  const { health, maxHealth, energy, maxEnergy, actus, taskCoins } = useAppContext();
 
   // Функция для переключения размера аватара
   const toggleAvatarSize = () => {
@@ -133,6 +133,14 @@ const ProfileScreen = ({ navigation }) => {
                 maxEnergy={maxEnergy} 
                 style={styles.resourceBar} 
               />
+              <CurrencyBar 
+                amount={actus} 
+                style={styles.resourceBar} 
+              />
+              <PremiumCurrencyBar 
+                amount={taskCoins} 
+                style={styles.resourceBar} 
+              />
             </View>
             
             {/* Блок статистики удален */}
@@ -175,6 +183,33 @@ const ProfileScreen = ({ navigation }) => {
               </Text>
             </View>
           </View>
+          
+          <View style={styles.resourceInfo}>
+            <View style={styles.resourceIconContainer}>
+              <Ionicons name="cash-outline" size={24} color="#4CD964" />
+            </View>
+            <View style={styles.resourceTextContainer}>
+              <Text style={styles.resourceTitle}>Актусы</Text>
+              <Text style={styles.resourceDescription}>
+                Основная игровая валюта. Получается за выполнение задач.
+                Используется для покупки снаряжения и улучшений.
+              </Text>
+            </View>
+          </View>
+          
+          <View style={styles.resourceInfo}>
+            <View style={styles.resourceIconContainer}>
+              <Ionicons name="diamond-outline" size={24} color="#FF9500" />
+            </View>
+            <View style={styles.resourceTextContainer}>
+              <Text style={styles.resourceTitle}>TaskCoin</Text>
+              <Text style={styles.resourceDescription}>
+                Премиум-валюта. Получается за выполнение особых достижений
+                и при повышении уровня. Используется для покупки редких предметов.
+              </Text>
+            </View>
+          </View>
+          
         </View>
         
       </ScrollView>

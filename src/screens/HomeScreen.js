@@ -15,7 +15,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useAppContext } from '../context/AppContext'; // Импортируем хук контекста
 import LevelProgressBar from '../components/LevelProgressBar';
 import LevelUpModal from '../components/LevelUpModal';
-import { TaskCard, Modal, Button, HealthBar, EnergyBar } from '../components/index'; // Добавляем импорт HealthBar и EnergyBar
+import { TaskCard, Modal, Button, HealthBar, EnergyBar, CurrencyBar, PremiumCurrencyBar } from '../components/index'; // Добавляем импорт компонентов валюты
 import Header from '../components/Header';
 import Avatar from '../components/Avatar';
 
@@ -37,7 +37,9 @@ const HomeScreen = ({ navigation }) => {
     health,
     maxHealth,
     energy,
-    maxEnergy
+    maxEnergy,
+    actus,
+    taskCoins
   } = useAppContext();
   
   // Состояние для UI
@@ -229,6 +231,15 @@ const HomeScreen = ({ navigation }) => {
               <EnergyBar 
                 energy={energy} 
                 maxEnergy={maxEnergy} 
+                style={styles.resourceBar} 
+              />
+              {/* Добавляем компоненты для отображения валюты */}
+              <CurrencyBar 
+                amount={actus} 
+                style={styles.resourceBar} 
+              />
+              <PremiumCurrencyBar 
+                amount={taskCoins} 
                 style={styles.resourceBar} 
               />
             </>

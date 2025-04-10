@@ -12,6 +12,10 @@ export class UserProfile {
     this.energy = data.energy !== undefined ? data.energy : 100;
     this.maxEnergy = data.maxEnergy || 100;
     
+    // Добавляем валюту
+    this.actus = data.actus || 0;           // Обычная валюта (Актусы)
+    this.taskCoins = data.taskCoins || 0;   // Премиум валюта (TaskCoin)
+    
     this.tasksCompleted = data.tasksCompleted || 0;
     this.totalExperienceGained = data.totalExperienceGained || 0;
     this.streakDays = data.streakDays || 0;
@@ -124,6 +128,30 @@ export class UserProfile {
     return (level * (level + 1) * 50); // Это даст нам нарастающее значение
   }
   
+  // Метод для добавления обычной валюты (Актусы)
+  addActus(amount) {
+    this.actus = Math.max(0, this.actus + amount);
+    this.updatedAt = new Date().toISOString();
+    return this.actus;
+  }
+
+  // Метод для добавления премиум-валюты (TaskCoin)
+  addTaskCoins(amount) {
+    this.taskCoins = Math.max(0, this.taskCoins + amount);
+    this.updatedAt = new Date().toISOString();
+    return this.taskCoins;
+  }
+
+  // Метод для проверки возможности траты валюты
+  canSpendActus(amount) {
+    return this.actus >= amount;
+  }
+
+  // Метод для проверки возможности траты премиум-валюты
+  canSpendTaskCoins(amount) {
+    return this.taskCoins >= amount;
+  }
+
   getLevelProgress() {
     // Получаем опыт для начала текущего уровня
     const currentLevelExp = UserProfile.getExperienceForNextLevel(this.level - 1) || 0;
@@ -159,6 +187,8 @@ export class UserProfile {
       maxHealth: this.maxHealth,
       energy: this.energy,
       maxEnergy: this.maxEnergy,
+      actus: this.actus,
+      taskCoins: this.taskCoins,
       tasksCompleted: this.tasksCompleted,
       totalExperienceGained: this.totalExperienceGained,
       streakDays: this.streakDays,

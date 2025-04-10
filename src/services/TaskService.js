@@ -228,12 +228,16 @@ export class TaskService {
       }
 
       const profileService = new ProfileService();
+      const profile = await profileService.getProfile();
       
       // Используем сохраненное значение фактически потраченной энергии
       const energyReturn = task.energySpent || 0;
       
       // Возвращаем опыт, только если он был начислен
       const experienceReturn = !task.noExperienceGained ? this.calculateExperience(task) : 0;
+      
+      // Рассчитываем возврат Актусов, только если опыт был начислен (т.е. было достаточно энергии)
+      const actusReturn = !task.noExperienceGained ? this.calculateActusReward(task) : 0;
       
       // Снимаем метку выполнения и очищаем связанные данные
       task.isCompleted = false;
@@ -252,11 +256,19 @@ export class TaskService {
         await profileService.addExperience(-experienceReturn);
       }
       
+      // Забираем Актусы, если они были начислены
+      if (actusReturn > 0) {
+        await profileService.updateProfile({
+          actus: Math.max(0, profile.actus - actusReturn)
+        });
+      }
+      
       return {
         success: true,
         task,
         experienceReturned: experienceReturn,
-        energyReturned: energyReturn
+        energyReturned: energyReturn,
+        actusReturned: actusReturn
       };
     } catch (error) {
       console.error('Ошибка при отмене выполнения задачи:', error);
@@ -332,6 +344,7 @@ export class TaskService {
       // Вычисляем затраты энергии и потенциальный опыт
       const energyCost = TaskService.calculateEnergyCost(task);
       const experienceGain = TaskService.calculateExperience(task);
+      const actusReward = TaskService.calculateActusReward(task); // Вычисляем награду в Актусах
       
       // Проверяем, достаточно ли энергии
       const hasEnoughEnergy = profile.energy >= energyCost;
@@ -378,6 +391,13 @@ export class TaskService {
         levelUp = await profileService.addExperience(actualExperienceGain);
       }
       
+      // Начисляем валюту (Актусы) за выполнение задачи
+      if (hasEnoughEnergy) {
+        await profileService.updateProfile({
+          actus: Math.max(0, profile.actus + actusReward)
+        });
+      }
+      
       // Обновляем счетчики в профиле
       await profileService.updateStatsOnTaskComplete();
       
@@ -398,6 +418,7 @@ export class TaskService {
         task,
         taskArchived,  // Изменяем на флаг архивирования
         experienceGained: actualExperienceGain,
+        actusGained: hasEnoughEnergy ? actusReward : 0,
         energySpent,
         insufficientEnergy: !hasEnoughEnergy,
         levelUp
@@ -455,6 +476,16 @@ export class TaskService {
       case 'medium': return 20;
       case 'low': return 10;
       default: return 20;
+    }
+  }
+  
+  // Расчет Актусов за выполнение задачи
+  static calculateActusReward(task) {
+    switch (task.priority) {
+      case 'high': return 15;
+      case 'medium': return 10;
+      case 'low': return 5;
+      default: return 10;
     }
   }
 
