@@ -108,13 +108,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     marginLeft: 4
   },
-  // Специфичные стили для разных типов валют
-  actusContainer: {
-    backgroundColor: '#F0F4FF'
-  },
-  taskCoinContainer: {
-    backgroundColor: '#FFF5E6'
-  },
+  
   // Стили для компонента CurrencyRow
   currencyRow: {
     flexDirection: 'row',

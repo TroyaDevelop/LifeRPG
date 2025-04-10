@@ -13,7 +13,6 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useAppContext } from '../context/AppContext'; // Импортируем контекст
 import Header from '../components/Header';
 import Modal from '../components/Modal';
-import { CurrencyBar, PremiumCurrencyBar } from '../components/Currency'; // Импортируем компоненты валют
 
 export function AchievementsScreen({ navigation }) {
   const [showModal, setShowModal] = useState(false);
@@ -290,14 +289,18 @@ export function AchievementsScreen({ navigation }) {
                   )}
                   {selectedAchievement.rewards.actus > 0 && (
                     <View style={styles.rewardItem}>
-                      <CurrencyBar amount={selectedAchievement.rewards.actus} compact={true} />
-                      <Text style={styles.rewardText}>Актусов</Text>
+                      <Ionicons name="cash" size={20} color="#4CD964" />
+                      <Text style={styles.rewardText}>
+                        {selectedAchievement.rewards.actus} Актусов
+                      </Text>
                     </View>
                   )}
                   {selectedAchievement.rewards.taskCoins > 0 && (
                     <View style={styles.rewardItem}>
-                      <PremiumCurrencyBar amount={selectedAchievement.rewards.taskCoins} compact={true} />
-                      <Text style={styles.rewardText}>TaskCoin</Text>
+                      <Ionicons name="diamond" size={20} color="#FF9500" />
+                      <Text style={styles.rewardText}>
+                        {selectedAchievement.rewards.taskCoins} TaskCoin
+                      </Text>
                     </View>
                   )}
                   {selectedAchievement.rewards.items && selectedAchievement.rewards.items.length > 0 && (

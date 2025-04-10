@@ -30,39 +30,6 @@ export class AchievementService {
           console.warn(`Сгенерирован ID для достижения без идентификатора: ${data.id}`);
         }
         
-        // Миграция старой структуры наград на новую
-        if (data.rewards) {
-          // Если в наградах есть coins, но нет actus, переименовываем поле
-          if (data.rewards.coins !== undefined && data.rewards.actus === undefined) {
-            data.rewards.actus = data.rewards.coins;
-          }
-          
-          // Убедимся что taskCoins существует
-          if (data.rewards.taskCoins === undefined) {
-            // Добавляем TaskCoin на основе редкости достижения и наличия обычной валюты
-            if (data.rewards.actus > 0) {
-              switch(data.rarity) {
-                case 'legendary':
-                  data.rewards.taskCoins = Math.ceil(data.rewards.actus / 250);
-                  break;
-                case 'epic':
-                  data.rewards.taskCoins = Math.ceil(data.rewards.actus / 500);
-                  break;
-                case 'rare':
-                  data.rewards.taskCoins = Math.ceil(data.rewards.actus / 750);
-                  break;
-                case 'uncommon':
-                  data.rewards.taskCoins = Math.ceil(data.rewards.actus / 1000);
-                  break;
-                case 'common':
-                default:
-                  data.rewards.taskCoins = data.rewards.actus > 500 ? 1 : 0;
-                  break;
-              }
-            }
-          }
-        }
-        
         try {
           return new AchievementModel(data);
         } catch (err) {

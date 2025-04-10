@@ -131,7 +131,7 @@ class AchievementModel {
         category: 'tasks',
         rarity: 'epic',
         progressTarget: 50,
-        rewards: { experience: 100, actus: 50, taskCoins: 1 },
+        rewards: { experience: 100, actus: 15, taskCoins: 1 },
         condition: { type: 'taskCompleted', value: 50 }
       }),
       new AchievementModel({
@@ -142,7 +142,7 @@ class AchievementModel {
         category: 'tasks',
         rarity: 'legendary',
         progressTarget: 100,
-        rewards: { experience: 200, actus: 100, taskCoins: 3 },
+        rewards: { experience: 200, actus: 30, taskCoins: 3 },
         condition: { type: 'taskCompleted', value: 100 }
       }),
       
@@ -156,7 +156,7 @@ class AchievementModel {
         rarity: 'uncommon',
         condition: { type: 'streak', days: 7 },
         progressTarget: 7,
-        rewards: { experience: 200, actus: 75, taskCoins: 1 },
+        rewards: { experience: 200, actus: 30, taskCoins: 1 },
         category: 'streaks'
       }),
       new AchievementModel({
@@ -167,7 +167,7 @@ class AchievementModel {
         rarity: 'epic',
         condition: { type: 'streak', days: 30 },
         progressTarget: 30,
-        rewards: { experience: 1000, actus: 500, taskCoins: 5 },
+        rewards: { experience: 1000, actus: 100, taskCoins: 5 },
         category: 'streaks'
       }),
 
@@ -180,7 +180,7 @@ class AchievementModel {
         rarity: 'uncommon',
         condition: { type: 'categories', count: 5 },
         progressTarget: 5,
-        rewards: { experience: 150, actus: 50, taskCoins: 1 },
+        rewards: { experience: 150, actus: 5},
         category: 'organization'
       }),
       
@@ -193,7 +193,7 @@ class AchievementModel {
         rarity: 'rare',
         condition: { type: 'priority', priority: 'high', count: 20 },
         progressTarget: 20,
-        rewards: { experience: 500, actus: 250, taskCoins: 2 },
+        rewards: { experience: 500, actus: 20, taskCoins: 1 },
         category: 'priorities'
       }),
 
@@ -230,7 +230,7 @@ class AchievementModel {
         rarity: 'common',
         condition: { type: 'level', level: 5 },
         progressTarget: 5,
-        rewards: { experience: 0, actus: 100, taskCoins: 1 },
+        rewards: { experience: 0, actus: 20, taskCoins: 1 },
         category: 'levels'
       }),
       new AchievementModel({
@@ -241,7 +241,7 @@ class AchievementModel {
         rarity: 'uncommon',
         condition: { type: 'level', level: 10 },
         progressTarget: 10,
-        rewards: { experience: 0, actus: 300, taskCoins: 2 },
+        rewards: { experience: 0, actus: 50, taskCoins: 2 },
         category: 'levels'
       }),
       new AchievementModel({
@@ -252,7 +252,7 @@ class AchievementModel {
         rarity: 'epic',
         condition: { type: 'level', level: 20 },
         progressTarget: 20,
-        rewards: { experience: 0, actus: 1000, taskCoins: 5 },
+        rewards: { experience: 0, actus: 100, taskCoins: 5 },
         category: 'levels'
       }),
       new AchievementModel({
@@ -263,7 +263,7 @@ class AchievementModel {
         rarity: 'legendary',
         condition: { type: 'level', level: 50 },
         progressTarget: 50,
-        rewards: { experience: 0, actus: 5000, taskCoins: 20 },
+        rewards: { experience: 0, actus: 250, taskCoins: 10 },
         category: 'levels'
       }),
     ];
