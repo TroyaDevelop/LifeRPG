@@ -15,7 +15,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useAppContext } from '../context/AppContext'; // Импортируем хук контекста
 import LevelProgressBar from '../components/LevelProgressBar';
 import LevelUpModal from '../components/LevelUpModal';
-import { TaskCard, Modal, Button, HealthBar, EnergyBar, CurrencyBar, PremiumCurrencyBar } from '../components/index'; // Добавляем импорт компонентов валюты
+import { TaskCard, Modal, Button, HealthBar, EnergyBar, CurrencyRow } from '../components/index'; // Обновляем импорт компонентов
 import Header from '../components/Header';
 import Avatar from '../components/Avatar';
 
@@ -233,14 +233,11 @@ const HomeScreen = ({ navigation }) => {
                 maxEnergy={maxEnergy} 
                 style={styles.resourceBar} 
               />
-              {/* Добавляем компоненты для отображения валюты */}
-              <CurrencyBar 
-                amount={actus} 
-                style={styles.resourceBar} 
-              />
-              <PremiumCurrencyBar 
-                amount={taskCoins} 
-                style={styles.resourceBar} 
+              {/* Отображение валюты в одном ряду */}
+              <CurrencyRow 
+                actus={actus} 
+                taskCoins={taskCoins} 
+                style={styles.currencyRow} 
               />
             </>
           )}
@@ -723,6 +720,9 @@ const styles = StyleSheet.create({
   },
   resourceBar: {
     marginBottom: 4,
+  },
+  currencyRow: {
+    marginTop: 4,
   },
 });
 

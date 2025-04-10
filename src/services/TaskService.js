@@ -482,10 +482,10 @@ export class TaskService {
   // Расчет Актусов за выполнение задачи
   static calculateActusReward(task) {
     switch (task.priority) {
-      case 'high': return 15;
-      case 'medium': return 10;
-      case 'low': return 5;
-      default: return 10;
+      case 'high': return 3;  // 3 монеты за высокий приоритет
+      case 'medium': return 2; // 2 монеты за средний приоритет
+      case 'low': return 1;   // 1 монета за низкий приоритет
+      default: return 2;      // По умолчанию 2 монеты (средний)
     }
   }
 

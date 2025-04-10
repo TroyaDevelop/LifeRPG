@@ -10,5 +10,4 @@ export { default as LevelUpModal } from './LevelUpModal';
 export { default as Avatar } from './Avatar';
 export { default as HealthBar } from './HealthBar';
 export { default as EnergyBar } from './EnergyBar';
-export { default as CurrencyBar } from './CurrencyBar';
-export { default as PremiumCurrencyBar } from './PremiumCurrencyBar';
+export { CurrencyBar, PremiumCurrencyBar, CurrencyRow } from './Currency';

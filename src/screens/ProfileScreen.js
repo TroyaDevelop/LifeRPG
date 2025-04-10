@@ -8,8 +8,8 @@ import Avatar from '../components/Avatar';
 import Header from '../components/Header';
 import LevelProgressBar from '../components/LevelProgressBar';
 import LoadingIndicator from '../components/LoadingIndicator';
-// Добавьте импорт компонентов
-import { Button, HealthBar, EnergyBar, CurrencyBar, PremiumCurrencyBar } from '../components';
+// Обновляем импорт компонентов
+import { Button, HealthBar, EnergyBar, CurrencyRow } from '../components';
 // Добавьте импорт useAppContext
 import { useAppContext } from '../context/AppContext';
 
@@ -133,13 +133,11 @@ const ProfileScreen = ({ navigation }) => {
                 maxEnergy={maxEnergy} 
                 style={styles.resourceBar} 
               />
-              <CurrencyBar 
-                amount={actus} 
-                style={styles.resourceBar} 
-              />
-              <PremiumCurrencyBar 
-                amount={taskCoins} 
-                style={styles.resourceBar} 
+              {/* Отображение валюты в одном ряду */}
+              <CurrencyRow 
+                actus={actus} 
+                taskCoins={taskCoins} 
+                style={styles.currencyRow} 
               />
             </View>
             
@@ -348,7 +346,15 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666666',
     lineHeight: 20,
-  }
+  },
+  currencyRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  currencyItem: {
+    flex: 1,
+    marginHorizontal: 4,
+  },
 });
 
 export default ProfileScreen;

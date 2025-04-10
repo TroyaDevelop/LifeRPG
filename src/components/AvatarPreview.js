@@ -15,7 +15,9 @@ const AvatarPreview = ({
 }) => {
   // Получаем правильный спрайт в зависимости от типа тела и тона кожи
   const bodySprite = BODY_TYPES[bodyType]?.sprites?.[skinTone] || BODY_TYPES.typeA.sprites.normal;
-  const hairSprite = hairStyle && HAIR_STYLES[hairStyle]?.sprite;
+  
+  // Получаем спрайт для волос только если стиль не 'none'
+  const hairSprite = hairStyle !== 'none' && HAIR_STYLES[hairStyle]?.sprite;
   
   return (
     <View style={[styles.container, style]}>
@@ -33,7 +35,7 @@ const AvatarPreview = ({
         resizeMode="contain"
       />
       
-      {/* Волосы - в два слоя */}
+      {/* Волосы - в два слоя, только если hairStyle не 'none' */}
       {hairSprite && (
         <>
           {/* Базовый слой волос с цветом */}
@@ -53,8 +55,6 @@ const AvatarPreview = ({
           )}
         </>
       )}
-      
-      {/* Убираем выражение лица */}
     </View>
   );
 };

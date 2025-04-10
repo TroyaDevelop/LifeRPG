@@ -93,7 +93,8 @@ const AvatarCustomizationScreen = ({ navigation }) => {
 
   // Обновляем функцию отображения причесок
 const renderHairStyleSelection = () => {
-  const hairColor = avatar?.hairColor ? HAIR_COLORS[avatar.hairColor] : HAIR_COLORS.brown;
+  // Используем localAvatar вместо avatar для правильного отображения текущего выбора
+  const hairColor = localAvatar?.hairColor ? HAIR_COLORS[localAvatar.hairColor] : HAIR_COLORS.brown;
   
   return (
     <View style={styles.spriteGrid}>
@@ -106,27 +107,19 @@ const renderHairStyleSelection = () => {
           ]}
           onPress={() => handleUpdateAvatar('hairStyle', style)}
         >
-          {style === 'none' ? (
-            // Для лысой прически отображаем только базовый спрайт
-              <Image 
-                source={BODY_TYPES[avatar?.bodyType || 'typeA'].sprites[avatar?.skinTone || 'normal']}
-                style={styles.hairPreview}
-                resizeMode="contain"
-              />
-          ) : (
-            // Для обычных причесок используем AvatarPreview с передачей тона кожи
-            <AvatarPreview
-              bodyType={localAvatar?.bodyType || 'typeA'}
-              skinTone={localAvatar?.skinTone || 'normal'}
-              faceExpression={localAvatar?.faceExpression || 'neutral'}
-              hairStyle={style}
-              hairColor={HAIR_COLORS[localAvatar?.hairColor] || HAIR_COLORS.brown}
-              eyeColor={EYE_COLORS[localAvatar?.eyeColor] || EYE_COLORS.blue}
-              style={styles.hairPreview}
-            />
-          )}
+          {/* Используем AvatarPreview для всех причесок, включая 'none' */}
+          <AvatarPreview
+            bodyType={localAvatar?.bodyType || 'typeA'}
+            skinTone={localAvatar?.skinTone || 'normal'}
+            faceExpression={localAvatar?.faceExpression || 'neutral'}
+            hairStyle={style}
+            hairColor={hairColor}
+            eyeColor={EYE_COLORS[localAvatar?.eyeColor] || EYE_COLORS.blue}
+            style={styles.hairPreview}
+          />
           
-          {avatar?.hairStyle === style && (
+          {/* Используем localAvatar вместо avatar для отметки выбранного элемента */}
+          {localAvatar?.hairStyle === style && (
             <View style={styles.selectedOverlay}>
               <Ionicons name="checkmark-circle" size={20} color="#4E64EE" />
             </View>
