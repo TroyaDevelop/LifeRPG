@@ -44,6 +44,24 @@ export const NotificationProvider = ({ children }) => {
     showNotification(`Потеряно ${actus} Актусов`, 'warning');
   };
 
+  // Добавляем функцию для отображения комбинированной награды
+  const showCombinedReward = (experience = 0, actus = 0, isGained = true) => {
+    if (experience <= 0 && actus <= 0) return; // Если нет награды, не показываем уведомление
+    
+    let message = isGained ? 'Задача выполнена! ' : 'Выполнение отменено. ';
+    
+    if (experience > 0) {
+      message += `${isGained ? '+' : '-'}${experience} опыта`;
+    }
+    
+    if (actus > 0) {
+      if (experience > 0) message += ', '; // Добавляем запятую, если уже есть информация об опыте
+      message += `${isGained ? '+' : '-'}${actus} Актусов`;
+    }
+    
+    showNotification(message, isGained ? 'success' : 'warning');
+  };
+
   const showError = (message) => {
     showNotification(message || 'Произошла ошибка', 'error');
   };
@@ -67,6 +85,7 @@ export const NotificationProvider = ({ children }) => {
     showExperienceLost,
     showActusGained,
     showActusLost,
+    showCombinedReward,
     showError,
     showSuccess,
     showInfo,
