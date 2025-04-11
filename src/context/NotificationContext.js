@@ -10,14 +10,16 @@ export const NotificationProvider = ({ children }) => {
     visible: false,
     message: '',
     type: 'info',
+    rewards: null,
   });
 
   // Функция для показа уведомления
-  const showNotification = (message, type = 'info') => {
+  const showNotification = (message, type = 'info', rewards = null) => {
     setToast({
       visible: true,
       message,
       type,
+      rewards,
     });
   };
 
@@ -28,20 +30,25 @@ export const NotificationProvider = ({ children }) => {
 
   // Специализированные функции для разных типов уведомлений
   const showExperienceGained = (experience) => {
-    showNotification(`Задача выполнена! +${experience} опыта`, 'success');
+    showNotification('Задача выполнена!', 'success', { experience });
   };
 
   const showExperienceLost = (experience) => {
-    showNotification(`Выполнение отменено. -${experience} опыта`, 'warning');
+    showNotification('Выполнение отменено', 'warning', { experience: -experience });
   };
 
   // Добавляем уведомления для валюты
   const showActusGained = (actus) => {
-    showNotification(`Получено ${actus} Актусов`, 'success');
+    showNotification('Получена награда', 'success', { actus });
   };
 
   const showActusLost = (actus) => {
-    showNotification(`Потеряно ${actus} Актусов`, 'warning');
+    showNotification('Отмена награды', 'warning', { actus: -actus });
+  };
+
+  // Функция для показа комплексной награды (опыт + актусы вместе)
+  const showReward = (experience = 0, actus = 0) => {
+    showNotification('Задача выполнена!', 'success', { experience, actus });
   };
 
   const showError = (message) => {
@@ -67,6 +74,7 @@ export const NotificationProvider = ({ children }) => {
     showExperienceLost,
     showActusGained,
     showActusLost,
+    showReward,
     showError,
     showSuccess,
     showInfo,
@@ -80,6 +88,7 @@ export const NotificationProvider = ({ children }) => {
         visible={toast.visible}
         message={toast.message}
         type={toast.type}
+        rewards={toast.rewards}
         onHide={hideNotification}
       />
     </NotificationContext.Provider>

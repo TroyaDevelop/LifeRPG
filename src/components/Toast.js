@@ -1,8 +1,12 @@
 import React, { useEffect, useRef } from 'react';
-import { Animated, Text, StyleSheet, Dimensions } from 'react-native';
+import { Animated, Text, StyleSheet, Dimensions, View, Image } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
-const Toast = ({ visible, message, type = 'success', onHide }) => {
+// Пути к спрайтам валюты
+const ACTUS_ICON = require('../../assets/sprites/currency/actus_coin.png');
+const EXP_ICON = require('../../assets/sprites/currency/exp_icon.png');
+
+const Toast = ({ visible, message, type = 'success', onHide, rewards = null }) => {
   const opacity = useRef(new Animated.Value(0)).current;
   const translateY = useRef(new Animated.Value(20)).current;
   
@@ -87,6 +91,48 @@ const Toast = ({ visible, message, type = 'success', onHide }) => {
   
   if (!visible) return null;
   
+  // Рендерим уведомление с наградами
+  if (rewards) {
+    return (
+      <Animated.View
+        style={[
+          styles.container,
+          { 
+            opacity, 
+            transform: [{ translateY }], 
+            backgroundColor,
+            borderColor,
+            borderWidth: 1,
+          },
+        ]}
+      >
+        <Ionicons name={icon} size={20} color={color} />
+        <View style={styles.contentContainer}>
+          <Text style={[styles.message, { color }]}>{message}</Text>
+          <View style={styles.rewardsContainer}>
+            {rewards.experience !== 0 && (
+              <View style={styles.rewardItem}>
+                <Image source={EXP_ICON} style={styles.rewardIcon} />
+                <Text style={[styles.rewardText, { color }]}>
+                  {rewards.experience > 0 ? `+${rewards.experience}` : rewards.experience}
+                </Text>
+              </View>
+            )}
+            {rewards.actus !== 0 && (
+              <View style={styles.rewardItem}>
+                <Image source={ACTUS_ICON} style={styles.rewardIcon} />
+                <Text style={[styles.rewardText, { color }]}>
+                  {rewards.actus > 0 ? `+${rewards.actus}` : rewards.actus}
+                </Text>
+              </View>
+            )}
+          </View>
+        </View>
+      </Animated.View>
+    );
+  }
+  
+  // Стандартное уведомление
   return (
     <Animated.View
       style={[
@@ -131,6 +177,29 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
     flex: 1,
+  },
+  contentContainer: {
+    flex: 1,
+    marginLeft: 8,
+  },
+  rewardsContainer: {
+    flexDirection: 'row',
+    marginTop: 4,
+  },
+  rewardItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  rewardIcon: {
+    width: 16,
+    height: 16,
+    resizeMode: 'contain',
+  },
+  rewardText: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    marginLeft: 4,
   },
 });
 

@@ -19,7 +19,7 @@ export const useApp = () => {
 // Провайдер контекста
 export const AppProvider = ({ children }) => {
   // Используем хук уведомлений внутри провайдера
-  const { showExperienceGained, showExperienceLost, showActusGained, showActusLost, showError } = useNotification();
+  const { showExperienceGained, showExperienceLost, showActusGained, showActusLost, showError, showReward, showNotification } = useNotification();
   
   // Добавляем ref для отслеживания загрузки
   const isLoadingRef = useRef(false);
@@ -204,14 +204,9 @@ export const AppProvider = ({ children }) => {
         // Выполнение задачи
         result = await TaskService.completeTask(taskId);
         
-        // Показываем уведомление с информацией о полученном опыте
-        if (result.success && result.experienceGained) {
-          showExperienceGained(result.experienceGained);
-        }
-        
-        // Показываем уведомление о полученных Актусах
-        if (result.success && result.actusGained) {
-          showActusGained(result.actusGained);
+        // Показываем уведомление с информацией о полученных наградах (опыт и актусы вместе)
+        if (result.success && (result.experienceGained > 0 || result.actusGained > 0)) {
+          showReward(result.experienceGained, result.actusGained);
         }
         
         // Обновляем достижения после выполнения задачи
@@ -223,14 +218,13 @@ export const AppProvider = ({ children }) => {
         // Отмена выполнения задачи
         result = await TaskService.uncompleteTask(taskId);
         
-        // Показываем уведомление с информацией о потерянном опыте
-        if (result.success && result.experienceReturned) {
-          showExperienceLost(result.experienceReturned);
-        }
-        
-        // Показываем уведомление о потерянных Актусах
-        if (result.success && result.actusReturned) {
-          showActusLost(result.actusReturned);
+        // Показываем уведомление с информацией о потерянных наградах
+        if (result.success && (result.experienceReturned > 0 || result.actusReturned > 0)) {
+          // Используем специальный текст для отмены выполнения задачи
+          showNotification('Выполнение отменено', 'warning', { 
+            experience: -result.experienceReturned, 
+            actus: -result.actusReturned 
+          });
         }
       }
       
