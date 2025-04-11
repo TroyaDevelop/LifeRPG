@@ -114,7 +114,7 @@ class AchievementModel {
       // Общие достижения
       new AchievementModel({
         id: 'first_steps',
-        title: 'Первые шаги',
+        title: 'Первый шаг на пути к совершенству',
         description: 'Выполните вашу первую задачу',
         icon: 'checkmark-circle-outline',
         category: 'tasks',
@@ -125,25 +125,47 @@ class AchievementModel {
       }),
       new AchievementModel({
         id: 'tasks_master',
-        title: 'Мастер задач',
+        title: 'Оправданный труд',
         description: 'Выполните 50 задач',
         icon: 'ribbon-outline',
         category: 'tasks',
-        rarity: 'epic',
+        rarity: 'uncommon',
         progressTarget: 50,
-        rewards: { experience: 100, actus: 15, taskCoins: 1 },
+        rewards: { experience: 50, actus: 15, taskCoins: 1 },
         condition: { type: 'taskCompleted', value: 50 }
       }),
       new AchievementModel({
         id: 'productivity_legend',
-        title: 'Легенда продуктивности',
+        title: 'Пробуждение воли',
         description: 'Выполните 100 задач',
         icon: 'trophy-outline',
         category: 'tasks',
-        rarity: 'legendary',
+        rarity: 'rare',
         progressTarget: 100,
-        rewards: { experience: 200, actus: 30, taskCoins: 3 },
+        rewards: { experience: 100, actus: 30, taskCoins: 3 },
         condition: { type: 'taskCompleted', value: 100 }
+      }),
+      new AchievementModel({
+        id: 'task_master_500',
+        title: 'Несокрушимая мотивация',
+        description: 'Выполните 500 задач',
+        icon: 'diamond-outline',
+        category: 'tasks',
+        rarity: 'epic',
+        progressTarget: 500,
+        rewards: { experience: 200, actus: 100, taskCoins: 5 },
+        condition: { type: 'taskCompleted', value: 500 }
+      }),
+      new AchievementModel({
+        id: 'task_master_1000',
+        title: 'И это только начало пути...',
+        description: 'Выполните 1000 задач',
+        icon: 'star-outline',
+        category: 'tasks',
+        rarity: 'legendary',
+        progressTarget: 1000,
+        rewards: { experience: 300, actus: 250, taskCoins: 10 },
+        condition: { type: 'taskCompleted', value: 1000 }
       }),
       new AchievementModel({
         id: 'night_owl',
@@ -157,6 +179,7 @@ class AchievementModel {
         category: 'tasks',
         hidden: false
       }),
+      
       new AchievementModel({
         id: 'early_bird',
         title: 'Ранняя пташка',
@@ -170,6 +193,17 @@ class AchievementModel {
         hidden: false
       }),
       
+      new AchievementModel({
+        id: 'priority_master',
+        title: 'Стратег',
+        description: 'Выполните 20 задач с высоким приоритетом',
+        icon: 'flame-outline',
+        rarity: 'rare',
+        condition: { type: 'priority', priority: 'high', count: 20 },
+        progressTarget: 20,
+        rewards: { experience: 100, actus: 20, taskCoins: 1 },
+        category: 'tasks',
+      }),
 
       // Достижения по сериям
       new AchievementModel({
@@ -185,46 +219,43 @@ class AchievementModel {
       }),
       new AchievementModel({
         id: 'streak_month',
-        title: 'Ежедневный герой',
+        title: 'Герой месяца',
         description: 'Выполняйте хотя бы одну задачу в день в течение 30 дней подряд',
         icon: 'calendar-outline',
-        rarity: 'epic',
+        rarity: 'rare',
         condition: { type: 'streak', days: 30 },
         progressTarget: 30,
-        rewards: { experience: 300, actus: 100, taskCoins: 5 },
+        rewards: { experience: 300, actus: 50, taskCoins: 5 },
+        category: 'streaks'
+      }),
+      new AchievementModel({
+        id: 'streak_quarter',
+        title: 'Легенда сезона',
+        description: 'Выполняйте хотя бы одну задачу в день в течение 90 дней подряд',
+        icon: 'calendar-number-outline',
+        rarity: 'epic',
+        condition: { type: 'streak', days: 90 },
+        progressTarget: 90,
+        rewards: { experience: 500, actus: 200, taskCoins: 10 },
+        category: 'streaks'
+      }),
+      new AchievementModel({
+        id: 'streak_year',
+        title: 'Триумф года',
+        description: 'Выполняйте хотя бы одну задачу в день в течение 365 дней подряд',
+        icon: 'calendar-clear-outline',
+        rarity: 'legendary',
+        condition: { type: 'streak', days: 365 },
+        progressTarget: 365,
+        rewards: { experience: 1000, actus: 500, taskCoins: 25 },
         category: 'streaks'
       }),
 
-      // Достижения по категориям задач
-      new AchievementModel({
-        id: 'category_master',
-        title: 'Организатор',
-        description: 'Создайте 5 разных категорий задач',
-        icon: 'pricetags-outline',
-        rarity: 'uncommon',
-        condition: { type: 'categories', count: 5 },
-        progressTarget: 5,
-        rewards: { experience: 10, actus: 5},
-        category: 'organization'
-      }),
-      
-      // Достижения по приоритетам
-      new AchievementModel({
-        id: 'priority_master',
-        title: 'Стратег',
-        description: 'Выполните 20 задач с высоким приоритетом',
-        icon: 'flame-outline',
-        rarity: 'rare',
-        condition: { type: 'priority', priority: 'high', count: 20 },
-        progressTarget: 20,
-        rewards: { experience: 100, actus: 20, taskCoins: 1 },
-        category: 'priorities'
-      }),
       
       // Достижения по уровню
       new AchievementModel({
         id: 'level_5',
-        title: 'Начинающий',
+        title: 'Новичок',
         description: 'Достигните 5 уровня',
         icon: 'person-outline',
         rarity: 'common',
@@ -241,7 +272,7 @@ class AchievementModel {
         rarity: 'uncommon',
         condition: { type: 'level', level: 10 },
         progressTarget: 10,
-        rewards: { experience: 0, actus: 50, taskCoins: 2 },
+        rewards: { experience: 0, actus: 50, taskCoins: 3 },
         category: 'levels'
       }),
       new AchievementModel({
@@ -249,7 +280,7 @@ class AchievementModel {
         title: 'Эксперт',
         description: 'Достигните 20 уровня',
         icon: 'person-outline',
-        rarity: 'epic',
+        rarity: 'rare',
         condition: { type: 'level', level: 20 },
         progressTarget: 20,
         rewards: { experience: 0, actus: 100, taskCoins: 5 },
@@ -257,13 +288,25 @@ class AchievementModel {
       }),
       new AchievementModel({
         id: 'level_50',
-        title: 'Мастер жизни',
+        title: 'Легенда баллады',
         description: 'Достигните 50 уровня',
         icon: 'person-outline',
-        rarity: 'legendary',
+        rarity: 'epic',
         condition: { type: 'level', level: 50 },
         progressTarget: 50,
         rewards: { experience: 0, actus: 250, taskCoins: 10 },
+        category: 'levels'
+      }),
+
+      new AchievementModel({
+        id: 'level_100',
+        title: 'Истинный Тасктопиец',
+        description: 'Достигните 100 уровня',
+        icon: 'person-outline',
+        rarity: 'legendary',
+        condition: { type: 'level', level: 100 },
+        progressTarget: 50,
+        rewards: { experience: 0, actus: 400, taskCoins: 20 },
         category: 'levels'
       }),
     ];
