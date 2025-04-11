@@ -151,6 +151,14 @@ const ProfileScreen = ({ navigation }) => {
             icon="brush-outline"
             style={styles.editAvatarButton}
           />
+          
+          {/* Добавляем кнопку для перехода в инвентарь */}
+          <Button 
+            title="Инвентарь" 
+            onPress={() => navigation.navigate('Inventory')}
+            icon="briefcase-outline"
+            style={styles.editAvatarButton}
+          />
         </View>
         
         <View style={styles.resourcesInfoSection}>

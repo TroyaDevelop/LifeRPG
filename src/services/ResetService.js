@@ -3,6 +3,7 @@ import { ProfileService } from './ProfileService';
 import { TaskService } from './TaskService';
 import { AchievementService } from './AchievementService';
 import CategoryService from './CategoryService';
+import EquipmentService from './EquipmentService';
 
 // Ключи хранилища
 const TASKS_STORAGE_KEY = '@LifeRPG:tasks';
@@ -10,6 +11,7 @@ const PROFILE_STORAGE_KEY = '@LifeRPG:profile';
 const CATEGORIES_STORAGE_KEY = '@LifeRPG:categories';
 const ACHIEVEMENTS_STORAGE_KEY = '@LifeRPG:achievements';
 const AVATAR_STORAGE_KEY = '@LifeRPG:avatar';
+const EQUIPMENT_STORAGE_KEY = 'liferpg_equipment';
 
 class ResetService {
   /**
@@ -42,6 +44,15 @@ class ResetService {
         console.log('ResetService: Сбрасываем профиль');
         const profileService = ProfileService.getInstance();
         resetPromises.push(profileService.resetProfile());
+        
+        // Сброс инвентаря при сбросе профиля
+        console.log('ResetService: Сбрасываем инвентарь и снаряжение вместе с профилем');
+        if (EquipmentService.resetAllEquipment) {
+          resetPromises.push(EquipmentService.resetAllEquipment(true)); // Сбрасываем и инициализируем тестовыми данными
+        } else {
+          resetPromises.push(AsyncStorage.removeItem(EQUIPMENT_STORAGE_KEY));
+          console.log('ResetService: Внимание! EquipmentService.resetAllEquipment не найден, используем прямое удаление');
+        }
       }
       
       // Сброс категорий

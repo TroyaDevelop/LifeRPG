@@ -10,12 +10,12 @@ export class AvatarModel {
     this.hairColor = data.hairColor || 'brown';      // Цвет волос
     this.eyeColor = data.eyeColor || 'blue';         // Цвет глаз
     // Убираем faceExpression
-    this.equipment = data.equipment || {             // Места для снаряжения (пока пустые)
-      head: null,
-      body: null,
-      legs: null,
-      weapon: null,
-      accessory: null
+    this.equipment = data.equipment || {             // Места для снаряжения
+      head: null,     // Головной убор (шапка, шлем и т.д.)
+      body: null,     // Верхняя одежда (рубашка, броня и т.д.)
+      legs: null,     // Нижняя одежда (штаны, юбка и т.д.)
+      footwear: null, // Обувь (ботинки, сапоги и т.д.)
+      weapon: null    // Оружие (меч, посох, лук и т.д.)
     };
     this.createdAt = data.createdAt || new Date().toISOString();
     this.updatedAt = data.updatedAt || new Date().toISOString();

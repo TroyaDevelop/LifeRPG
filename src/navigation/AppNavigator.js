@@ -18,6 +18,7 @@ import AppSettingsScreen from '../screens/AppSettingsScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import AvatarCustomizationScreen from '../screens/AvatarCustomizationScreen';
 import AboutScreen from '../screens/AboutScreen';
+import InventoryScreen from '../screens/InventoryScreen'; // Добавляем импорт экрана инвентаря
 
 const Stack = createNativeStackNavigator();
 
@@ -59,6 +60,7 @@ export default function AppNavigator() {
         <Stack.Screen name="AppSettings" component={AppSettingsScreen} />
         <Stack.Screen name="Profile" component={ProfileScreen} />
         <Stack.Screen name="AvatarCustomization" component={AvatarCustomizationScreen} />
+        <Stack.Screen name="Inventory" component={InventoryScreen} />
         <Stack.Screen 
           name="About" 
           component={AboutScreen} 
