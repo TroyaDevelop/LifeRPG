@@ -323,4 +323,26 @@ export class AchievementService {
       return { updated: false, error: error.message };
     }
   }
+  
+  /**
+   * Сброс всех достижений и создание предопределённых
+   * @returns {Promise<boolean>} - Результат операции
+   */
+  static async resetAllAchievements() {
+    try {
+      console.log('AchievementService: Начинаем сброс всех достижений');
+      
+      // Создаем предопределенные достижения
+      const predefinedAchievements = AchievementModel.createPredefinedAchievements();
+      
+      // Сохраняем их в хранилище
+      await this.saveAchievements(predefinedAchievements);
+      
+      console.log('AchievementService: Все достижения успешно сброшены и созданы стандартные');
+      return true;
+    } catch (error) {
+      console.error('AchievementService: Ошибка при сбросе достижений:', error);
+      return false;
+    }
+  }
 }

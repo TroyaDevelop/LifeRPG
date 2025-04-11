@@ -397,6 +397,15 @@ export class ProfileService {
         JSON.stringify(defaultProfile)
       );
       
+      // Сбрасываем достижения вместе с профилем
+      try {
+        const { AchievementService } = require('./AchievementService');
+        await AchievementService.resetAllAchievements();
+        console.log('ProfileService: Достижения успешно сброшены вместе с профилем');
+      } catch (achievementError) {
+        console.error('ProfileService: Ошибка при сбросе достижений:', achievementError);
+      }
+      
       console.log('ProfileService: Профиль успешно сброшен');
       return defaultProfile;
     } catch (error) {
