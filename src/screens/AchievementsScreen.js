@@ -118,7 +118,12 @@ export function AchievementsScreen({ navigation }) {
 
   const renderCategory = (category) => {
     const categoryAchievements = filteredAchievements.filter(
-      a => a.category === category && (!a.hidden || a.unlocked)
+      a => a.category === category && (
+        !a.hidden || 
+        a.unlocked || 
+        a.id === 'night_owl' || 
+        a.id === 'early_bird'
+      )
     );
     
     if (categoryAchievements.length === 0) return null;
@@ -148,6 +153,7 @@ export function AchievementsScreen({ navigation }) {
       case 'organization': return 'Организация';
       case 'priorities': return 'Приоритеты';
       case 'levels': return 'Уровни';
+      case 'time': return 'Время суток';
       case 'general': return 'Общие';
       default: return category;
     }
@@ -389,7 +395,7 @@ export function AchievementsScreen({ navigation }) {
       ) : (
         <FlatList
           style={styles.listContainer}
-          data={['tasks', 'streaks', 'efficiency', 'organization', 'priorities', 'levels', 'general']}
+          data={['tasks', 'streaks', 'efficiency', 'organization', 'priorities', 'levels', 'time', 'general']}
           keyExtractor={(item) => `category-section-${item}`}
           renderItem={({ item }) => renderCategory(item)}
           ListEmptyComponent={

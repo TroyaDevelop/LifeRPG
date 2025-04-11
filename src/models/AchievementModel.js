@@ -145,6 +145,30 @@ class AchievementModel {
         rewards: { experience: 200, actus: 30, taskCoins: 3 },
         condition: { type: 'taskCompleted', value: 100 }
       }),
+      new AchievementModel({
+        id: 'night_owl',
+        title: 'Ночная сова',
+        description: 'Выполните 10 задач между 22:00 и 5:00',
+        icon: 'moon-outline',
+        rarity: 'rare',
+        condition: { type: 'timeOfDay', timeRange: 'night', count: 10 },
+        progressTarget: 10,
+        rewards: { experience: 100, actus: 20, taskCoins: 1 },
+        category: 'tasks',
+        hidden: false
+      }),
+      new AchievementModel({
+        id: 'early_bird',
+        title: 'Ранняя пташка',
+        description: 'Выполните 10 задач между 5:00 и 9:00',
+        icon: 'sunny-outline',
+        rarity: 'rare',
+        condition: { type: 'timeOfDay', timeRange: 'morning', count: 10 },
+        progressTarget: 10,
+        rewards: { experience: 100, actus: 20, taskCoins: 1 },
+        category: 'tasks',
+        hidden: false
+      }),
       
 
       // Достижения по сериям
@@ -156,7 +180,7 @@ class AchievementModel {
         rarity: 'uncommon',
         condition: { type: 'streak', days: 7 },
         progressTarget: 7,
-        rewards: { experience: 200, actus: 30, taskCoins: 1 },
+        rewards: { experience: 100, actus: 30, taskCoins: 1 },
         category: 'streaks'
       }),
       new AchievementModel({
@@ -167,7 +191,7 @@ class AchievementModel {
         rarity: 'epic',
         condition: { type: 'streak', days: 30 },
         progressTarget: 30,
-        rewards: { experience: 1000, actus: 100, taskCoins: 5 },
+        rewards: { experience: 300, actus: 100, taskCoins: 5 },
         category: 'streaks'
       }),
 
@@ -180,7 +204,7 @@ class AchievementModel {
         rarity: 'uncommon',
         condition: { type: 'categories', count: 5 },
         progressTarget: 5,
-        rewards: { experience: 150, actus: 5},
+        rewards: { experience: 10, actus: 5},
         category: 'organization'
       }),
       
@@ -193,32 +217,8 @@ class AchievementModel {
         rarity: 'rare',
         condition: { type: 'priority', priority: 'high', count: 20 },
         progressTarget: 20,
-        rewards: { experience: 500, actus: 20, taskCoins: 1 },
+        rewards: { experience: 100, actus: 20, taskCoins: 1 },
         category: 'priorities'
-      }),
-
-      // Скрытые достижения
-      new AchievementModel({
-        id: 'night_owl',
-        title: 'Ночная сова',
-        description: 'Выполните 10 задач между 22:00 и 5:00',
-        icon: 'moon-outline',
-        rarity: 'rare',
-        condition: { type: 'timeOfDay', timeRange: 'night', count: 10 },
-        progressTarget: 10,
-        rewards: { experience: 300, actus: 150, taskCoins: 1 },
-        category: 'time',
-      }),
-      new AchievementModel({
-        id: 'early_bird',
-        title: 'Ранняя пташка',
-        description: 'Выполните 10 задач между 5:00 и 9:00',
-        icon: 'sunny-outline',
-        rarity: 'rare',
-        condition: { type: 'timeOfDay', timeRange: 'morning', count: 10 },
-        progressTarget: 10,
-        rewards: { experience: 300, actus: 150, taskCoins: 1 },
-        category: 'time',
       }),
       
       // Достижения по уровню
