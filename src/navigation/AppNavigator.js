@@ -7,7 +7,6 @@ import { SchedulerService } from '../services/SchedulerService';
 import HomeScreen from '../screens/HomeScreen';
 import AddTaskScreen from '../screens/AddTaskScreen/AddTaskScreen';
 import EditTaskScreen from '../screens/EditTaskScreen/EditTaskScreen';
-import NotificationSettingsScreen from '../screens/NotificationSettingsScreen';
 import CategoriesScreen from '../screens/CategoriesScreen';
 import AddCategoryScreen from '../screens/AddCategoryScreen';
 import EditCategoryScreen from '../screens/EditCategoryScreen';
@@ -51,7 +50,6 @@ export default function AppNavigator() {
         />
         <Stack.Screen name="AddTask" component={AddTaskScreen} />
         <Stack.Screen name="EditTask" component={EditTaskScreen} />
-        <Stack.Screen name="NotificationSettings" component={NotificationSettingsScreen} />
         <Stack.Screen name="Categories" component={CategoriesScreen} />
         <Stack.Screen name="AddCategory" component={AddCategoryScreen} />
         <Stack.Screen name="EditCategory" component={EditCategoryScreen} />

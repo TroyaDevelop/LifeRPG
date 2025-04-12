@@ -41,13 +41,6 @@ export default function SettingsScreen({ navigation }) {
       onPress: () => navigation.navigate('ArchivedTasks')
     },
     {
-      id: 'notifications',
-      title: 'Уведомления',
-      icon: 'notifications-outline',
-      description: 'Настройка напоминаний и уведомлений',
-      onPress: () => navigation.navigate('NotificationSettings')
-    },
-    {
       id: 'profile',
       title: 'Профиль',
       icon: 'person-outline',
