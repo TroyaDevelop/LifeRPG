@@ -5,6 +5,7 @@ import { Header, Button, Modal, LoadingIndicator, Avatar } from '../components';
 import { EquipmentService } from '../services';
 import { useAppContext } from '../context/AppContext';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import { EQUIPMENT_SETS, ALL_EQUIPMENT_SPRITES } from '../constants/EquipmentSprites';
 
 const EQUIPMENT_TYPES = {
   head: 'Головные уборы',
@@ -21,6 +22,9 @@ const InventoryScreen = ({ navigation }) => {
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [activeTab, setActiveTab] = useState('all');
   const [equippedItems, setEquippedItems] = useState({});
+  const [equipmentSets, setEquipmentSets] = useState({});
+  const [showSetDetailsModal, setShowSetDetailsModal] = useState(false);
+  const [selectedSet, setSelectedSet] = useState(null);
   
   // Получаем данные аватара из контекста
   const { avatar, updateAvatar } = useAppContext();
@@ -36,10 +40,15 @@ const InventoryScreen = ({ navigation }) => {
       
       // Группируем экипированные предметы по типу
       const equipped = {};
-      items.filter(item => item.equipped).forEach(item => {
+      const equippedItems = items.filter(item => item.equipped);
+      equippedItems.forEach(item => {
         equipped[item.type] = item;
       });
       setEquippedItems(equipped);
+      
+      // Получаем информацию о наборах снаряжения
+      const setsInfo = equipmentService.calculateEquipmentBonuses(equippedItems).sets;
+      setEquipmentSets(setsInfo);
     } catch (error) {
       console.error('Error fetching equipment:', error);
     } finally {
@@ -259,6 +268,77 @@ const InventoryScreen = ({ navigation }) => {
     </View>
   );
 
+  // Обработчик нажатия на набор снаряжения
+  const handleSetPress = (setName) => {
+    setSelectedSet({
+      ...equipmentSets[setName],
+      name: setName
+    });
+    setShowSetDetailsModal(true);
+  };
+  
+  // Секция с наборами снаряжения
+  const renderEquipmentSets = () => {
+    // Проверяем, есть ли у игрока наборы снаряжения
+    const hasSets = Object.keys(equipmentSets).length > 0;
+    
+    if (!hasSets) return null;
+    
+    return (
+      <View style={styles.setsSection}>
+        <Text style={styles.sectionTitle}>Наборы снаряжения</Text>
+        
+        {Object.entries(equipmentSets).map(([setName, setInfo]) => (
+          <TouchableOpacity 
+            key={setName}
+            style={[
+              styles.setCard,
+              setInfo.completed && styles.completedSetCard
+            ]}
+            onPress={() => handleSetPress(setName)}
+          >
+            <View style={styles.setHeaderRow}>
+              <View style={styles.setNameContainer}>
+                <Ionicons 
+                  name={setInfo.completed ? "shield" : "shield-outline"} 
+                  size={24} 
+                  color={setInfo.completed ? "#FF8C00" : "#4E64EE"} 
+                />
+                <Text style={styles.setName}>{setInfo.name || setName}</Text>
+              </View>
+              
+              <View style={styles.setProgressContainer}>
+                <Text style={styles.setProgressText}>
+                  {setInfo.collectedPieces}/{setInfo.totalPieces}
+                </Text>
+                <View style={styles.progressBar}>
+                  <View 
+                    style={[
+                      styles.progressFill,
+                      {
+                        width: `${(setInfo.collectedPieces / setInfo.totalPieces) * 100}%`,
+                        backgroundColor: setInfo.completed ? "#FF8C00" : "#4E64EE"
+                      }
+                    ]}
+                  />
+                </View>
+              </View>
+            </View>
+            
+            {setInfo.bonusApplied && (
+              <View style={styles.setBonusRow}>
+                <Ionicons name="star" size={16} color="#FF8C00" />
+                <Text style={styles.setBonusText}>
+                  {setInfo.completed ? "Активны полные бонусы набора" : "Активны частичные бонусы набора"}
+                </Text>
+              </View>
+            )}
+          </TouchableOpacity>
+        ))}
+      </View>
+    );
+  };
+
   return (
     <View style={styles.container}>
       <Header title="Инвентарь" hasBack={true} onBack={() => navigation.goBack()} />
@@ -266,8 +346,9 @@ const InventoryScreen = ({ navigation }) => {
       {loading ? (
         <LoadingIndicator />
       ) : (
-        <View style={styles.content}>
+        <ScrollView style={styles.content}>
           {renderEquippedItems()}
+          {renderEquipmentSets()}
           
           <Text style={styles.sectionTitle}>Доступные предметы</Text>
           {renderTabs()}
@@ -278,6 +359,8 @@ const InventoryScreen = ({ navigation }) => {
               renderItem={renderItem}
               keyExtractor={item => item.id}
               contentContainerStyle={styles.list}
+              scrollEnabled={false}
+              nestedScrollEnabled={true}
             />
           ) : (
             <View style={styles.emptyContainer}>
@@ -288,9 +371,10 @@ const InventoryScreen = ({ navigation }) => {
               </Text>
             </View>
           )}
-        </View>
+        </ScrollView>
       )}
 
+      {/* Модальное окно с деталями предмета */}
       <Modal
         visible={showDetailsModal}
         onClose={() => setShowDetailsModal(false)}
@@ -317,7 +401,7 @@ const InventoryScreen = ({ navigation }) => {
             {selectedItem.set && (
               <View style={styles.setContainer}>
                 <Ionicons name="link-outline" size={18} color="#4E64EE" />
-                <Text style={styles.setText}>{selectedItem.set}</Text>
+                <Text style={styles.setText}>{selectedItem.getSetName()}</Text>
               </View>
             )}
             
@@ -352,6 +436,119 @@ const InventoryScreen = ({ navigation }) => {
                 <Button title="Экипировать" onPress={handleEquipItem} />
               )}
             </View>
+          </View>
+        )}
+      </Modal>
+
+      {/* Модальное окно с деталями набора */}
+      <Modal
+        visible={showSetDetailsModal}
+        onClose={() => setShowSetDetailsModal(false)}
+        title={selectedSet?.name ? `Набор "${selectedSet.name}"` : 'Детали набора'}
+      >
+        {selectedSet && (
+          <View style={styles.modalContent}>
+            <View style={[
+              styles.setIconLarge,
+              { backgroundColor: selectedSet.completed ? "#FF8C00" : "#4E64EE" }
+            ]}>
+              <Ionicons 
+                name={selectedSet.completed ? "shield" : "shield-outline"} 
+                size={36} 
+                color="#FFFFFF" 
+              />
+            </View>
+            
+            <Text style={styles.setProgressLarge}>
+              {selectedSet.collectedPieces}/{selectedSet.totalPieces} предметов собрано
+            </Text>
+            
+            {EQUIPMENT_SETS[selectedSet.name] && (
+              <Text style={styles.setDescription}>
+                {EQUIPMENT_SETS[selectedSet.name].description || "Нет описания"}
+              </Text>
+            )}
+            
+            <Text style={styles.statsTitle}>Бонусы набора:</Text>
+            {EQUIPMENT_SETS[selectedSet.name] && EQUIPMENT_SETS[selectedSet.name].bonus ? (
+              <View style={styles.statsContainer}>
+                {Object.entries(EQUIPMENT_SETS[selectedSet.name].bonus).map(([key, value]) => {
+                  // Если набор не полный и применяются частичные бонусы, показываем уменьшенный бонус
+                  const actualValue = selectedSet.completed 
+                    ? value 
+                    : (selectedSet.bonusApplied ? Math.floor(value * 0.5) : 0);
+                  
+                  return (
+                    <View key={key} style={styles.statItemContainer}>
+                      <Text style={styles.statItem}>
+                        {key}: <Text style={[
+                          styles.statValue,
+                          { color: selectedSet.bonusApplied ? "#FF8C00" : "#999999" }
+                        ]}>
+                          +{actualValue}
+                        </Text>
+                        {!selectedSet.completed && selectedSet.bonusApplied && (
+                          <Text style={styles.fullBonusValue}> (полный: +{value})</Text>
+                        )}
+                      </Text>
+                    </View>
+                  );
+                })}
+              </View>
+            ) : (
+              <Text style={styles.noStats}>Нет бонусов</Text>
+            )}
+            
+            {EQUIPMENT_SETS[selectedSet.name] && (
+              <>
+                <Text style={[styles.statsTitle, { marginTop: 16 }]}>Предметы в наборе:</Text>
+                <View style={styles.setPiecesContainer}>
+                  {EQUIPMENT_SETS[selectedSet.name].pieces.map((pieceId) => {
+                    // Ищем предмет в инвентаре по его ID или originalId
+                    const inventoryItem = equipment.find(item => 
+                      item.id === pieceId || 
+                      (item.originalId && item.originalId === pieceId)
+                    );
+                    
+                    // Определяем, собран ли предмет
+                    const isCollected = selectedSet.items && selectedSet.items.some(
+                      id => id.includes(pieceId)
+                    );
+                    
+                    // Получаем название предмета из разных источников в порядке приоритета:
+                    // 1. Из инвентаря игрока (если предмет есть в инвентаре)
+                    // 2. Из словаря ALL_EQUIPMENT_SPRITES (получаем имя объекта)
+                    // 3. Человекопонятное форматирование ID, если ничего не найдено
+                    const itemName = inventoryItem ? inventoryItem.name : 
+                                    (ALL_EQUIPMENT_SPRITES[pieceId] ? ALL_EQUIPMENT_SPRITES[pieceId].name : 
+                                    pieceId.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' '));
+                    
+                    return (
+                      <View key={pieceId} style={styles.setPieceRow}>
+                        <Ionicons 
+                          name={isCollected ? "checkmark-circle" : "ellipse-outline"} 
+                          size={20} 
+                          color={isCollected ? "#4CAF50" : "#CCCCCC"} 
+                        />
+                        <Text style={[
+                          styles.setPieceText,
+                          isCollected ? styles.collectedPiece : styles.missingPiece
+                        ]}>
+                          {itemName}
+                        </Text>
+                      </View>
+                    );
+                  })}
+                </View>
+              </>
+            )}
+            
+            {selectedSet.completed && (
+              <View style={styles.completionBadge}>
+                <Ionicons name="trophy" size={20} color="#FFFFFF" />
+                <Text style={styles.completionText}>Набор собран полностью!</Text>
+              </View>
+            )}
           </View>
         )}
       </Modal>
@@ -625,6 +822,141 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#333333',
     marginLeft: 6,
+  },
+  // Стили для секции наборов снаряжения
+  setsSection: {
+    backgroundColor: '#FFFFFF',
+    padding: 12,
+    marginBottom: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  setCard: {
+    backgroundColor: '#F7F9FC',
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+  },
+  completedSetCard: {
+    borderColor: '#FF8C00',
+    borderWidth: 2,
+  },
+  setHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  setNameContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  setName: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginLeft: 8,
+    color: '#333333',
+  },
+  setProgressContainer: {
+    alignItems: 'flex-end',
+  },
+  setProgressText: {
+    fontSize: 12,
+    color: '#666666',
+    marginBottom: 4,
+  },
+  progressBar: {
+    height: 4,
+    width: 80,
+    backgroundColor: '#E0E0E0',
+    borderRadius: 2,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: '#4E64EE',
+  },
+  setBonusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+    padding: 6,
+    backgroundColor: '#FFF5E6',
+    borderRadius: 6,
+  },
+  setBonusText: {
+    marginLeft: 6,
+    fontSize: 12,
+    color: '#FF8C00',
+  },
+  
+  // Стили для модального окна деталей набора
+  setIconLarge: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#4E64EE',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  setProgressLarge: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333333',
+    marginBottom: 12,
+  },
+  setDescription: {
+    fontSize: 14,
+    textAlign: 'center',
+    color: '#666666',
+    marginBottom: 24,
+    padding: 8,
+  },
+  setPiecesContainer: {
+    alignSelf: 'stretch',
+    marginBottom: 16,
+  },
+  setPieceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  setPieceText: {
+    marginLeft: 8,
+    fontSize: 14,
+  },
+  collectedPiece: {
+    color: '#333333',
+    fontWeight: '500',
+  },
+  missingPiece: {
+    color: '#999999',
+  },
+  fullBonusValue: {
+    fontSize: 12,
+    color: '#999999',
+    fontStyle: 'italic',
+  },
+  completionBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FF8C00',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    marginTop: 16,
+  },
+  completionText: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+    fontSize: 14,
+    marginLeft: 8,
   },
   buttonContainer: {
     flexDirection: 'row',

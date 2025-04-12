@@ -106,6 +106,32 @@ class EquipmentModel {
     // Округляем до целого числа
     return Math.round(power);
   }
+  
+  /**
+   * Проверяет, принадлежит ли предмет к набору
+   * @returns {boolean} true, если предмет принадлежит к набору
+   */
+  isSetItem() {
+    return Boolean(this.set);
+  }
+  
+  /**
+   * Получает имя набора на русском языке
+   * @returns {string} Имя набора или пустая строка
+   */
+  getSetName() {
+    if (!this.set) return '';
+    
+    // Стандартные названия наборов
+    const setNames = {
+      'Фермер': 'Фермерский набор',
+      'Герой': 'Набор героя',
+      'Мудрец': 'Комплект мудреца',
+      'Стражник': 'Снаряжение стражника'
+    };
+    
+    return setNames[this.set] || this.set;
+  }
 }
 
 export default EquipmentModel;

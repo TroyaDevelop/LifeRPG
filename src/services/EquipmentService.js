@@ -1,6 +1,7 @@
 import { EquipmentModel } from '../models';
 import StorageService from './StorageService';
 import { sampleEquipment } from '../data/sampleEquipment';
+import { EQUIPMENT_SETS } from '../constants/EquipmentSprites';
 
 const EQUIPMENT_STORAGE_KEY = 'liferpg_equipment';
 const PLAYER_INVENTORY_KEY = 'liferpg_player_inventory';
@@ -255,7 +256,7 @@ class EquipmentService {
   /**
    * Применяет эффекты экипированного снаряжения к профилю
    * @param {Object[]} equippedItems - Массив экипированных предметов
-   * @returns {Object} - Суммарные бонусы от снаряжения { strength: 10, intelligence: 5, ... }
+   * @returns {Object} - Суммарные бонусы от снаряжения и информация о наборах
    */
   calculateEquipmentBonuses(equippedItems) {
     // Начальные значения бонусов
@@ -263,7 +264,10 @@ class EquipmentService {
     
     // Если нет экипированных предметов, возвращаем пустой объект бонусов
     if (!equippedItems || equippedItems.length === 0) {
-      return bonuses;
+      return { 
+        stats: bonuses,
+        sets: {}
+      };
     }
     
     // Собираем все наборы снаряжения, которые есть у игрока
@@ -285,36 +289,81 @@ class EquipmentService {
         if (!equipmentSets[item.set]) {
           equipmentSets[item.set] = {
             count: 0,
-            items: []
+            items: [],
+            completed: false,
+            name: item.getSetName(),
+            bonusApplied: false
           };
         }
         equipmentSets[item.set].count++;
-        equipmentSets[item.set].items.push(item);
+        equipmentSets[item.set].items.push(item.id);
       }
     });
     
     // Проверяем наборы снаряжения для дополнительных бонусов
-    Object.entries(equipmentSets).forEach(([setName, setData]) => {
-      // Проверяем, какой процент набора собран
-      // Предполагаем, что полный набор состоит из 5 предметов (по одному на каждый слот)
-      const setCompletion = setData.count / 5;
+    Object.entries(equipmentSets).forEach(([setName, setInfo]) => {
+      const setData = EQUIPMENT_SETS[setName];
       
-      // Добавляем бонус за набор в зависимости от процента собранного набора
-      if (setCompletion >= 1) {
-        // Полный набор - максимальный бонус
-        bonuses.setBonus = (bonuses.setBonus || 0) + 20;
-        // Добавляем уникальный бонус набора
-        bonuses[`${setName.toLowerCase()}_full`] = 15;
-      } else if (setCompletion >= 0.6) {
-        // 3+ предметов из набора - средний бонус
-        bonuses.setBonus = (bonuses.setBonus || 0) + 10;
-      } else if (setCompletion >= 0.4) {
-        // 2 предмета из набора - минимальный бонус
-        bonuses.setBonus = (bonuses.setBonus || 0) + 5;
+      if (setData) {
+        // Проверяем, собран ли полный комплект
+        const totalPieces = setData.pieces.length;
+        const collectedPieces = setInfo.count;
+        const completionPercentage = collectedPieces / totalPieces;
+        
+        setInfo.totalPieces = totalPieces;
+        setInfo.collectedPieces = collectedPieces;
+        setInfo.completionPercentage = completionPercentage;
+        setInfo.description = setData.description || '';
+        
+        // Применяем бонусы в зависимости от степени заполненности набора
+        if (completionPercentage >= 1) {
+          // Полный комплект - применяем все бонусы
+          setInfo.completed = true;
+          setInfo.bonusApplied = true;
+          
+          // Добавляем бонусы набора к общим бонусам
+          if (setData.bonus) {
+            Object.entries(setData.bonus).forEach(([stat, value]) => {
+              bonuses[stat] = (bonuses[stat] || 0) + value;
+            });
+          }
+        } else if (completionPercentage >= 0.5) {
+          // Более половины комплекта - частичный бонус
+          setInfo.bonusApplied = true;
+          
+          if (setData.bonus) {
+            Object.entries(setData.bonus).forEach(([stat, value]) => {
+              // Применяем половину бонуса
+              bonuses[stat] = (bonuses[stat] || 0) + Math.floor(value * 0.5);
+            });
+          }
+        }
       }
     });
     
-    return bonuses;
+    return {
+      stats: bonuses,
+      sets: equipmentSets
+    };
+  }
+  
+  /**
+   * Получает информацию о наборах снаряжения
+   * @returns {Promise<Object>} - Информация о наборах и их комплектации
+   */
+  async getEquipmentSetsInfo() {
+    try {
+      // Получаем экипированные предметы
+      const equippedItems = await this.getEquippedItems();
+      
+      // Получаем информацию о бонусах и наборах
+      const equipmentInfo = this.calculateEquipmentBonuses(equippedItems);
+      
+      return equipmentInfo.sets;
+    } catch (error) {
+      console.error('Error getting equipment sets info:', error);
+      return {};
+    }
   }
 
   /**
