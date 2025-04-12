@@ -9,7 +9,7 @@ import Header from '../components/Header';
 import LevelProgressBar from '../components/LevelProgressBar';
 import LoadingIndicator from '../components/LoadingIndicator';
 // Обновляем импорт компонентов
-import { Button, HealthBar, EnergyBar, CurrencyRow } from '../components';
+import { Button, HealthBar, EnergyBar, CurrencyRow, CharacterStats } from '../components';
 // Добавьте импорт useAppContext
 import { useAppContext } from '../context/AppContext';
 
@@ -102,9 +102,10 @@ const ProfileScreen = ({ navigation }) => {
               ]}
             >
               <Avatar 
-                size={avatarSize === 'xlarge' ? 240 : 180} // Явно указываем размер
+                size={avatarSize === 'xlarge' ? 'xlarge' : 'large'} // Явно указываем размер
                 style={styles.avatar}
                 avatarData={avatar} 
+                showEquipment={true}
               />
               
               {/* Иконка увеличения/уменьшения */}
@@ -157,6 +158,14 @@ const ProfileScreen = ({ navigation }) => {
             title="Инвентарь" 
             onPress={() => navigation.navigate('Inventory')}
             icon="briefcase-outline"
+            style={styles.editAvatarButton}
+          />
+          
+          {/* Добавляем кнопку для перехода в магазин снаряжения */}
+          <Button 
+            title="Магазин снаряжения" 
+            onPress={() => navigation.navigate('Shop')}
+            icon="cart-outline"
             style={styles.editAvatarButton}
           />
         </View>
@@ -217,6 +226,9 @@ const ProfileScreen = ({ navigation }) => {
           </View>
           
         </View>
+        
+        {/* Добавляем компонент CharacterStats */}
+        <CharacterStats style={styles.characterStatsSection} />
         
       </ScrollView>
     </View>
@@ -362,6 +374,14 @@ const styles = StyleSheet.create({
   currencyItem: {
     flex: 1,
     marginHorizontal: 4,
+  },
+  characterStats: {
+    marginTop: 16,
+  },
+  characterStatsSection: {
+    margin: 16,
+    marginTop: 0,
+    marginBottom: 24,
   },
 });
 

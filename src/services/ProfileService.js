@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { UserProfile } from '../models/UserProfile';
+import EquipmentService from './EquipmentService';
 
 const PROFILE_STORAGE_KEY = '@LifeRPG:userProfile';
 
@@ -486,6 +487,68 @@ export class ProfileService {
     } catch (error) {
       console.error('Ошибка при обновлении здоровья за ежедневные задачи:', error);
       throw error;
+    }
+  }
+
+  // Применение бонусов от экипированного снаряжения
+  async applyEquipmentBonuses() {
+    try {
+      const profile = await this.getProfile();
+      
+      // Получаем экипированные предметы
+      const equipmentService = new EquipmentService();
+      const equippedItems = await equipmentService.getEquippedItems();
+      
+      // Рассчитываем бонусы от снаряжения
+      const bonuses = equipmentService.calculateEquipmentBonuses(equippedItems);
+      
+      // Сохраняем бонусы в профиле
+      profile.equipmentBonuses = bonuses;
+      
+      // Обновляем профиль
+      await this.saveProfile(profile);
+      
+      return bonuses;
+    } catch (error) {
+      console.error('Ошибка при применении бонусов снаряжения:', error);
+      return {};
+    }
+  }
+
+  // Получение всех итоговых характеристик игрока, включая бонусы от снаряжения
+  async getPlayerStats() {
+    try {
+      const profile = await this.getProfile();
+      
+      // Базовые характеристики
+      const baseStats = {
+        strength: profile.strength || 0,
+        intelligence: profile.intelligence || 0,
+        endurance: profile.endurance || 0,
+        charisma: profile.charisma || 0,
+        luck: profile.luck || 0,
+        // Добавляем другие базовые характеристики
+      };
+      
+      // Бонусы от снаряжения
+      const equipmentBonuses = profile.equipmentBonuses || {};
+      
+      // Объединяем базовые характеристики и бонусы от снаряжения
+      const totalStats = { ...baseStats };
+      
+      // Суммируем базовые характеристики и бонусы
+      Object.entries(equipmentBonuses).forEach(([stat, bonus]) => {
+        if (totalStats[stat] !== undefined) {
+          totalStats[stat] += bonus;
+        } else {
+          totalStats[stat] = bonus;
+        }
+      });
+      
+      return totalStats;
+    } catch (error) {
+      console.error('Ошибка при получении характеристик игрока:', error);
+      return {};
     }
   }
 }

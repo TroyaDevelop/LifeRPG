@@ -8,6 +8,7 @@ export { default as Modal } from './Modal';
 export { default as LevelProgressBar } from './LevelProgressBar';
 export { default as LevelUpModal } from './LevelUpModal';
 export { default as Avatar } from './Avatar';
+export { default as CharacterStats } from './CharacterStats';
 export { default as HealthBar } from './HealthBar';
 export { default as EnergyBar } from './EnergyBar';
 export { CurrencyBar, PremiumCurrencyBar, CurrencyRow } from './Currency';

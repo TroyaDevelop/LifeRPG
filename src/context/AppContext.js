@@ -403,9 +403,24 @@ export const AppProvider = ({ children }) => {
   // Функции для работы с валютой
   const updateActus = async (delta) => {
     try {
+      // Если это покупка предмета (отрицательное значение delta)
+      if (delta < 0) {
+        // Проверяем, хватает ли актусов для покупки
+        if ((profile.actus || 0) < Math.abs(delta)) {
+          throw new Error('Недостаточно актусов для покупки');
+        }
+      }
+      
+      /* 
+       * Важно! Передаем delta напрямую, так как ProfileService
+       * сам выполнит сложение для поля 'actus'
+       */
       const updatedProfile = await profileService.updateProfile({
-        actus: Math.max(0, (profile.actus || 0) + delta)
+        actus: delta
       });
+      
+      console.log(`Обновление актусов: было ${profile.actus}, изменение ${delta}, стало ${updatedProfile.actus}`);
+      
       setActus(updatedProfile.actus);
       setProfile(updatedProfile);
       return updatedProfile;
@@ -417,9 +432,24 @@ export const AppProvider = ({ children }) => {
   
   const updateTaskCoins = async (delta) => {
     try {
+      // Если это покупка предмета (отрицательное значение delta)
+      if (delta < 0) {
+        // Проверяем, хватает ли премиум-валюты для покупки
+        if ((profile.taskCoins || 0) < Math.abs(delta)) {
+          throw new Error('Недостаточно TaskCoin для покупки');
+        }
+      }
+      
+      /* 
+       * Важно! Передаем delta напрямую, так как ProfileService
+       * сам выполнит сложение для поля 'taskCoins'
+       */
       const updatedProfile = await profileService.updateProfile({
-        taskCoins: Math.max(0, (profile.taskCoins || 0) + delta)
+        taskCoins: delta
       });
+      
+      console.log(`Обновление TaskCoins: было ${profile.taskCoins}, изменение ${delta}, стало ${updatedProfile.taskCoins}`);
+      
       setTaskCoins(updatedProfile.taskCoins);
       setProfile(updatedProfile);
       return updatedProfile;

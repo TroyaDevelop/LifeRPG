@@ -19,6 +19,7 @@ import ProfileScreen from '../screens/ProfileScreen';
 import AvatarCustomizationScreen from '../screens/AvatarCustomizationScreen';
 import AboutScreen from '../screens/AboutScreen';
 import InventoryScreen from '../screens/InventoryScreen'; // Добавляем импорт экрана инвентаря
+import ShopScreen from '../screens/ShopScreen'; // Добавляем импорт экрана магазина
 
 const Stack = createNativeStackNavigator();
 
@@ -67,6 +68,11 @@ export default function AppNavigator() {
           options={{ 
             headerShown: false 
           }} 
+        />
+        <Stack.Screen 
+          name="Shop" 
+          component={ShopScreen}
+          /* Добавляем экран магазина */ 
         />
       </Stack.Navigator>
     </NavigationContainer>

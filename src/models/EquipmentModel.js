@@ -1,52 +1,57 @@
-// Модель для хранения информации о снаряжении
+/**
+ * Модель для предмета снаряжения
+ */
 class EquipmentModel {
   /**
-   * Создает новый экземпляр снаряжения
-   * @param {Object} params - Параметры снаряжения
-   * @param {string|null} params.id - Уникальный идентификатор
-   * @param {string} params.name - Название предмета
-   * @param {string} params.type - Тип предмета ('head', 'body', 'legs', 'footwear', 'weapon')
-   * @param {string} params.description - Описание предмета
-   * @param {string} params.image - Путь к изображению предмета
-   * @param {Object} params.stats - Характеристики предмета
-   * @param {string} params.rarity - Редкость предмета ('common', 'rare', 'epic', 'legendary')
-   * @param {number} params.price - Цена предмета в игровой валюте
-   * @param {boolean} params.equipped - Надет ли предмет на персонажа
-   * @param {Date} params.createdAt - Дата создания предмета
+   * @param {Object} data - Данные предмета
+   * @param {string} data.id - Уникальный идентификатор предмета
+   * @param {string} data.name - Название предмета
+   * @param {string} data.type - Тип предмета (head, body, legs, footwear, weapon)
+   * @param {string} data.description - Описание предмета
+   * @param {string} data.image - URL изображения предмета
+   * @param {string} data.rarity - Редкость предмета (common, rare, epic, legendary)
+   * @param {Object} data.stats - Характеристики предмета
+   * @param {number} data.level - Требуемый уровень для использования предмета
+   * @param {number} data.price - Цена предмета
+   * @param {string} data.set - Название набора, к которому принадлежит предмет
+   * @param {boolean} data.equipped - Флаг, указывающий, надет ли предмет
+   * @param {string} data.originalId - Оригинальный ID предмета (для купленных предметов)
    */
-  constructor({
-    id = null,
-    name = '',
-    type = '', // 'head', 'body', 'legs', 'footwear', 'weapon'
-    description = '',
-    image = '',
-    stats = {}, // { strength: 0, intelligence: 0, etc. }
-    rarity = 'common', // common, rare, epic, legendary
-    price = 0,
-    equipped = false,
-    createdAt = new Date(),
-    level = 1, // Минимальный уровень для использования
-    set = null, // Название набора, к которому принадлежит предмет
-  }) {
-    this.id = id || Math.random().toString(36).substr(2, 9);
-    this.name = name;
-    this.type = type;
-    this.description = description;
-    this.image = image;
-    this.stats = stats;
-    this.rarity = rarity;
-    this.price = price;
-    this.equipped = equipped;
-    this.createdAt = createdAt;
-    this.level = level;
-    this.set = set;
+  constructor(data = {}) {
+    this.id = data.id || `equipment_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+    this.name = data.name || 'Безымянный предмет';
+    this.type = data.type || 'weapon'; // По умолчанию тип - оружие
+    this.description = data.description || '';
+    this.image = data.image || null;
+    this.rarity = data.rarity || 'common';
+    this.stats = data.stats || {};
+    this.level = data.level || 1;
+    this.price = data.price || 100;
+    this.set = data.set || null;
+    this.equipped = data.equipped || false;
+    this.originalId = data.originalId || null;
+    this.createdAt = data.createdAt || new Date().toISOString();
+    this.updatedAt = data.updatedAt || new Date().toISOString();
   }
-
+  
   /**
-   * Возвращает множитель бонуса в зависимости от редкости предмета
-   * @returns {number} - Множитель бонуса
+   * Получает множитель бонусов в зависимости от редкости предмета
+   * @returns {number} Множитель бонусов
    */
   getRarityMultiplier() {
+    switch (this.rarity) {
+      case 'legendary': return 2.0;  // Двойной бонус для легендарных предметов
+      case 'epic': return 1.5;       // Полуторный бонус для эпических предметов
+      case 'rare': return 1.25;      // Небольшой дополнительный бонус для редких предметов
+      default: return 1.0;           // Стандартный бонус для обычных предметов
+    }
+  }
+  
+  /**
+   * Получает числовое значение редкости предмета
+   * @returns {number} Числовое значение редкости (1-4)
+   */
+  getRarityValue() {
     switch (this.rarity) {
       case 'legendary': return 4;
       case 'epic': return 3;
@@ -56,8 +61,8 @@ class EquipmentModel {
   }
   
   /**
-   * Возвращает цвет в зависимости от редкости предмета
-   * @returns {string} - Цветовой код
+   * Получает цветовой код для отображения редкости предмета
+   * @returns {string} Цветовой код в формате HEX
    */
   getRarityColor() {
     switch (this.rarity) {
@@ -66,6 +71,40 @@ class EquipmentModel {
       case 'rare': return '#4E64EE';      // Синий
       default: return '#48BB78';          // Зеленый (common)
     }
+  }
+  
+  /**
+   * Получает текстовое представление редкости предмета
+   * @returns {string} Текстовое представление редкости на русском
+   */
+  getRarityLabel() {
+    switch (this.rarity) {
+      case 'legendary': return 'Легендарный';
+      case 'epic': return 'Эпический';
+      case 'rare': return 'Редкий';
+      default: return 'Обычный';
+    }
+  }
+  
+  /**
+   * Получает общую силу предмета на основе его статистик и редкости
+   * @returns {number} Числовое значение силы предмета
+   */
+  getItemPower() {
+    let power = 0;
+    
+    // Суммируем все статистики предмета
+    if (this.stats) {
+      Object.values(this.stats).forEach(value => {
+        power += value;
+      });
+    }
+    
+    // Умножаем на коэффициент редкости
+    power *= this.getRarityMultiplier();
+    
+    // Округляем до целого числа
+    return Math.round(power);
   }
 }
 

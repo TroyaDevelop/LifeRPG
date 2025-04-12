@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert, ScrollView } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Header, Button, Modal, LoadingIndicator, Avatar } from '../components';
+import { CurrencyBar } from '../components/Currency'; // Импортируем компонент валюты
 import { EquipmentService } from '../services';
 import { useAppContext } from '../context/AppContext';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -14,90 +15,85 @@ const EQUIPMENT_TYPES = {
   weapon: 'Оружие'
 };
 
-const InventoryScreen = ({ navigation }) => {
-  const [equipment, setEquipment] = useState([]);
+const ShopScreen = ({ navigation }) => {
+  const [shopItems, setShopItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedItem, setSelectedItem] = useState(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [activeTab, setActiveTab] = useState('all');
-  const [equippedItems, setEquippedItems] = useState({});
   
-  // Получаем данные аватара из контекста
-  const { avatar, updateAvatar } = useAppContext();
+  // Получаем данные из контекста на верхнем уровне компонента
+  const { actus, updateActus, profile } = useAppContext();
 
   const equipmentService = new EquipmentService();
 
-  const fetchEquipment = async () => {
+  // Загрузка предметов, доступных в магазине
+  const fetchShopItems = async () => {
     setLoading(true);
     try {
-      // Используем метод getPlayerInventory для загрузки предметов инвентаря игрока
-      const items = await equipmentService.getPlayerInventory();
-      setEquipment(items);
-      
-      // Группируем экипированные предметы по типу
-      const equipped = {};
-      items.filter(item => item.equipped).forEach(item => {
-        equipped[item.type] = item;
-      });
-      setEquippedItems(equipped);
+      // Здесь получаем предметы для магазина из сервиса
+      const items = await equipmentService.getShopItems();
+      setShopItems(items);
     } catch (error) {
-      console.error('Error fetching equipment:', error);
+      console.error('Error fetching shop items:', error);
     } finally {
       setLoading(false);
     }
   };
 
+  // Загрузка предметов при открытии экрана
   useFocusEffect(
     useCallback(() => {
-      fetchEquipment();
+      fetchShopItems();
     }, [])
   );
 
+  // Обработка нажатия на предмет
   const handleItemPress = (item) => {
     setSelectedItem(item);
     setShowDetailsModal(true);
   };
 
-  const handleEquipItem = async () => {
+  // Покупка предмета
+  const handleBuyItem = async () => {
     if (!selectedItem) return;
-    
+
+    // Проверка наличия валюты
+    if (actus < selectedItem.price) {
+      Alert.alert(
+        "Недостаточно средств",
+        "У вас недостаточно актусов для покупки этого предмета.",
+        [{ text: "ОК" }]
+      );
+      return;
+    }
+
     try {
-      await equipmentService.equipItem(selectedItem.id);
+      // Покупаем предмет
+      await equipmentService.addToInventory(selectedItem);
       
-      // Обновляем экипировку аватара
-      if (avatar) {
-        const updatedEquipment = { ...avatar.equipment };
-        updatedEquipment[selectedItem.type] = selectedItem.id;
-        updateAvatar({ equipment: updatedEquipment });
-      }
+      // Списываем валюту - передаем положительное число, но со знаком минус
+      await updateActus(-Math.abs(selectedItem.price));
       
-      fetchEquipment();
+      Alert.alert(
+        "Успешная покупка",
+        `Вы успешно приобрели ${selectedItem.name}! Предмет добавлен в ваш инвентарь.`,
+        [{ text: "ОК" }]
+      );
+
+      fetchShopItems();
       setShowDetailsModal(false);
     } catch (error) {
-      console.error('Error equipping item:', error);
+      console.error('Error buying item:', error);
+      Alert.alert(
+        "Ошибка покупки",
+        "Произошла ошибка при покупке предмета. Попробуйте еще раз.",
+        [{ text: "ОК" }]
+      );
     }
   };
 
-  const handleUnequipItem = async () => {
-    if (!selectedItem) return;
-    
-    try {
-      await equipmentService.unequipItem(selectedItem.id);
-      
-      // Обновляем экипировку аватара
-      if (avatar) {
-        const updatedEquipment = { ...avatar.equipment };
-        updatedEquipment[selectedItem.type] = null;
-        updateAvatar({ equipment: updatedEquipment });
-      }
-      
-      fetchEquipment();
-      setShowDetailsModal(false);
-    } catch (error) {
-      console.error('Error unequipping item:', error);
-    }
-  };
-
+  // Определение цвета редкости предмета
   const renderRarityColor = (rarity) => {
     switch (rarity) {
       case 'common': return '#A0A0A0';
@@ -108,6 +104,7 @@ const InventoryScreen = ({ navigation }) => {
     }
   };
   
+  // Получение текстового представления редкости
   const getRarityLabel = (rarity) => {
     switch (rarity) {
       case 'common': return 'Обычный';
@@ -118,6 +115,7 @@ const InventoryScreen = ({ navigation }) => {
     }
   };
 
+  // Получение иконки для типа снаряжения
   const getEquipmentTypeIcon = (type) => {
     switch (type) {
       case 'head': return 'helmet-outline';
@@ -129,17 +127,20 @@ const InventoryScreen = ({ navigation }) => {
     }
   };
 
+  // Получение названия типа снаряжения
   const getEquipmentTypeLabel = (type) => {
     return EQUIPMENT_TYPES[type] || type;
   };
 
-  const filteredEquipment = equipment.filter(item => 
+  // Фильтрация предметов в магазине по выбранному типу
+  const filteredItems = shopItems.filter(item => 
     activeTab === 'all' || item.type === activeTab
   );
 
+  // Рендер элемента в списке
   const renderItem = ({ item }) => (
     <TouchableOpacity
-      style={[styles.itemCard, item.equipped && styles.equippedItem]}
+      style={styles.itemCard}
       onPress={() => handleItemPress(item)}
     >
       <View style={styles.itemContent}>
@@ -152,14 +153,13 @@ const InventoryScreen = ({ navigation }) => {
         <View style={styles.itemInfo}>
           <Text style={styles.itemName}>{item.name}</Text>
           <Text style={styles.itemType}>{getEquipmentTypeLabel(item.type)}</Text>
-          {item.equipped && <Text style={styles.equippedText}>Надето</Text>}
+          
+          {item.level > 1 && (
+            <Text style={styles.levelRequirementSmall}>Уровень: {item.level}</Text>
+          )}
         </View>
-        <View style={styles.statsPreview}>
-          {Object.entries(item.stats || {}).slice(0, 2).map(([key, value]) => (
-            <Text key={key} style={styles.statPreview}>
-              +{value} {key}
-            </Text>
-          ))}
+        <View style={styles.priceTag}>
+          <CurrencyBar amount={item.price} compact={true} style={styles.compactCurrency} />
         </View>
         <Ionicons 
           name="chevron-forward-outline" 
@@ -171,110 +171,71 @@ const InventoryScreen = ({ navigation }) => {
     </TouchableOpacity>
   );
   
-  // Рендер вкладок категорий
+  // Рендер вкладок фильтрации
   const renderTabs = () => (
-    <ScrollView 
-      horizontal 
-      showsHorizontalScrollIndicator={false} 
-      style={styles.tabsContainer}
-      contentContainerStyle={styles.tabsContent}
-    >
-      <TouchableOpacity 
-        style={[styles.tab, activeTab === 'all' && styles.activeTab]} 
-        onPress={() => setActiveTab('all')}
+    <View style={styles.tabsContainer}>
+      <ScrollView 
+        horizontal 
+        showsHorizontalScrollIndicator={false} 
+        contentContainerStyle={styles.tabsContent}
       >
-        <Ionicons 
-          name="grid-outline" 
-          size={20} 
-          color={activeTab === 'all' ? '#4E64EE' : '#666666'} 
-        />
-        <Text style={[
-          styles.tabText, 
-          activeTab === 'all' && styles.activeTabText
-        ]}>
-          Все
-        </Text>
-      </TouchableOpacity>
-      
-      {Object.entries(EQUIPMENT_TYPES).map(([type, label]) => (
         <TouchableOpacity 
-          key={type}
-          style={[styles.tab, activeTab === type && styles.activeTab]} 
-          onPress={() => setActiveTab(type)}
+          style={[styles.tab, activeTab === 'all' && styles.activeTab]} 
+          onPress={() => setActiveTab('all')}
         >
           <Ionicons 
-            name={getEquipmentTypeIcon(type)} 
+            name="grid-outline" 
             size={20} 
-            color={activeTab === type ? '#4E64EE' : '#666666'} 
+            color={activeTab === 'all' ? '#4E64EE' : '#666666'} 
           />
           <Text style={[
             styles.tabText, 
-            activeTab === type && styles.activeTabText
+            activeTab === 'all' && styles.activeTabText
           ]}>
-            {label}
+            Все
           </Text>
         </TouchableOpacity>
-      ))}
-    </ScrollView>
-  );
-
-  // Секция с надетыми предметами
-  const renderEquippedItems = () => (
-    <View style={styles.equippedSection}>
-      <Text style={styles.sectionTitle}>Экипировка персонажа</Text>
-      
-      <View style={styles.characterPreview}>
-        <View style={styles.avatarContainer}>
-          <Avatar size="large" avatarData={avatar} showEquipment={true} />
-        </View>
         
-        <View style={styles.equippedSlotsContainer}>
-          {Object.entries(EQUIPMENT_TYPES).map(([type, label]) => (
-            <View key={type} style={styles.equippedSlot}>
-              <View style={[
-                styles.slotIcon,
-                equippedItems[type] ? { backgroundColor: renderRarityColor(equippedItems[type].rarity) } : {}
-              ]}>
-                <Ionicons 
-                  name={getEquipmentTypeIcon(type)} 
-                  size={22} 
-                  color={equippedItems[type] ? "#FFFFFF" : "#CCCCCC"} 
-                />
-              </View>
-              <Text style={styles.slotLabel}>{label}</Text>
-              {equippedItems[type] && (
-                <TouchableOpacity 
-                  style={styles.equippedItemButton}
-                  onPress={() => handleItemPress(equippedItems[type])}
-                >
-                  <Text style={styles.equippedItemName} numberOfLines={1}>
-                    {equippedItems[type].name}
-                  </Text>
-                </TouchableOpacity>
-              )}
-            </View>
-          ))}
-        </View>
-      </View>
+        {Object.entries(EQUIPMENT_TYPES).map(([type, label]) => (
+          <TouchableOpacity 
+            key={type}
+            style={[styles.tab, activeTab === type && styles.activeTab]} 
+            onPress={() => setActiveTab(type)}
+          >
+            <Ionicons 
+              name={getEquipmentTypeIcon(type)} 
+              size={20} 
+              color={activeTab === type ? '#4E64EE' : '#666666'} 
+            />
+            <Text style={[
+              styles.tabText, 
+              activeTab === type && styles.activeTabText
+            ]}>
+              {label}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
     </View>
   );
 
   return (
     <View style={styles.container}>
-      <Header title="Инвентарь" hasBack={true} onBack={() => navigation.goBack()} />
+      <Header title="Магазин снаряжения" hasBack={true} onBack={() => navigation.goBack()} />
+      
+      <View style={styles.currencyContainer}>
+        <CurrencyBar amount={actus} compact={true} />
+      </View>
       
       {loading ? (
         <LoadingIndicator />
       ) : (
         <View style={styles.content}>
-          {renderEquippedItems()}
-          
-          <Text style={styles.sectionTitle}>Доступные предметы</Text>
           {renderTabs()}
           
-          {filteredEquipment.length > 0 ? (
+          {filteredItems.length > 0 ? (
             <FlatList
-              data={filteredEquipment}
+              data={filteredItems}
               renderItem={renderItem}
               keyExtractor={item => item.id}
               contentContainerStyle={styles.list}
@@ -283,8 +244,8 @@ const InventoryScreen = ({ navigation }) => {
             <View style={styles.emptyContainer}>
               <Text style={styles.emptyText}>
                 {activeTab === 'all' 
-                  ? 'У вас пока нет предметов в инвентаре' 
-                  : `У вас нет предметов типа "${getEquipmentTypeLabel(activeTab)}"`}
+                  ? 'В магазине пока нет доступных предметов' 
+                  : `Нет предметов типа "${getEquipmentTypeLabel(activeTab)}"`}
               </Text>
             </View>
           )}
@@ -322,7 +283,12 @@ const InventoryScreen = ({ navigation }) => {
             )}
             
             {selectedItem.level > 1 && (
-              <Text style={styles.levelRequirement}>Требуемый уровень: {selectedItem.level}</Text>
+              <Text style={[
+                styles.levelRequirement,
+                profile?.level < selectedItem.level ? styles.levelRequirementNotMet : {}
+              ]}>
+                Требуемый уровень: {selectedItem.level}
+              </Text>
             )}
             
             <Text style={styles.statsTitle}>Характеристики:</Text>
@@ -341,16 +307,18 @@ const InventoryScreen = ({ navigation }) => {
             )}
             
             <View style={styles.priceContainer}>
-              <Ionicons name="cash-outline" size={20} color="#4CD964" />
-              <Text style={styles.priceValue}>{selectedItem.price} актусов</Text>
+              <CurrencyBar amount={selectedItem.price} style={styles.modalCurrency} />
             </View>
             
             <View style={styles.buttonContainer}>
-              {selectedItem.equipped ? (
-                <Button title="Снять" onPress={handleUnequipItem} type="secondary" />
-              ) : (
-                <Button title="Экипировать" onPress={handleEquipItem} />
-              )}
+              <Button 
+                title="Купить" 
+                onPress={handleBuyItem} 
+                disabled={
+                  actus < selectedItem.price || 
+                  (selectedItem.level > 1 && profile?.level < selectedItem.level)
+                } 
+              />
             </View>
           </View>
         )}
@@ -364,74 +332,33 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F7F9FC',
   },
+  currencyContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E0E0E0',
+  },
+  currencyText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginLeft: 8,
+    color: '#333333',
+  },
   content: {
     flex: 1,
   },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginVertical: 12,
-    marginHorizontal: 16,
-    color: '#333333',
-  },
-  equippedSection: {
-    backgroundColor: '#FFFFFF',
-    padding: 16,
-    marginBottom: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  characterPreview: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  avatarContainer: {
-    width: 100,
-    marginRight: 16,
-  },
-  equippedSlotsContainer: {
-    flex: 1,
-  },
-  equippedSlot: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  slotIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#E0E0E0',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 8,
-  },
-  slotName: {
-    width: 80,
-    fontSize: 13,
-    color: '#666666',
-  },
-  slotItemName: {
-    flex: 1,
-    fontSize: 14,
-    color: '#333333',
-    fontWeight: '500',
-  },
-  emptySlot: {
-    color: '#AAAAAA',
-    fontStyle: 'italic',
-  },
   tabsContainer: {
-    maxHeight: 50,
+    backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: '#E0E0E0',
-    backgroundColor: '#FFFFFF',
   },
   tabsContent: {
+    flexDirection: 'row',
     paddingHorizontal: 12,
+    paddingVertical: 8,
   },
   tab: {
     flexDirection: 'row',
@@ -468,10 +395,6 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
-  equippedItem: {
-    borderColor: '#4CAF50',
-    borderWidth: 2,
-  },
   itemContent: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -498,19 +421,25 @@ const styles = StyleSheet.create({
     color: '#666666',
     marginTop: 2,
   },
-  equippedText: {
+  levelRequirementSmall: {
     fontSize: 12,
-    color: '#4CAF50',
-    fontWeight: 'bold',
+    color: '#F39C12',
     marginTop: 2,
   },
-  statsPreview: {
+  priceTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F5F7FA',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
     marginRight: 8,
   },
-  statPreview: {
-    fontSize: 12,
-    color: '#4E64EE',
-    textAlign: 'right',
+  priceValue: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginRight: 4,
+    color: '#333333',
   },
   itemArrow: {
     marginLeft: 8,
@@ -583,6 +512,9 @@ const styles = StyleSheet.create({
     color: '#F39C12',
     marginBottom: 16,
   },
+  levelRequirementNotMet: {
+    color: '#E74C3C',
+  },
   statsTitle: {
     fontSize: 16,
     fontWeight: 'bold',
@@ -620,8 +552,8 @@ const styles = StyleSheet.create({
     marginTop: 8,
     marginBottom: 24,
   },
-  priceValue: {
-    fontSize: 16,
+  priceValueLarge: {
+    fontSize: 18,
     fontWeight: 'bold',
     color: '#333333',
     marginLeft: 6,
@@ -630,6 +562,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     width: '100%',
   },
+  compactCurrency: {
+    padding: 0,
+    backgroundColor: 'transparent',
+  },
+  modalCurrency: {
+    marginTop: 8,
+  },
 });
 
-export default InventoryScreen;
+export default ShopScreen;
