@@ -4,10 +4,10 @@
 export const sampleEquipment = [
   // Набор обычного снаряжения
   {
-    id: 'equip_head_common',
-    name: 'Шляпа искателя приключений',
+    id: 'farmer_set_head',
+    name: 'Фермерская шляпа',
     type: 'head',
-    description: 'Простая шляпа, защищающая от солнца.',
+    description: 'Защищает от солнца.',
     rarity: 'common',
     stats: {
       intelligence: 1,
@@ -17,9 +17,10 @@ export const sampleEquipment = [
     level: 1
   },
   {
-    id: 'equip_body_common',
-    name: 'Льняная рубашка',
+    id: 'farmer_set_body',
+    name: 'Фермерская льняная рубашка',
     type: 'body',
+
     description: 'Обычная рубашка из льняной ткани.',
     rarity: 'common',
     stats: {
@@ -30,10 +31,10 @@ export const sampleEquipment = [
     level: 1
   },
   {
-    id: 'equip_legs_common',
-    name: 'Штаны путешественника',
+    id: 'farmer_set_legs',
+    name: 'Фермерские штаны',
     type: 'legs',
-    description: 'Прочные штаны для длительных походов.',
+    description: 'Просторные штаны для удобства работы в поле.',
     rarity: 'common',
     stats: {
       endurance: 2
@@ -42,10 +43,10 @@ export const sampleEquipment = [
     level: 1
   },
   {
-    id: 'equip_footwear_common',
-    name: 'Кожаные ботинки',
+    id: 'farmer_set_footwear',
+    name: 'Фермерские ботинки',
     type: 'footwear',
-    description: 'Удобные ботинки для долгих путешествий.',
+    description: 'Удобство превыше всего.',
     rarity: 'common',
     stats: {
       endurance: 1,
@@ -55,15 +56,15 @@ export const sampleEquipment = [
     level: 1
   },
   {
-    id: 'equip_weapon_common',
-    name: 'Учебный меч',
+    id: 'wooden_bow',
+    name: 'Деревянный лук',
     type: 'weapon',
-    description: 'Деревянный меч для тренировок.',
+    description: 'В умелых руках, выпущенная стрела попадёт в глаз и воробью.',
     rarity: 'common',
     stats: {
       strength: 2
     },
-    price: 80,
+    price: 1,
     level: 1
   },
   
@@ -123,17 +124,17 @@ export const sampleEquipment = [
     level: 5
   },
   {
-    id: 'equip_weapon_rare',
-    name: 'Стальной меч',
+    id: 'spear',
+    name: 'Копье',
     type: 'weapon',
-    description: 'Хорошо сбалансированный меч из высококачественной стали.',
-    rarity: 'rare',
+    description: 'Хорошо сбалансированное копье из высококачественной стали.',
+    rarity: 'common',
     stats: {
       strength: 4,
       speed: 1
     },
-    price: 550,
-    level: 5
+    price: 1,
+    level: 1
   },
   
   // Набор эпического снаряжения

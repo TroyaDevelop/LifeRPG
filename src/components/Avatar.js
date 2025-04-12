@@ -3,6 +3,7 @@ import { View, Image, StyleSheet, Text } from 'react-native';
 import { AvatarService } from '../services/AvatarService';
 import { EquipmentService } from '../services';
 import { BODY_TYPES, HAIR_STYLES, HAIR_COLORS, EYE_SPRITE, EYE_COLORS } from '../constants/AvatarSprites'; 
+import { ALL_EQUIPMENT_SPRITES, RARITY_COLORS } from '../constants/EquipmentSprites';
 import LoadingIndicator from './LoadingIndicator';
 
 /**
@@ -43,6 +44,8 @@ const Avatar = ({ size = 'medium', onPress, style, avatarData, showEquipment = f
   }, [avatarData]);
 
   // Загружаем снаряжение, если нужно его отображать
+  // Важное изменение: добавляем avatarData в зависимости, чтобы
+  // компонент перезагружал снаряжение при изменении аватара
   useEffect(() => {
     if (showEquipment) {
       const loadEquippedItems = async () => {
@@ -50,11 +53,13 @@ const Avatar = ({ size = 'medium', onPress, style, avatarData, showEquipment = f
         try {
           const equipmentService = new EquipmentService();
           const items = await equipmentService.getEquippedItems();
+          console.log('Avatar: Loaded equipped items:', items.length);
           
           // Группируем предметы по типу
           const equipped = {};
           items.forEach(item => {
             equipped[item.type] = item;
+            console.log(`Avatar: Equipped ${item.type}: ${item.name}`);
           });
           
           setEquippedItems(equipped);
@@ -67,7 +72,7 @@ const Avatar = ({ size = 'medium', onPress, style, avatarData, showEquipment = f
       
       loadEquippedItems();
     }
-  }, [showEquipment]);
+  }, [showEquipment, avatarData]); // Добавляем avatarData в зависимости
 
   // Определяем размеры аватара
   const getSize = () => {
@@ -115,12 +120,7 @@ const Avatar = ({ size = 'medium', onPress, style, avatarData, showEquipment = f
 
   // Функция для получения цвета снаряжения по редкости
   const getEquipmentColor = (rarity) => {
-    switch (rarity) {
-      case 'legendary': return '#FF8C00'; // Оранжевый
-      case 'epic': return '#9013FE';      // Фиолетовый
-      case 'rare': return '#4E64EE';      // Синий
-      default: return '#48BB78';          // Зеленый (common)
-    }
+    return RARITY_COLORS[rarity] || RARITY_COLORS.common;
   };
 
   // Функция для получения стилей элемента снаряжения
@@ -132,6 +132,41 @@ const Avatar = ({ size = 'medium', onPress, style, avatarData, showEquipment = f
     return { 
       backgroundColor: getEquipmentColor(item.rarity),
     };
+  };
+
+  // Функция для получения спрайта снаряжения по ID
+  const getEquipmentSprite = (item) => {
+    // Проверяем, что у предмета есть originalId (оригинальный ID)
+    const itemId = item.originalId || item.id;
+    
+    // Сначала попробуем найти спрайт по originalId, затем по id без суффикса _player_
+    let sprite = null;
+    
+    if (ALL_EQUIPMENT_SPRITES[itemId]) {
+      sprite = ALL_EQUIPMENT_SPRITES[itemId].sprite;
+    } 
+    // Если не нашли по точному совпадению, пробуем найти базовый ID
+    else if (item.id && item.id.includes('_player_')) {
+      // Извлекаем базовый ID, убирая суффикс _player_timestamp
+      const baseId = item.id.split('_player_')[0];
+      if (ALL_EQUIPMENT_SPRITES[baseId]) {
+        sprite = ALL_EQUIPMENT_SPRITES[baseId].sprite;
+      }
+    }
+
+    console.log('Equipment debug - Item:', item.name);
+    console.log('ID:', item.id);
+    console.log('OriginalID:', item.originalId);
+    console.log('Looking for sprite with ID:', itemId);
+    console.log('Found sprite:', sprite ? 'YES' : 'NO');
+    
+    return sprite;
+  };
+
+  // Проверяем, должны ли мы скрыть волосы из-за головного убора
+  const shouldHideHair = () => {
+    // Если есть головной убор и прическа - афро, скрываем волосы
+    return showEquipment && equippedItems.head && avatar.hairStyle === 'afro';
   };
 
   return (
@@ -151,8 +186,77 @@ const Avatar = ({ size = 'medium', onPress, style, avatarData, showEquipment = f
           resizeMode="contain"
         />
         
-        {/* Прическа персонажа - в два слоя */}
-        {hairStyle && (
+        {/* Слой снаряжения (тело, ноги, обувь и оружие) - отображаем только если showEquipment=true */}
+        {showEquipment && (
+          <>
+            {/* Предмет для тела */}
+            {equippedItems.body && getEquipmentSprite(equippedItems.body) ? (
+              <Image 
+                source={getEquipmentSprite(equippedItems.body)}
+                style={styles.bodySlot}
+                resizeMode="contain"
+              />
+            ) : equippedItems.body && (
+              <View 
+                style={[
+                  styles.bodySlot, 
+                  { backgroundColor: getEquipmentColor(equippedItems.body.rarity), opacity: 0.8 }
+                ]} 
+              />
+            )}
+            
+            {/* Предмет для ног */}
+            {equippedItems.legs && getEquipmentSprite(equippedItems.legs) ? (
+              <Image 
+                source={getEquipmentSprite(equippedItems.legs)}
+                style={styles.legsSlot}
+                resizeMode="contain"
+              />
+            ) : equippedItems.legs && (
+              <View 
+                style={[
+                  styles.legsSlot, 
+                  { backgroundColor: getEquipmentColor(equippedItems.legs.rarity), opacity: 0.8 }
+                ]} 
+              />
+            )}
+            
+            {/* Предмет для обуви */}
+            {equippedItems.footwear && getEquipmentSprite(equippedItems.footwear) ? (
+              <Image 
+                source={getEquipmentSprite(equippedItems.footwear)}
+                style={styles.footwearSlot}
+                resizeMode="contain"
+              />
+            ) : equippedItems.footwear && (
+              <View 
+                style={[
+                  styles.footwearSlot, 
+                  { backgroundColor: getEquipmentColor(equippedItems.footwear.rarity), opacity: 0.8 }
+                ]} 
+              />
+            )}
+            
+            {/* Предмет для оружия */}
+            {equippedItems.weapon && getEquipmentSprite(equippedItems.weapon) ? (
+              <Image 
+                source={getEquipmentSprite(equippedItems.weapon)}
+                style={styles.weaponSlot}
+                resizeMode="contain"
+              />
+            ) : equippedItems.weapon && (
+              <View 
+                style={[
+                  styles.weaponSlot, 
+                  { backgroundColor: getEquipmentColor(equippedItems.weapon.rarity), opacity: 0.8 }
+                ]} 
+              />
+            )}
+          </>
+        )}
+        
+        {/* Прическа персонажа - в два слоя, но не отображаем афро с шапкой */}
+        {hairStyle && !shouldHideHair() && (
           <>
             {/* Базовая форма волос с применением цвета */}
             <Image
@@ -172,59 +276,20 @@ const Avatar = ({ size = 'medium', onPress, style, avatarData, showEquipment = f
           </>
         )}
         
-        {/* Слой снаряжения - отображаем только если showEquipment=true */}
-        {showEquipment && (
-          <View style={styles.equipmentLayer}>
-            {/* Предмет для головы */}
-            {equippedItems.head && (
-              <View 
-                style={[
-                  styles.headSlot, 
-                  getEquipmentStyle('head')
-                ]} 
-              />
-            )}
-            
-            {/* Предмет для тела */}
-            {equippedItems.body && (
-              <View 
-                style={[
-                  styles.bodySlot, 
-                  getEquipmentStyle('body')
-                ]} 
-              />
-            )}
-            
-            {/* Предмет для ног */}
-            {equippedItems.legs && (
-              <View 
-                style={[
-                  styles.legsSlot, 
-                  getEquipmentStyle('legs')
-                ]} 
-              />
-            )}
-            
-            {/* Предмет для обуви */}
-            {equippedItems.footwear && (
-              <View 
-                style={[
-                  styles.footwearSlot, 
-                  getEquipmentStyle('footwear')
-                ]} 
-              />
-            )}
-            
-            {/* Предмет для оружия */}
-            {equippedItems.weapon && (
-              <View 
-                style={[
-                  styles.weaponSlot, 
-                  getEquipmentStyle('weapon')
-                ]} 
-              />
-            )}
-          </View>
+        {/* Головной убор должен быть последним, чтобы отрисоваться поверх всего */}
+        {showEquipment && equippedItems.head && getEquipmentSprite(equippedItems.head) ? (
+          <Image 
+            source={getEquipmentSprite(equippedItems.head)}
+            style={styles.headSlot}
+            resizeMode="contain"
+          />
+        ) : showEquipment && equippedItems.head && (
+          <View 
+            style={[
+              styles.headSlot, 
+              { backgroundColor: getEquipmentColor(equippedItems.head.rarity), opacity: 0.8 }
+            ]} 
+          />
         )}
       </View>
     </View>
@@ -240,8 +305,8 @@ const styles = StyleSheet.create({
     borderRadius: 12, // Немного скругляем края
   },
   spriteContainer: {
-    width: '95%', // Немного уменьшаем размер спрайтов
-    height: '95%',
+    width: '100%', 
+    height: '100%',
     position: 'relative',
   },
   baseSprite: {
@@ -250,20 +315,67 @@ const styles = StyleSheet.create({
     height: '100%',
     top: 0,
     left: 0,
+    zIndex: 1,
   },
   eyeSprite: {
     position: 'absolute',
     width: '100%',
     height: '100%',
-    zIndex: 1,
+    zIndex: 2,
     top: 0,
     left: 0,
   },
+  // Слои снаряжения
+  equipmentLayer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: '100%', 
+    height: '100%',
+    zIndex: 3, // Базовый z-index для слоя снаряжения
+  },
+  bodySlot: {
+    position: 'absolute',
+    width: '100%',
+    height: '100%',
+    top: 0,
+    left: 0,
+    opacity: 1,
+    zIndex: 3, // Тело (рубашка)
+  },
+  legsSlot: {
+    position: 'absolute',
+    width: '100%',
+    height: '100%',
+    top: 0,
+    left: 0,
+    opacity: 1,
+    zIndex: 3, // Ноги (тот же уровень, что и тело)
+  },
+  footwearSlot: {
+    position: 'absolute',
+    width: '100%',
+    height: '100%',
+    top: 0,
+    left: 0,
+    opacity: 1,
+    zIndex: 3, // Обувь (тот же уровень, что и тело)
+  },
+  weaponSlot: {
+    position: 'absolute',
+    width: '100%',
+    height: '100%',
+    top: 0,
+    left: 0,
+    opacity: 1,
+    zIndex: 3, // Оружие (тот же уровень, что и тело)
+  },
+  // Волосы выше тела, но ниже шапки
   hairStyle: {
     position: 'absolute',
     width: '100%',
     height: '100%',
-    zIndex: 2, // Под деталями волос, но выше базового спрайта
+    zIndex: 4, // Волосы выше тела
     top: 0,
     left: 0,
   },
@@ -271,63 +383,19 @@ const styles = StyleSheet.create({
     position: 'absolute',
     width: '100%',
     height: '100%',
-    zIndex: 3, // Поверх базовых волос
+    zIndex: 5, // Детали волос выше базовых волос
     top: 0,
     left: 0,
   },
-  // Стили для слоя снаряжения
-  equipmentLayer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    width: '100%', 
-    height: '100%',
-    zIndex: 5, // Поверх всего остального
-  },
+  // Шапка выше всего
   headSlot: {
     position: 'absolute',
-    top: '5%',
-    left: '30%',
-    width: '40%',
-    height: '20%',
-    borderRadius: 20,
-    opacity: 0.8,
-  },
-  bodySlot: {
-    position: 'absolute',
-    top: '25%',
-    left: '20%',
-    width: '60%',
-    height: '30%',
-    borderRadius: 10,
-    opacity: 0.8,
-  },
-  legsSlot: {
-    position: 'absolute',
-    top: '55%',
-    left: '30%',
-    width: '40%',
-    height: '25%',
-    borderRadius: 10,
-    opacity: 0.8,
-  },
-  footwearSlot: {
-    position: 'absolute',
-    top: '80%',
-    left: '30%',
-    width: '40%',
-    height: '15%',
-    borderRadius: 5,
-    opacity: 0.8,
-  },
-  weaponSlot: {
-    position: 'absolute',
-    top: '40%',
-    right: '5%',
-    width: '20%',
-    height: '30%',
-    borderRadius: 5,
-    opacity: 0.8,
+    width: '100%',
+    height: '100%',
+    top: 0,
+    left: 0,
+    opacity: 1,
+    zIndex: 10, // Очень высокий z-index, чтобы гарантированно быть поверх всего
   },
 });
 

@@ -18,7 +18,22 @@ export default function SettingsScreen({ navigation }) {
   // Корректно получаем функции из контекста
   const { resetProgress, refreshData } = useAppContext();
 
-  const menuItems = [
+  // Разделяем пункты меню на категории
+  const profileMenuItems = [
+    {
+      id: 'profile',
+      title: 'Профиль',
+      icon: 'person-outline',
+      description: 'Управление профилем персонажа',
+      onPress: () => navigation.navigate('Profile')
+    },
+    {
+      id: 'shop',
+      title: 'Магазин снаряжения',
+      icon: 'cart-outline',
+      description: 'Приобретение снаряжения для персонажа',
+      onPress: () => navigation.navigate('Shop')
+    },
     {
       id: 'achievements',
       title: 'Достижения',
@@ -26,6 +41,9 @@ export default function SettingsScreen({ navigation }) {
       description: 'Ваши полученные и доступные достижения',
       onPress: () => navigation.navigate('Achievements')
     },
+  ];
+  
+  const taskMenuItems = [
     {
       id: 'categories',
       title: 'Категории',
@@ -40,13 +58,9 @@ export default function SettingsScreen({ navigation }) {
       description: 'Просмотр выполненных и архивированных задач',
       onPress: () => navigation.navigate('ArchivedTasks')
     },
-    {
-      id: 'profile',
-      title: 'Профиль',
-      icon: 'person-outline',
-      description: 'Управление профилем персонажа',
-      onPress: () => navigation.navigate('Profile')
-    },
+  ];
+  
+  const systemMenuItems = [
     {
       id: 'appSettings',
       title: 'Настройки приложения',
@@ -260,9 +274,22 @@ export default function SettingsScreen({ navigation }) {
       />
       
       <ScrollView style={styles.scrollView}>
+        {/* Первая секция: профиль и персонаж */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Основные настройки</Text>
-          {menuItems.map(renderMenuItem)}
+          <Text style={styles.sectionTitle}>Персонаж</Text>
+          {profileMenuItems.map(renderMenuItem)}
+        </View>
+        
+        {/* Вторая секция: задачи */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Управление задачами</Text>
+          {taskMenuItems.map(renderMenuItem)}
+        </View>
+        
+        {/* Третья секция: системные настройки */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Система</Text>
+          {systemMenuItems.map(renderMenuItem)}
         </View>
         
         <View style={styles.dangerSection}>

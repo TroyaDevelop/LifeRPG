@@ -120,7 +120,6 @@ const ProfileScreen = ({ navigation }) => {
           </View>
           
           <View style={styles.profileInfo}>
-            <Text style={styles.profileName}>Уровень {profile?.level}</Text>
             {profile && <LevelProgressBar profile={profile} style={styles.levelProgress} />}
             
             <View style={styles.resourcesContainer}>
@@ -161,13 +160,7 @@ const ProfileScreen = ({ navigation }) => {
             style={styles.editAvatarButton}
           />
           
-          {/* Добавляем кнопку для перехода в магазин снаряжения */}
-          <Button 
-            title="Магазин снаряжения" 
-            onPress={() => navigation.navigate('Shop')}
-            icon="cart-outline"
-            style={styles.editAvatarButton}
-          />
+          {/* Кнопка "Магазин снаряжения" удалена, она перенесена в SettingsScreen */}
         </View>
         
         <View style={styles.resourcesInfoSection}>

@@ -217,7 +217,7 @@ const HomeScreen = ({ navigation }) => {
           style={styles.avatarContainer}
           onPress={() => navigation.navigate('Profile')}
         >
-          <Avatar size="medium" style={styles.avatar} avatarData={avatar} />
+          <Avatar size="medium" style={styles.avatar} avatarData={avatar} showEquipment={true} />
         </TouchableOpacity>
         <View style={styles.resourceBars}>
           {profile && (
