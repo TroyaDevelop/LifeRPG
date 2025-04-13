@@ -19,7 +19,6 @@ import { CurrencyBar, PremiumCurrencyBar } from '../components/Currency'; // И�
 export function AchievementsScreen({ navigation }) {
   const [showModal, setShowModal] = useState(false);
   const [selectedAchievement, setSelectedAchievement] = useState(null);
-  const [activeTab, setActiveTab] = useState('all'); // 'all', 'unlocked', 'locked'
   
   // Используем контекст
   const { 
@@ -35,21 +34,6 @@ export function AchievementsScreen({ navigation }) {
     }, [])
   );
 
-  // Фильтрация достижений по вкладкам
-  const filteredAchievements = React.useMemo(() => {
-    if (!achievements) return [];
-    
-    switch (activeTab) {
-      case 'unlocked':
-        return achievements.filter(achievement => achievement.unlocked);
-      case 'locked':
-        return achievements.filter(achievement => !achievement.unlocked);
-      case 'all':
-      default:
-        return achievements;
-    }
-  }, [achievements, activeTab]);
-
   // Группировка достижений по категориям
   const achievementsByCategory = React.useMemo(() => {
     const grouped = {
@@ -62,16 +46,18 @@ export function AchievementsScreen({ navigation }) {
       general: []
     };
     
-    filteredAchievements.forEach(achievement => {
-      if (achievement.category in grouped) {
-        grouped[achievement.category].push(achievement);
-      } else {
-        grouped.general.push(achievement);
-      }
-    });
+    if (achievements) {
+      achievements.forEach(achievement => {
+        if (achievement.category in grouped) {
+          grouped[achievement.category].push(achievement);
+        } else {
+          grouped.general.push(achievement);
+        }
+      });
+    }
     
     return grouped;
-  }, [filteredAchievements]);
+  }, [achievements]);
 
   const handleAchievementPress = (achievement) => {
     setSelectedAchievement(achievement);
@@ -117,7 +103,9 @@ export function AchievementsScreen({ navigation }) {
   };
 
   const renderCategory = (category) => {
-    const categoryAchievements = filteredAchievements.filter(
+    if (!achievements) return null;
+    
+    const categoryAchievements = achievements.filter(
       a => a.category === category && (
         !a.hidden || 
         a.unlocked || 
@@ -358,35 +346,6 @@ export function AchievementsScreen({ navigation }) {
         onBack={() => navigation.goBack()} 
       />
       
-      <View style={styles.tabContainer}>
-        <TouchableOpacity 
-          style={[styles.tab, activeTab === 'all' && styles.activeTab]} 
-          onPress={() => setActiveTab('all')}
-        >
-          <Text style={[styles.tabText, activeTab === 'all' && styles.activeTabText]}>
-            Все
-          </Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity 
-          style={[styles.tab, activeTab === 'unlocked' && styles.activeTab]} 
-          onPress={() => setActiveTab('unlocked')}
-        >
-          <Text style={[styles.tabText, activeTab === 'unlocked' && styles.activeTabText]}>
-            Разблокированные
-          </Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity 
-          style={[styles.tab, activeTab === 'locked' && styles.activeTab]} 
-          onPress={() => setActiveTab('locked')}
-        >
-          <Text style={[styles.tabText, activeTab === 'locked' && styles.activeTabText]}>
-            Заблокированные
-          </Text>
-        </TouchableOpacity>
-      </View>
-      
       {isLoading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#4E66F1" />
@@ -418,30 +377,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F5F6FA',
-  },
-  tabContainer: {
-    flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#EEEEEE',
-  },
-  tab: {
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    marginRight: 8,
-  },
-  activeTab: {
-    borderBottomWidth: 2,
-    borderBottomColor: '#4E66F1',
-  },
-  tabText: {
-    fontSize: 14,
-    color: '#888888',
-  },
-  activeTabText: {
-    color: '#4E66F1',
-    fontWeight: '600',
   },
   listContainer: {
     flex: 1,

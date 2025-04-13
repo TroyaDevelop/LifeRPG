@@ -10,7 +10,6 @@ export default function SettingsScreen({ navigation }) {
   const [resetOptions, setResetOptions] = useState({
     resetProfile: true,
     resetTasks: true,
-    resetAchievements: true,
     resetCategories: true
   });
   const [isResetting, setIsResetting] = useState(false);
@@ -209,21 +208,6 @@ export default function SettingsScreen({ navigation }) {
           
           <TouchableOpacity 
             style={styles.optionItem} 
-            onPress={() => toggleOption('resetAchievements')}
-          >
-            <View style={[
-              styles.optionCheckbox, 
-              { backgroundColor: resetOptions.resetAchievements ? '#4E66F1' : 'transparent' }
-            ]}>
-              {resetOptions.resetAchievements && (
-                <Ionicons name="checkmark" size={18} color="#FFFFFF" />
-              )}
-            </View>
-            <Text style={styles.optionText}>Достижения</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={styles.optionItem} 
             onPress={() => toggleOption('resetCategories')}
           >
             <View style={[
@@ -253,7 +237,6 @@ export default function SettingsScreen({ navigation }) {
             disabled={isResetting || 
               !(resetOptions.resetProfile || 
                 resetOptions.resetTasks || 
-                resetOptions.resetAchievements || 
                 resetOptions.resetCategories)}
           >
             <Text style={styles.resetButtonText}>

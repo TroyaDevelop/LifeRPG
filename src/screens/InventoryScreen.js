@@ -161,31 +161,44 @@ const InventoryScreen = ({ navigation }) => {
       style={[styles.itemCard, item.equipped && styles.equippedItem]}
       onPress={() => handleItemPress(item)}
     >
-      <View style={styles.itemContent}>
+      <View style={styles.itemSquare}>
         <View style={[
           styles.itemImage, 
           { backgroundColor: renderRarityColor(item.rarity) }
         ]}>
-          <Ionicons name={getEquipmentTypeIcon(item.type)} size={24} color="#FFFFFF" />
+          <Ionicons name={getEquipmentTypeIcon(item.type)} size={32} color="#FFFFFF" />
         </View>
-        <View style={styles.itemInfo}>
-          <Text style={styles.itemName}>{item.name}</Text>
-          <Text style={styles.itemType}>{getEquipmentTypeLabel(item.type)}</Text>
-          {item.equipped && <Text style={styles.equippedText}>Надето</Text>}
-        </View>
-        <View style={styles.statsPreview}>
-          {Object.entries(item.stats || {}).slice(0, 2).map(([key, value]) => (
+        
+        <Text style={styles.itemName} numberOfLines={1} ellipsizeMode="tail">{item.name}</Text>
+        
+        <View style={styles.itemFooter}>
+          <Text style={styles.itemType} numberOfLines={1}>{getEquipmentTypeLabel(item.type)}</Text>
+          
+          {/* Отображаем до 2-х статов в карточке */}
+          {Object.entries(item.stats || {}).slice(0, 1).map(([key, value]) => (
             <Text key={key} style={styles.statPreview}>
               +{value} {STAT_NAMES[key] || key}
             </Text>
           ))}
         </View>
-        <Ionicons 
-          name="chevron-forward-outline" 
-          size={20} 
-          color="#CCCCCC" 
-          style={styles.itemArrow}
-        />
+
+        {item.equipped && (
+          <View style={styles.equippedBadge}>
+            <Ionicons name="checkmark-circle" size={16} color="#FFFFFF" />
+          </View>
+        )}
+        
+        {item.level > 1 && (
+          <View style={styles.levelBadge}>
+            <Text style={styles.levelBadgeText}>{item.level}</Text>
+          </View>
+        )}
+        
+        {item.set && (
+          <View style={styles.setBadge}>
+            <Ionicons name="link-outline" size={12} color="#4E64EE" />
+          </View>
+        )}
       </View>
     </TouchableOpacity>
   );
@@ -398,6 +411,8 @@ const InventoryScreen = ({ navigation }) => {
               contentContainerStyle={styles.list}
               scrollEnabled={false}
               nestedScrollEnabled={true}
+              numColumns={2}
+              columnWrapperStyle={styles.columnWrapper}
             />
           ) : (
             <View style={styles.emptyContainer}>
@@ -734,43 +749,93 @@ const styles = StyleSheet.create({
   itemCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
-    padding: 12,
-    marginBottom: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+    flex: 1,
+    margin: 6,
+    maxWidth: '48%',
   },
-  equippedItem: {
-    borderColor: '#4CAF50',
-    borderWidth: 2,
+  itemSquare: {
+    padding: 12,
+    alignItems: 'center',
+    position: 'relative',
+    aspectRatio: 1,
+    justifyContent: 'space-between',
+  },
+  itemImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 12,
+    backgroundColor: '#E0E0E0',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  itemName: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#333333',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  itemFooter: {
+    width: '100%',
+    flexDirection: 'column',
+    alignItems: 'center',
+  },
+  itemType: {
+    fontSize: 12,
+    color: '#666666',
+    marginBottom: 6,
+  },
+  equippedBadge: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: '#4CAF50',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  levelBadge: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: '#F39C12',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  levelBadgeText: {
+    fontSize: 10,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+  },
+  setBadge: {
+    position: 'absolute',
+    bottom: 8,
+    right: 8,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: '#EFF3FF',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   itemContent: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  itemImage: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#E0E0E0',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
   itemInfo: {
     marginLeft: 12,
     flex: 1,
-  },
-  itemName: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333333',
-  },
-  itemType: {
-    fontSize: 14,
-    color: '#666666',
-    marginTop: 2,
   },
   equippedText: {
     fontSize: 12,

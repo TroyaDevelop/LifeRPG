@@ -153,36 +153,39 @@ const ShopScreen = ({ navigation }) => {
     activeTab === 'all' || item.type === activeTab
   );
 
-  // Рендер элемента в списке
+  // Рендер элемента в сетке (в виде квадрата)
   const renderItem = ({ item }) => (
     <TouchableOpacity
       style={styles.itemCard}
       onPress={() => handleItemPress(item)}
     >
-      <View style={styles.itemContent}>
+      <View style={styles.itemSquare}>
         <View style={[
           styles.itemImage, 
           { backgroundColor: renderRarityColor(item.rarity) }
         ]}>
-          <Ionicons name={getEquipmentTypeIcon(item.type)} size={24} color="#FFFFFF" />
+          <Ionicons name={getEquipmentTypeIcon(item.type)} size={32} color="#FFFFFF" />
         </View>
-        <View style={styles.itemInfo}>
-          <Text style={styles.itemName}>{item.name}</Text>
-          <Text style={styles.itemType}>{getEquipmentTypeLabel(item.type)}</Text>
+        
+        <Text style={styles.itemName} numberOfLines={1} ellipsizeMode="tail">{item.name}</Text>
+        
+        <View style={styles.itemFooter}>
+          <Text style={styles.itemType} numberOfLines={1}>{getEquipmentTypeLabel(item.type)}</Text>
           
-          {item.level > 1 && (
-            <Text style={styles.levelRequirementSmall}>Уровень: {item.level}</Text>
-          )}
-        </View>
-        <View style={styles.priceTag}>
           <CurrencyBar amount={item.price} compact={true} style={styles.compactCurrency} />
         </View>
-        <Ionicons 
-          name="chevron-forward-outline" 
-          size={20} 
-          color="#CCCCCC" 
-          style={styles.itemArrow}
-        />
+
+        {item.level > 1 && (
+          <View style={styles.levelBadge}>
+            <Text style={styles.levelBadgeText}>{item.level}</Text>
+          </View>
+        )}
+        
+        {item.set && (
+          <View style={styles.setBadge}>
+            <Ionicons name="link-outline" size={12} color="#4E64EE" />
+          </View>
+        )}
       </View>
     </TouchableOpacity>
   );
@@ -255,6 +258,8 @@ const ShopScreen = ({ navigation }) => {
               renderItem={renderItem}
               keyExtractor={item => item.id}
               contentContainerStyle={styles.list}
+              numColumns={2}
+              columnWrapperStyle={styles.columnWrapper}
             />
           ) : (
             <View style={styles.emptyContainer}>
@@ -405,68 +410,87 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   list: {
-    padding: 16,
-    paddingTop: 8,
+    padding: 8,
   },
   itemCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
-    padding: 12,
-    marginBottom: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+    flex: 1,
+    margin: 6,
+    maxWidth: '48%',
   },
-  itemContent: {
-    flexDirection: 'row',
+  itemSquare: {
+    padding: 12,
     alignItems: 'center',
+    position: 'relative',
+    aspectRatio: 1,
+    justifyContent: 'space-between',
   },
   itemImage: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 60,
+    height: 60,
+    borderRadius: 12,
     backgroundColor: '#E0E0E0',
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  itemInfo: {
-    marginLeft: 12,
-    flex: 1,
+    marginBottom: 10,
   },
   itemName: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: 'bold',
     color: '#333333',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  itemFooter: {
+    width: '100%',
+    flexDirection: 'column',
+    alignItems: 'center',
   },
   itemType: {
-    fontSize: 14,
-    color: '#666666',
-    marginTop: 2,
-  },
-  levelRequirementSmall: {
     fontSize: 12,
-    color: '#F39C12',
-    marginTop: 2,
+    color: '#666666',
+    marginBottom: 6,
   },
-  priceTag: {
-    flexDirection: 'row',
+  levelBadge: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: '#F39C12',
+    justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F5F7FA',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-    marginRight: 8,
   },
-  priceValue: {
-    fontSize: 14,
+  levelBadgeText: {
+    fontSize: 10,
     fontWeight: 'bold',
-    marginRight: 4,
-    color: '#333333',
+    color: '#FFFFFF',
   },
-  itemArrow: {
-    marginLeft: 8,
+  setBadge: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: '#EFF3FF',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  columnWrapper: {
+    justifyContent: 'space-between',
+    paddingHorizontal: 4,
+  },
+  compactCurrency: {
+    padding: 0,
+    backgroundColor: 'transparent',
   },
   emptyContainer: {
     flex: 1,
@@ -585,10 +609,6 @@ const styles = StyleSheet.create({
   buttonContainer: {
     flexDirection: 'row',
     width: '100%',
-  },
-  compactCurrency: {
-    padding: 0,
-    backgroundColor: 'transparent',
   },
   modalCurrency: {
     marginTop: 8,

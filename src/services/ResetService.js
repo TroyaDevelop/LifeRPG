@@ -78,16 +78,7 @@ class ResetService {
         }
       }
       
-      // Сброс достижений
-      if (options.resetAchievements) {
-        console.log('ResetService: Сбрасываем достижения');
-        if (AchievementService.resetAllAchievements) {
-          resetPromises.push(AchievementService.resetAllAchievements());
-        } else {
-          resetPromises.push(AsyncStorage.removeItem(ACHIEVEMENTS_STORAGE_KEY));
-          console.log('ResetService: Внимание! AchievementService.resetAllAchievements не найден, используем прямое удаление');
-        }
-      }
+      // Убрана секция сброса достижений, так как они сбрасываются при сбросе профиля
       
       // Ждем завершения всех операций
       const results = await Promise.all(resetPromises);

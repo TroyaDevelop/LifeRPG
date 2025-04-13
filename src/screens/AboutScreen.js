@@ -57,45 +57,59 @@ const AboutScreen = ({ navigation }) => {
           </Text>
         </View>
         
+        {/* Блок с информацией о ресурсах персонажа */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Функции</Text>
+          <Text style={styles.sectionTitle}>Ресурсы персонажа</Text>
           
-          <View style={styles.featureItem}>
-            <Ionicons name="checkbox" size={24} color="#4E64EE" style={styles.featureIcon} />
-            <View style={styles.featureTextContainer}>
-              <Text style={styles.featureTitle}>Управление задачами</Text>
-              <Text style={styles.featureDescription}>
-                Создавайте обычные и ежедневные задачи, устанавливайте сроки и приоритеты
+          <View style={styles.resourceInfo}>
+            <View style={styles.resourceIconContainer}>
+              <Ionicons name="heart" size={24} color="#FF3B30" />
+            </View>
+            <View style={styles.resourceTextContainer}>
+              <Text style={styles.resourceTitle}>Здоровье</Text>
+              <Text style={styles.resourceDescription}>
+                Снижается при невыполнении ежедневных задач. 
+                Восстанавливается медленно при выполнении всех ежедневных задач.
               </Text>
             </View>
           </View>
           
-          <View style={styles.featureItem}>
-            <Ionicons name="stats-chart" size={24} color="#4E64EE" style={styles.featureIcon} />
-            <View style={styles.featureTextContainer}>
-              <Text style={styles.featureTitle}>Статистика и анализ</Text>
-              <Text style={styles.featureDescription}>
-                Отслеживайте свой прогресс и анализируйте эффективность с помощью подробной статистики
+          <View style={styles.resourceInfo}>
+            <View style={styles.resourceIconContainer}>
+              <Ionicons name="flash" size={24} color="#5AC8FA" />
+            </View>
+            <View style={styles.resourceTextContainer}>
+              <Text style={styles.resourceTitle}>Энергия</Text>
+              <Text style={styles.resourceDescription}>
+                Тратится при выполнении задач для получения опыта. 
+                Полностью восстанавливается каждый день.
               </Text>
             </View>
           </View>
           
-          <View style={styles.featureItem}>
-            <Ionicons name="trophy" size={24} color="#4E64EE" style={styles.featureIcon} />
-            <View style={styles.featureTextContainer}>
-              <Text style={styles.featureTitle}>Достижения</Text>
-              <Text style={styles.featureDescription}>
-                Получайте опыт и разблокируйте достижения за выполнение задач
+          <View style={styles.resourceInfo}>
+            <View style={styles.resourceIconContainer}>
+              <Ionicons name="cash-outline" size={24} color="#4CD964" />
+            </View>
+            <View style={styles.resourceTextContainer}>
+              <Text style={styles.resourceTitle}>Актусы</Text>
+              <Text style={styles.resourceDescription}>
+                Основная игровая валюта. Получается за выполнение задач.
+                Используется для покупки снаряжения и улучшений.
               </Text>
             </View>
           </View>
           
-          <View style={styles.featureItem}>
-            <Ionicons name="person" size={24} color="#4E64EE" style={styles.featureIcon} />
-            <View style={styles.featureTextContainer}>
-              <Text style={styles.featureTitle}>Персонаж</Text>
-              <Text style={styles.featureDescription}>
-                Создайте и настройте своего виртуального персонажа, который растет вместе с вами
+          <View style={styles.resourceInfo}>
+            <View style={styles.resourceIconContainer}>
+              <Ionicons name="diamond-outline" size={24} color="#FF9500" />
+            </View>
+            <View style={styles.resourceTextContainer}>
+              <Text style={styles.resourceTitle}>TaskCoin</Text>
+              <Text style={styles.resourceDescription}>
+                Премиум-валюта. Получается за выполнение особых достижений, 
+                при повышении уровня или может быть приобретена за реальные деньги. 
+                Используется для покупки редких предметов.
               </Text>
             </View>
           </View>
@@ -251,6 +265,29 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 16,
     marginBottom: 8,
+  },
+  resourceInfo: {
+    flexDirection: 'row',
+    marginBottom: 16,
+    alignItems: 'flex-start',
+  },
+  resourceIconContainer: {
+    marginRight: 12,
+    marginTop: 2,
+  },
+  resourceTextContainer: {
+    flex: 1,
+  },
+  resourceTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333333',
+    marginBottom: 4,
+  },
+  resourceDescription: {
+    fontSize: 14,
+    color: '#666666',
+    lineHeight: 20,
   },
 });
 

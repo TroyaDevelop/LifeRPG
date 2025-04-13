@@ -158,63 +158,6 @@ const ProfileScreen = ({ navigation }) => {
           {/* Кнопка "Магазин снаряжения" удалена, она перенесена в SettingsScreen */}
         </View>
         
-        <View style={styles.resourcesInfoSection}>
-          <Text style={styles.sectionTitle}>Ресурсы персонажа</Text>
-          
-          <View style={styles.resourceInfo}>
-            <View style={styles.resourceIconContainer}>
-              <Ionicons name="heart" size={24} color="#FF3B30" />
-            </View>
-            <View style={styles.resourceTextContainer}>
-              <Text style={styles.resourceTitle}>Здоровье</Text>
-              <Text style={styles.resourceDescription}>
-                Снижается при невыполнении ежедневных задач. 
-                Восстанавливается медленно при выполнении всех ежедневных задач.
-              </Text>
-            </View>
-          </View>
-          
-          <View style={styles.resourceInfo}>
-            <View style={styles.resourceIconContainer}>
-              <Ionicons name="flash" size={24} color="#5AC8FA" />
-            </View>
-            <View style={styles.resourceTextContainer}>
-              <Text style={styles.resourceTitle}>Энергия</Text>
-              <Text style={styles.resourceDescription}>
-                Тратится при выполнении задач для получения опыта. 
-                Полностью восстанавливается каждый день.
-              </Text>
-            </View>
-          </View>
-          
-          <View style={styles.resourceInfo}>
-            <View style={styles.resourceIconContainer}>
-              <Ionicons name="cash-outline" size={24} color="#4CD964" />
-            </View>
-            <View style={styles.resourceTextContainer}>
-              <Text style={styles.resourceTitle}>Актусы</Text>
-              <Text style={styles.resourceDescription}>
-                Основная игровая валюта. Получается за выполнение задач.
-                Используется для покупки снаряжения и улучшений.
-              </Text>
-            </View>
-          </View>
-          
-          <View style={styles.resourceInfo}>
-            <View style={styles.resourceIconContainer}>
-              <Ionicons name="diamond-outline" size={24} color="#FF9500" />
-            </View>
-            <View style={styles.resourceTextContainer}>
-              <Text style={styles.resourceTitle}>TaskCoin</Text>
-              <Text style={styles.resourceDescription}>
-                Премиум-валюта. Получается за выполнение особых достижений
-                и при повышении уровня. Используется для покупки редких предметов.
-              </Text>
-            </View>
-          </View>
-          
-        </View>
-        
       </ScrollView>
     </View>
   );
