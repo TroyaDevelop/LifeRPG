@@ -8,8 +8,8 @@ import Avatar from '../components/Avatar';
 import Header from '../components/Header';
 import LevelProgressBar from '../components/LevelProgressBar';
 import LoadingIndicator from '../components/LoadingIndicator';
-// Обновляем импорт компонентов
-import { Button, HealthBar, EnergyBar, CurrencyRow, CharacterStats } from '../components';
+// Обновляем импорт компонентов - убираем CurrencyRow
+import { Button, HealthBar, EnergyBar, CharacterStats } from '../components';
 // Добавьте импорт useAppContext
 import { useAppContext } from '../context/AppContext';
 
@@ -133,15 +133,10 @@ const ProfileScreen = ({ navigation }) => {
                 maxEnergy={maxEnergy} 
                 style={styles.resourceBar} 
               />
-              {/* Отображение валюты в одном ряду */}
-              <CurrencyRow 
-                actus={actus} 
-                taskCoins={taskCoins} 
-                style={styles.currencyRow} 
-              />
             </View>
             
-            {/* Блок статистики удален */}
+            {/* Перемещаем компонент CharacterStats под шкалы здоровья и энергии */}
+            <CharacterStats style={styles.characterStats} />
           </View>
 
           {/* Добавляем кнопку для перехода на экран редактирования аватара */}
@@ -219,9 +214,6 @@ const ProfileScreen = ({ navigation }) => {
           </View>
           
         </View>
-        
-        {/* Добавляем компонент CharacterStats */}
-        <CharacterStats style={styles.characterStatsSection} />
         
       </ScrollView>
     </View>

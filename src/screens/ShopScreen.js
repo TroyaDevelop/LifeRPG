@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert, ScrollView } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { Header, Button, Modal, LoadingIndicator, Avatar } from '../components';
+import { Header, Button, Modal, LoadingIndicator, Avatar, Toast } from '../components';
 import { CurrencyBar } from '../components/Currency'; // Импортируем компонент валюты
 import { EquipmentService } from '../services';
 import { useAppContext } from '../context/AppContext';
@@ -15,12 +15,27 @@ const EQUIPMENT_TYPES = {
   weapon: 'Оружие'
 };
 
+// Словарь для перевода названий характеристик
+const STAT_NAMES = {
+  strength: 'Сила',
+  intelligence: 'Интеллект',
+  agility: 'Ловкость',
+  willpower: 'Воля',
+  luck: 'Удача',
+  setBonus: 'Бонус комплекта'
+};
+
 const ShopScreen = ({ navigation }) => {
   const [shopItems, setShopItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedItem, setSelectedItem] = useState(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [activeTab, setActiveTab] = useState('all');
+  
+  // Состояния для Toast-уведомлений
+  const [toastVisible, setToastVisible] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+  const [toastType, setToastType] = useState('success');
   
   // Получаем данные из контекста на верхнем уровне компонента
   const { actus, updateActus, profile } = useAppContext();
@@ -60,11 +75,10 @@ const ShopScreen = ({ navigation }) => {
 
     // Проверка наличия валюты
     if (actus < selectedItem.price) {
-      Alert.alert(
-        "Недостаточно средств",
-        "У вас недостаточно актусов для покупки этого предмета.",
-        [{ text: "ОК" }]
-      );
+      // Показываем Toast с ошибкой
+      setToastMessage("Недостаточно актусов для покупки этого предмета");
+      setToastType("error");
+      setToastVisible(true);
       return;
     }
 
@@ -75,21 +89,23 @@ const ShopScreen = ({ navigation }) => {
       // Списываем валюту - передаем положительное число, но со знаком минус
       await updateActus(-Math.abs(selectedItem.price));
       
-      Alert.alert(
-        "Успешная покупка",
-        `Вы успешно приобрели ${selectedItem.name}! Предмет добавлен в ваш инвентарь.`,
-        [{ text: "ОК" }]
-      );
-
-      fetchShopItems();
+      // Закрываем модальное окно деталей предмета
       setShowDetailsModal(false);
+      
+      // Показываем Toast с успешной покупкой
+      setToastMessage(`Вы приобрели ${selectedItem.name}!`);
+      setToastType("success");
+      setToastVisible(true);
+
+      // Обновляем список товаров
+      fetchShopItems();
+      
     } catch (error) {
       console.error('Error buying item:', error);
-      Alert.alert(
-        "Ошибка покупки",
-        "Произошла ошибка при покупке предмета. Попробуйте еще раз.",
-        [{ text: "ОК" }]
-      );
+      // Показываем Toast с ошибкой
+      setToastMessage("Произошла ошибка при покупке предмета");
+      setToastType("error");
+      setToastVisible(true);
     }
   };
 
@@ -297,7 +313,7 @@ const ShopScreen = ({ navigation }) => {
                 {Object.entries(selectedItem.stats).map(([key, value]) => (
                   <View key={key} style={styles.statItemContainer}>
                     <Text style={styles.statItem}>
-                      {key}: <Text style={styles.statValue}>+{value}</Text>
+                      {STAT_NAMES[key] || key}: <Text style={styles.statValue}>+{value}</Text>
                     </Text>
                   </View>
                 ))}
@@ -323,6 +339,14 @@ const ShopScreen = ({ navigation }) => {
           </View>
         )}
       </Modal>
+      
+      {/* Toast для уведомлений о покупке */}
+      <Toast
+        visible={toastVisible}
+        message={toastMessage}
+        type={toastType}
+        onHide={() => setToastVisible(false)}
+      />
     </View>
   );
 };

@@ -15,6 +15,16 @@ const EQUIPMENT_TYPES = {
   weapon: 'Оружие'
 };
 
+// Словарь для перевода названий характеристик
+const STAT_NAMES = {
+  strength: 'Сила',
+  intelligence: 'Интеллект',
+  agility: 'Ловкость',
+  willpower: 'Воля',
+  luck: 'Удача',
+  setBonus: 'Бонус комплекта'
+};
+
 const InventoryScreen = ({ navigation }) => {
   const [equipment, setEquipment] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -166,7 +176,7 @@ const InventoryScreen = ({ navigation }) => {
         <View style={styles.statsPreview}>
           {Object.entries(item.stats || {}).slice(0, 2).map(([key, value]) => (
             <Text key={key} style={styles.statPreview}>
-              +{value} {key}
+              +{value} {STAT_NAMES[key] || key}
             </Text>
           ))}
         </View>
@@ -180,52 +190,14 @@ const InventoryScreen = ({ navigation }) => {
     </TouchableOpacity>
   );
   
-  // Рендер вкладок категорий
-  const renderTabs = () => (
-    <ScrollView 
-      horizontal 
-      showsHorizontalScrollIndicator={false} 
-      style={styles.tabsContainer}
-      contentContainerStyle={styles.tabsContent}
-    >
-      <TouchableOpacity 
-        style={[styles.tab, activeTab === 'all' && styles.activeTab]} 
-        onPress={() => setActiveTab('all')}
-      >
-        <Ionicons 
-          name="grid-outline" 
-          size={20} 
-          color={activeTab === 'all' ? '#4E64EE' : '#666666'} 
-        />
-        <Text style={[
-          styles.tabText, 
-          activeTab === 'all' && styles.activeTabText
-        ]}>
-          Все
-        </Text>
-      </TouchableOpacity>
-      
-      {Object.entries(EQUIPMENT_TYPES).map(([type, label]) => (
-        <TouchableOpacity 
-          key={type}
-          style={[styles.tab, activeTab === type && styles.activeTab]} 
-          onPress={() => setActiveTab(type)}
-        >
-          <Ionicons 
-            name={getEquipmentTypeIcon(type)} 
-            size={20} 
-            color={activeTab === type ? '#4E64EE' : '#666666'} 
-          />
-          <Text style={[
-            styles.tabText, 
-            activeTab === type && styles.activeTabText
-          ]}>
-            {label}
-          </Text>
-        </TouchableOpacity>
-      ))}
-    </ScrollView>
-  );
+  // Функция для получения заголовка выбранной категории
+  const getCategoryTitle = () => {
+    if (activeTab === 'all') {
+      return 'Все предметы';
+    } else {
+      return EQUIPMENT_TYPES[activeTab] || 'Предметы';
+    }
+  };
 
   // Секция с надетыми предметами
   const renderEquippedItems = () => (
@@ -233,36 +205,102 @@ const InventoryScreen = ({ navigation }) => {
       <Text style={styles.sectionTitle}>Экипировка персонажа</Text>
       
       <View style={styles.characterPreview}>
-        <View style={styles.avatarContainer}>
-          <Avatar size="large" avatarData={avatar} showEquipment={true} />
-        </View>
-        
-        <View style={styles.equippedSlotsContainer}>
-          {Object.entries(EQUIPMENT_TYPES).map(([type, label]) => (
-            <View key={type} style={styles.equippedSlot}>
-              <View style={[
-                styles.slotIcon,
-                equippedItems[type] ? { backgroundColor: renderRarityColor(equippedItems[type].rarity) } : {}
-              ]}>
-                <Ionicons 
-                  name={getEquipmentTypeIcon(type)} 
-                  size={22} 
-                  color={equippedItems[type] ? "#FFFFFF" : "#CCCCCC"} 
-                />
-              </View>
-              <Text style={styles.slotLabel}>{label}</Text>
-              {equippedItems[type] && (
-                <TouchableOpacity 
-                  style={styles.equippedItemButton}
-                  onPress={() => handleItemPress(equippedItems[type])}
-                >
-                  <Text style={styles.equippedItemName} numberOfLines={1}>
-                    {equippedItems[type].name}
-                  </Text>
-                </TouchableOpacity>
+        <View style={styles.equipmentSlotsLayout}>
+          {/* Левая колонка слотов */}
+          <View style={styles.equipmentColumn}>
+            <TouchableOpacity
+              style={[
+                styles.equipmentSlot,
+                equippedItems['body'] ? { backgroundColor: renderRarityColor(equippedItems['body'].rarity) } : {}
+              ]}
+              onPress={() => setActiveTab('body')}
+            >
+              <Ionicons 
+                name={getEquipmentTypeIcon('body')} 
+                size={28} 
+                color={equippedItems['body'] ? "#FFFFFF" : "#CCCCCC"}
+              />
+              {equippedItems['body'] && (
+                <View style={styles.equippedIndicator} />
               )}
-            </View>
-          ))}
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={[
+                styles.equipmentSlot,
+                equippedItems['legs'] ? { backgroundColor: renderRarityColor(equippedItems['legs'].rarity) } : {}
+              ]}
+              onPress={() => setActiveTab('legs')}
+            >
+              <Ionicons 
+                name={getEquipmentTypeIcon('legs')} 
+                size={28} 
+                color={equippedItems['legs'] ? "#FFFFFF" : "#CCCCCC"}
+              />
+              {equippedItems['legs'] && (
+                <View style={styles.equippedIndicator} />
+              )}
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={[
+                styles.equipmentSlot,
+                equippedItems['footwear'] ? { backgroundColor: renderRarityColor(equippedItems['footwear'].rarity) } : {}
+              ]}
+              onPress={() => setActiveTab('footwear')}
+            >
+              <Ionicons 
+                name={getEquipmentTypeIcon('footwear')} 
+                size={28} 
+                color={equippedItems['footwear'] ? "#FFFFFF" : "#CCCCCC"}
+              />
+              {equippedItems['footwear'] && (
+                <View style={styles.equippedIndicator} />
+              )}
+            </TouchableOpacity>
+          </View>
+          
+          {/* Центральный аватар */}
+          <View style={styles.centralAvatarContainer}>
+            <Avatar size="large" avatarData={avatar} showEquipment={true} />
+          </View>
+          
+          {/* Правая колонка слотов */}
+          <View style={styles.equipmentColumn}>
+            <TouchableOpacity
+              style={[
+                styles.equipmentSlot,
+                equippedItems['head'] ? { backgroundColor: renderRarityColor(equippedItems['head'].rarity) } : {}
+              ]}
+              onPress={() => setActiveTab('head')}
+            >
+              <Ionicons 
+                name={getEquipmentTypeIcon('head')} 
+                size={28} 
+                color={equippedItems['head'] ? "#FFFFFF" : "#CCCCCC"}
+              />
+              {equippedItems['head'] && (
+                <View style={styles.equippedIndicator} />
+              )}
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={[
+                styles.equipmentSlot,
+                equippedItems['weapon'] ? { backgroundColor: renderRarityColor(equippedItems['weapon'].rarity) } : {}
+              ]}
+              onPress={() => setActiveTab('weapon')}
+            >
+              <Ionicons 
+                name={getEquipmentTypeIcon('weapon')} 
+                size={28} 
+                color={equippedItems['weapon'] ? "#FFFFFF" : "#CCCCCC"}
+              />
+              {equippedItems['weapon'] && (
+                <View style={styles.equippedIndicator} />
+              )}
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
     </View>
@@ -350,8 +388,7 @@ const InventoryScreen = ({ navigation }) => {
           {renderEquippedItems()}
           {renderEquipmentSets()}
           
-          <Text style={styles.sectionTitle}>Доступные предметы</Text>
-          {renderTabs()}
+          <Text style={styles.sectionTitle}>{getCategoryTitle()}</Text>
           
           {filteredEquipment.length > 0 ? (
             <FlatList
@@ -415,7 +452,7 @@ const InventoryScreen = ({ navigation }) => {
                 {Object.entries(selectedItem.stats).map(([key, value]) => (
                   <View key={key} style={styles.statItemContainer}>
                     <Text style={styles.statItem}>
-                      {key}: <Text style={styles.statValue}>+{value}</Text>
+                      {STAT_NAMES[key] || key}: <Text style={styles.statValue}>+{value}</Text>
                     </Text>
                   </View>
                 ))}
@@ -481,7 +518,7 @@ const InventoryScreen = ({ navigation }) => {
                   return (
                     <View key={key} style={styles.statItemContainer}>
                       <Text style={styles.statItem}>
-                        {key}: <Text style={[
+                        {STAT_NAMES[key] || key}: <Text style={[
                           styles.statValue,
                           { color: selectedSet.bonusApplied ? "#FF8C00" : "#999999" }
                         ]}>
@@ -582,8 +619,48 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   characterPreview: {
-    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+  },
+  equipmentSlotsLayout: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: '100%',
+  },
+  equipmentColumn: {
+    alignItems: 'center',
+  },
+  centralAvatarContainer: {
+    marginHorizontal: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  equipmentSlot: {
+    width: 50,
+    height: 50,
+    borderRadius: 8,
+    backgroundColor: '#E0E0E0',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 15,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  equippedIndicator: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: '#4CAF50',
+    borderWidth: 1,
+    borderColor: '#FFFFFF',
   },
   avatarContainer: {
     width: 100,

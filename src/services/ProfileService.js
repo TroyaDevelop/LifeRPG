@@ -524,14 +524,13 @@ export class ProfileService {
       const baseStats = {
         strength: profile.strength || 0,
         intelligence: profile.intelligence || 0,
-        endurance: profile.endurance || 0,
-        charisma: profile.charisma || 0,
-        luck: profile.luck || 0,
-        // Добавляем другие базовые характеристики
+        agility: profile.agility || 0,
+        willpower: profile.willpower || 0,
+        luck: profile.luck || 0
       };
       
       // Бонусы от снаряжения
-      const equipmentBonuses = profile.equipmentBonuses || {};
+      const equipmentBonuses = profile.equipmentBonuses && profile.equipmentBonuses.stats ? profile.equipmentBonuses.stats : {};
       
       // Объединяем базовые характеристики и бонусы от снаряжения
       const totalStats = { ...baseStats };
@@ -545,6 +544,7 @@ export class ProfileService {
         }
       });
       
+      console.log('Характеристики игрока:', totalStats);
       return totalStats;
     } catch (error) {
       console.error('Ошибка при получении характеристик игрока:', error);

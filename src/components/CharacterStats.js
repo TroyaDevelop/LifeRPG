@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { ProfileService } from '../services';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
@@ -12,21 +12,14 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 const CharacterStats = ({ style }) => {
   const [stats, setStats] = useState({});
   const [loading, setLoading] = useState(true);
-  const [expanded, setExpanded] = useState(false);
   
   // Получаем дружественные названия характеристик
   const statNames = {
     strength: 'Сила',
     intelligence: 'Интеллект',
-    endurance: 'Выносливость',
-    charisma: 'Харизма',
-    luck: 'Удача',
-    wisdom: 'Мудрость',
-    speed: 'Скорость',
     agility: 'Ловкость',
-    defense: 'Защита',
-    magic: 'Магия',
-    productivity: 'Продуктивность',
+    willpower: 'Воля',
+    luck: 'Удача',
     setBonus: 'Бонус комплекта'
   };
   
@@ -34,15 +27,9 @@ const CharacterStats = ({ style }) => {
   const statIcons = {
     strength: 'barbell-outline',
     intelligence: 'bulb-outline',
-    endurance: 'heart-outline',
-    charisma: 'people-outline',
-    luck: 'leaf-outline',
-    wisdom: 'school-outline',
-    speed: 'flash-outline',
     agility: 'body-outline',
-    defense: 'shield-outline',
-    magic: 'sparkles-outline',
-    productivity: 'trending-up-outline',
+    willpower: 'shield-checkmark-outline',
+    luck: 'leaf-outline',
     setBonus: 'link-outline'
   };
 
@@ -78,102 +65,88 @@ const CharacterStats = ({ style }) => {
 
   return (
     <View style={[styles.container, style]}>
-      <TouchableOpacity 
-        style={styles.header} 
-        onPress={() => setExpanded(!expanded)}
-      >
-        <Text style={styles.title}>Характеристики персонажа</Text>
-        <Ionicons
-          name={expanded ? 'chevron-up-outline' : 'chevron-down-outline'}
-          size={24}
-          color="#4E64EE"
-        />
-      </TouchableOpacity>
+      <Text style={styles.title}>Характеристики персонажа</Text>
       
-      {expanded && (
-        <View style={styles.statsContainer}>
-          {loading ? (
-            <Text style={styles.loadingText}>Загрузка характеристик...</Text>
-          ) : statsArray.length > 0 ? (
-            statsArray.map((stat, index) => (
+      <View style={styles.statsContainer}>
+        {loading ? (
+          <Text style={styles.loadingText}>Загрузка характеристик...</Text>
+        ) : statsArray.length > 0 ? (
+          <View style={styles.statsColumn}>
+            {statsArray.map((stat, index) => (
               <View key={index} style={styles.statItem}>
                 <View style={styles.statIconContainer}>
-                  <Ionicons name={stat.icon} size={20} color="#4E64EE" />
+                  <Ionicons name={stat.icon} size={18} color="#4E64EE" />
                 </View>
                 <Text style={styles.statName}>{stat.name}</Text>
                 <Text style={styles.statValue}>{stat.value}</Text>
               </View>
-            ))
-          ) : (
-            <Text style={styles.emptyText}>Нет доступных характеристик</Text>
-          )}
-        </View>
-      )}
+            ))}
+          </View>
+        ) : (
+          <Text style={styles.emptyText}>Нет доступных характеристик</Text>
+        )}
+      </View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
+    width: '100%',
+    marginTop: 10,
+    paddingTop: 8,
+    paddingBottom: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#E0E0E0',
   },
   title: {
     fontSize: 16,
     fontWeight: 'bold',
     color: '#333333',
+    marginBottom: 12,
+    textAlign: 'center',
   },
   statsContainer: {
-    padding: 16,
+    width: '100%',
+  },
+  statsColumn: {
+    flexDirection: 'column',
+    justifyContent: 'flex-start',
   },
   statItem: {
+    width: '100%', // Один элемент в ряду
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
+    paddingVertical: 6,
+    marginBottom: 8,
   },
   statIconContainer: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     backgroundColor: '#F0F3FF',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: 8,
   },
   statName: {
     flex: 1,
-    fontSize: 14,
+    fontSize: 13,
     color: '#666666',
   },
   statValue: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: 'bold',
     color: '#333333',
+    marginLeft: 4,
   },
   loadingText: {
-    padding: 16,
+    padding: 8,
     textAlign: 'center',
     color: '#666666',
   },
   emptyText: {
-    padding: 16,
+    padding: 8,
     textAlign: 'center',
     color: '#666666',
     fontStyle: 'italic',

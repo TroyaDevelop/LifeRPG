@@ -12,3 +12,4 @@ export { default as CharacterStats } from './CharacterStats';
 export { default as HealthBar } from './HealthBar';
 export { default as EnergyBar } from './EnergyBar';
 export { CurrencyBar, PremiumCurrencyBar, CurrencyRow } from './Currency';
+export { default as Toast } from './Toast';

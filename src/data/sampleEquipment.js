@@ -11,7 +11,7 @@ export const sampleEquipment = [
     rarity: 'common',
     stats: {
       intelligence: 1,
-      charisma: 1
+      willpower: 1
     },
     price: 3,
     level: 1
@@ -20,12 +20,11 @@ export const sampleEquipment = [
     id: 'farmer_set_body',
     name: 'Фермерская льняная рубашка',
     type: 'body',
-
     description: 'Обычная рубашка из льняной ткани.',
     rarity: 'common',
     stats: {
-      endurance: 1,
-      charisma: 1
+      strength: 1,
+      willpower: 1
     },
     price: 5,
     level: 1
@@ -37,7 +36,7 @@ export const sampleEquipment = [
     description: 'Просторные штаны для удобства работы в поле.',
     rarity: 'common',
     stats: {
-      endurance: 2
+      strength: 2
     },
     price: 5,
     level: 1
@@ -49,8 +48,8 @@ export const sampleEquipment = [
     description: 'Удобство превыше всего.',
     rarity: 'common',
     stats: {
-      endurance: 1,
-      speed: 1
+      strength: 1,
+      agility: 1
     },
     price: 100,
     level: 1
@@ -77,7 +76,7 @@ export const sampleEquipment = [
     rarity: 'rare',
     stats: {
       intelligence: 3,
-      wisdom: 2
+      willpower: 2
     },
     price: 350,
     level: 5
@@ -89,8 +88,8 @@ export const sampleEquipment = [
     description: 'Прочная и надежная кольчуга из качественной стали.',
     rarity: 'rare',
     stats: {
-      defense: 5,
-      endurance: 2
+      strength: 5,
+      willpower: 2
     },
     price: 500,
     level: 5,
@@ -103,8 +102,8 @@ export const sampleEquipment = [
     description: 'Прочные штаны с кожаными вставками для дополнительной защиты.',
     rarity: 'rare',
     stats: {
-      defense: 3,
-      endurance: 2
+      strength: 3,
+      willpower: 2
     },
     price: 400,
     level: 5,
@@ -117,8 +116,8 @@ export const sampleEquipment = [
     description: 'Легкие сапоги, которые даруют своему владельцу необычайную скорость.',
     rarity: 'rare',
     stats: {
-      speed: 5,
-      agility: 3
+      agility: 5,
+      luck: 3
     },
     price: 450,
     level: 5
@@ -131,7 +130,7 @@ export const sampleEquipment = [
     rarity: 'common',
     stats: {
       strength: 4,
-      speed: 1
+      agility: 1
     },
     price: 1,
     level: 1
@@ -146,8 +145,8 @@ export const sampleEquipment = [
     rarity: 'epic',
     stats: {
       intelligence: 6,
-      wisdom: 4,
-      charisma: 2
+      willpower: 4,
+      luck: 2
     },
     price: 1200,
     level: 10,
@@ -161,8 +160,8 @@ export const sampleEquipment = [
     rarity: 'epic',
     stats: {
       intelligence: 5,
-      wisdom: 3,
-      magic: 4
+      willpower: 3,
+      luck: 4
     },
     price: 1500,
     level: 10,
@@ -175,8 +174,8 @@ export const sampleEquipment = [
     description: 'Закаленные в битвах латные поножи.',
     rarity: 'epic',
     stats: {
-      defense: 7,
-      endurance: 4
+      strength: 7,
+      willpower: 4
     },
     price: 1300,
     level: 10
@@ -188,9 +187,9 @@ export const sampleEquipment = [
     description: 'Легендарные сапоги, позволяющие преодолевать огромные расстояния.',
     rarity: 'epic',
     stats: {
-      speed: 8,
-      agility: 5,
-      endurance: 3
+      agility: 8,
+      luck: 5,
+      strength: 3
     },
     price: 1400,
     level: 10
@@ -203,7 +202,7 @@ export const sampleEquipment = [
     rarity: 'epic',
     stats: {
       strength: 7,
-      magic: 5
+      intelligence: 5
     },
     price: 1600,
     level: 10
@@ -218,9 +217,8 @@ export const sampleEquipment = [
     rarity: 'legendary',
     stats: {
       intelligence: 10,
-      wisdom: 8,
-      charisma: 5,
-      productivity: 15
+      willpower: 8,
+      luck: 5
     },
     price: 3000,
     level: 20
@@ -232,9 +230,9 @@ export const sampleEquipment = [
     description: 'Легендарный доспех, выкованный из материала, добытого с упавшей звезды.',
     rarity: 'legendary',
     stats: {
-      defense: 12,
-      strength: 8,
-      endurance: 10
+      strength: 12,
+      willpower: 8,
+      agility: 10
     },
     price: 3500,
     level: 20,
@@ -247,9 +245,9 @@ export const sampleEquipment = [
     description: 'Часть легендарного комплекта, дарует невероятную выносливость.',
     rarity: 'legendary',
     stats: {
-      defense: 10,
-      endurance: 12,
-      speed: 5
+      strength: 10,
+      willpower: 12,
+      agility: 5
     },
     price: 3200,
     level: 20,
@@ -262,9 +260,9 @@ export const sampleEquipment = [
     description: 'Завершающая часть комплекта героя, позволяет двигаться молниеносно.',
     rarity: 'legendary',
     stats: {
-      speed: 15,
-      agility: 12,
-      endurance: 8
+      agility: 15,
+      luck: 12,
+      strength: 8
     },
     price: 3100,
     level: 20,
@@ -278,8 +276,8 @@ export const sampleEquipment = [
     rarity: 'legendary',
     stats: {
       strength: 15,
-      magic: 10,
-      charisma: 8
+      intelligence: 10,
+      luck: 8
     },
     price: 5000,
     level: 20,

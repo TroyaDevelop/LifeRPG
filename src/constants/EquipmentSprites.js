@@ -216,7 +216,7 @@ export const EQUIPMENT_SETS = {
     name: 'Фермерский набор',
     description: 'Полный комплект фермерского снаряжения для работы в поле.',
     bonus: {
-      endurance: 5,
+      willpower: 5,
       intelligence: 3,
       strength: 2
     },
@@ -234,8 +234,8 @@ export const EQUIPMENT_SETS = {
     bonus: {
       strength: 10,
       intelligence: 10,
-      endurance: 10,
-      charisma: 10,
+      willpower: 10,
+      luck: 10,
       agility: 10
     },
     pieces: [
@@ -251,7 +251,7 @@ export const EQUIPMENT_SETS = {
     description: 'Набор для тех, кто стремится к знаниям и мудрости.',
     bonus: {
       intelligence: 15,
-      wisdom: 12
+      willpower: 12
     },
     pieces: [
       'equip_head_epic',
@@ -262,8 +262,8 @@ export const EQUIPMENT_SETS = {
     name: 'Снаряжение стражника',
     description: 'Прочный комплект для защитников порядка.',
     bonus: {
-      defense: 8,
-      endurance: 5
+      strength: 8,
+      willpower: 5
     },
     pieces: [
       'equip_head_rare',

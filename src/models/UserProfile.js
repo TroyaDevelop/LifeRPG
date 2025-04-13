@@ -12,6 +12,16 @@ export class UserProfile {
     this.energy = data.energy !== undefined ? data.energy : 100;
     this.maxEnergy = data.maxEnergy || 100;
     
+    // Базовые характеристики персонажа
+    this.strength = data.strength || 0;  // Начальная сила
+    this.intelligence = data.intelligence || 0;  // Начальный интеллект
+    this.agility = data.agility || 0;  // Начальная ловкость
+    this.willpower = data.willpower || 0;  // Начальная воля
+    this.luck = data.luck || 0;  // Начальная удача
+    
+    // Сохраняем бонусы от снаряжения
+    this.equipmentBonuses = data.equipmentBonuses || { stats: {} };
+    
     // Добавляем валюту
     this.actus = data.actus || 0;           // Обычная валюта (Актусы)
     this.taskCoins = data.taskCoins || 0;   // Премиум валюта (TaskCoin)
@@ -187,6 +197,12 @@ export class UserProfile {
       maxHealth: this.maxHealth,
       energy: this.energy,
       maxEnergy: this.maxEnergy,
+      strength: this.strength,
+      intelligence: this.intelligence,
+      agility: this.agility,
+      willpower: this.willpower,
+      luck: this.luck,
+      equipmentBonuses: this.equipmentBonuses,
       actus: this.actus,
       taskCoins: this.taskCoins,
       tasksCompleted: this.tasksCompleted,
