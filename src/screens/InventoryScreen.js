@@ -172,7 +172,8 @@ const InventoryScreen = ({ navigation }) => {
 
   const renderItem = ({ item }) => {
     // Получаем иконку предмета
-    const itemIcon = getItemIcon(item.id);
+    // Пробуем получить иконку по ID или originalId (если он есть)
+    const itemIcon = item.originalId ? getItemIcon(item.originalId) : getItemIcon(item.id);
     
     return (
       <TouchableOpacity
@@ -256,11 +257,19 @@ const InventoryScreen = ({ navigation }) => {
               ]}
               onPress={() => setActiveTab('body')}
             >
-              <Ionicons 
-                name={getEquipmentTypeIcon('body')} 
-                size={28} 
-                color={equippedItems['body'] ? "#FFFFFF" : "#CCCCCC"}
-              />
+              {equippedItems['body'] && ((equippedItems['body'].originalId && getItemIcon(equippedItems['body'].originalId)) || getItemIcon(equippedItems['body'].id)) ? (
+                <Image 
+                  source={equippedItems['body'].originalId ? getItemIcon(equippedItems['body'].originalId) : getItemIcon(equippedItems['body'].id)}
+                  style={styles.slotItemIcon}
+                  resizeMode="contain"
+                />
+              ) : (
+                <Ionicons 
+                  name={getEquipmentTypeIcon('body')} 
+                  size={28} 
+                  color={equippedItems['body'] ? "#FFFFFF" : "#CCCCCC"}
+                />
+              )}
               {equippedItems['body'] && (
                 <View style={styles.equippedIndicator} />
               )}
@@ -273,11 +282,19 @@ const InventoryScreen = ({ navigation }) => {
               ]}
               onPress={() => setActiveTab('legs')}
             >
-              <Ionicons 
-                name={getEquipmentTypeIcon('legs')} 
-                size={28} 
-                color={equippedItems['legs'] ? "#FFFFFF" : "#CCCCCC"}
-              />
+              {equippedItems['legs'] && ((equippedItems['legs'].originalId && getItemIcon(equippedItems['legs'].originalId)) || getItemIcon(equippedItems['legs'].id)) ? (
+                <Image 
+                  source={equippedItems['legs'].originalId ? getItemIcon(equippedItems['legs'].originalId) : getItemIcon(equippedItems['legs'].id)}
+                  style={styles.slotItemIcon}
+                  resizeMode="contain"
+                />
+              ) : (
+                <Ionicons 
+                  name={getEquipmentTypeIcon('legs')} 
+                  size={28} 
+                  color={equippedItems['legs'] ? "#FFFFFF" : "#CCCCCC"}
+                />
+              )}
               {equippedItems['legs'] && (
                 <View style={styles.equippedIndicator} />
               )}
@@ -290,11 +307,19 @@ const InventoryScreen = ({ navigation }) => {
               ]}
               onPress={() => setActiveTab('footwear')}
             >
-              <Ionicons 
-                name={getEquipmentTypeIcon('footwear')} 
-                size={28} 
-                color={equippedItems['footwear'] ? "#FFFFFF" : "#CCCCCC"}
-              />
+              {equippedItems['footwear'] && ((equippedItems['footwear'].originalId && getItemIcon(equippedItems['footwear'].originalId)) || getItemIcon(equippedItems['footwear'].id)) ? (
+                <Image 
+                  source={equippedItems['footwear'].originalId ? getItemIcon(equippedItems['footwear'].originalId) : getItemIcon(equippedItems['footwear'].id)}
+                  style={styles.slotItemIcon}
+                  resizeMode="contain"
+                />
+              ) : (
+                <Ionicons 
+                  name={getEquipmentTypeIcon('footwear')} 
+                  size={28} 
+                  color={equippedItems['footwear'] ? "#FFFFFF" : "#CCCCCC"}
+                />
+              )}
               {equippedItems['footwear'] && (
                 <View style={styles.equippedIndicator} />
               )}
@@ -315,11 +340,19 @@ const InventoryScreen = ({ navigation }) => {
               ]}
               onPress={() => setActiveTab('head')}
             >
-              <Ionicons 
-                name={getEquipmentTypeIcon('head')} 
-                size={28} 
-                color={equippedItems['head'] ? "#FFFFFF" : "#CCCCCC"}
-              />
+              {equippedItems['head'] && ((equippedItems['head'].originalId && getItemIcon(equippedItems['head'].originalId)) || getItemIcon(equippedItems['head'].id)) ? (
+                <Image 
+                  source={equippedItems['head'].originalId ? getItemIcon(equippedItems['head'].originalId) : getItemIcon(equippedItems['head'].id)}
+                  style={styles.slotItemIcon}
+                  resizeMode="contain"
+                />
+              ) : (
+                <Ionicons 
+                  name={getEquipmentTypeIcon('head')} 
+                  size={28} 
+                  color={equippedItems['head'] ? "#FFFFFF" : "#CCCCCC"}
+                />
+              )}
               {equippedItems['head'] && (
                 <View style={styles.equippedIndicator} />
               )}
@@ -332,11 +365,19 @@ const InventoryScreen = ({ navigation }) => {
               ]}
               onPress={() => setActiveTab('weapon')}
             >
-              <Ionicons 
-                name={getEquipmentTypeIcon('weapon')} 
-                size={28} 
-                color={equippedItems['weapon'] ? "#FFFFFF" : "#CCCCCC"}
-              />
+              {equippedItems['weapon'] && ((equippedItems['weapon'].originalId && getItemIcon(equippedItems['weapon'].originalId)) || getItemIcon(equippedItems['weapon'].id)) ? (
+                <Image 
+                  source={equippedItems['weapon'].originalId ? getItemIcon(equippedItems['weapon'].originalId) : getItemIcon(equippedItems['weapon'].id)}
+                  style={styles.slotItemIcon}
+                  resizeMode="contain"
+                />
+              ) : (
+                <Ionicons 
+                  name={getEquipmentTypeIcon('weapon')} 
+                  size={28} 
+                  color={equippedItems['weapon'] ? "#FFFFFF" : "#CCCCCC"}
+                />
+              )}
               {equippedItems['weapon'] && (
                 <View style={styles.equippedIndicator} />
               )}
@@ -466,7 +507,13 @@ const InventoryScreen = ({ navigation }) => {
               styles.itemImageLarge,
               { borderColor: renderRarityColor(selectedItem.rarity) }
             ]}>
-              {getItemIcon(selectedItem.id) ? (
+              {selectedItem.originalId && getItemIcon(selectedItem.originalId) ? (
+                <Image 
+                  source={getItemIcon(selectedItem.originalId)} 
+                  style={styles.itemSpriteLarge} 
+                  resizeMode="contain" 
+                />
+              ) : getItemIcon(selectedItem.id) ? (
                 <Image 
                   source={getItemIcon(selectedItem.id)} 
                   style={styles.itemSpriteLarge} 
@@ -753,6 +800,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#333333',
     fontWeight: '500',
+  },
+  slotItemIcon: {
+    width: 36,
+    height: 36,
+    resizeMode: 'contain',
   },
   emptySlot: {
     color: '#AAAAAA',
