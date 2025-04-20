@@ -5,6 +5,9 @@ import { EQUIPMENT_SETS } from '../constants/EquipmentSprites';
 
 const EQUIPMENT_STORAGE_KEY = 'liferpg_equipment';
 const PLAYER_INVENTORY_KEY = 'liferpg_player_inventory';
+const SHOP_LAST_UPDATE_KEY = 'liferpg_shop_last_update';
+const SHOP_ITEMS_KEY = 'liferpg_shop_items';
+const SHOP_ITEMS_COUNT = 8; // Количество товаров в магазине
 
 class EquipmentService {
   // Удаляем конструктор, так как StorageService содержит статические методы
@@ -89,11 +92,26 @@ class EquipmentService {
         throw new Error('Неверный формат параметра. Ожидается ID предмета или объект предмета с id');
       }
       
-      // Получаем все предметы из магазина
+      // Получаем текущий ассортимент магазина
+      const currentShopItems = await StorageService.getItem(SHOP_ITEMS_KEY) || [];
+      
+      // Получаем все предметы из общего хранилища
       const allItems = await this.getAllEquipment();
       
-      // Находим предмет по ID
-      const itemToPurchase = allItems.find(item => item.id === itemId);
+      // Проверяем наличие предмета в текущем ассортименте магазина
+      const shopItem = currentShopItems.find(item => item.id === itemId);
+      
+      // Находим предмет по ID в общем списке предметов
+      let itemToPurchase = allItems.find(item => item.id === itemId);
+      
+      // Если предмет есть в магазине, но отсутствует в общем списке, используем его из магазина
+      if (shopItem && !itemToPurchase) {
+        console.log(`addToInventory: Предмет ${itemId} найден в ассортименте магазина, но отсутствует в общем хранилище. Используем данные из магазина.`);
+        itemToPurchase = new EquipmentModel(shopItem);
+        
+        // Добавляем предмет в общее хранилище
+        await this.saveEquipment(shopItem);
+      }
       
       if (!itemToPurchase) {
         console.error('addToInventory: Предмет не найден:', itemId);
@@ -120,6 +138,10 @@ class EquipmentService {
       // Удаляем предмет из общего списка предметов (из магазина)
       const updatedEquipment = allItems.filter(item => item.id !== itemId);
       await StorageService.setItem(EQUIPMENT_STORAGE_KEY, updatedEquipment);
+      
+      // Обновляем текущий ассортимент магазина
+      const updatedShopItems = currentShopItems.filter(item => item.id !== itemId);
+      await StorageService.setItem(SHOP_ITEMS_KEY, updatedShopItems);
       
       return inventoryItem;
     } catch (error) {
@@ -318,7 +340,6 @@ class EquipmentService {
         // Применяем бонусы в зависимости от степени заполненности набора
         if (completionPercentage >= 1) {
           // Полный комплект - применяем все бонусы
-          setInfo.completed = true;
           setInfo.bonusApplied = true;
           
           // Добавляем бонусы набора к общим бонусам
@@ -395,19 +416,109 @@ class EquipmentService {
 
   /**
    * Получение предметов, доступных для покупки в магазине
-   * Исключает предметы, которые уже есть в инвентаре игрока
+   * Возвращает 8 случайных предметов и обновляет их раз в день в полночь
    * @returns {Promise<Array>} - Массив предметов, доступных для покупки
    */
   async getShopItems() {
     try {
-      // Инициализируем магазин, если это необходимо
-      const allEquipment = await this.initializeShopItems();
+      // Проверяем, нужно ли обновить ассортимент
+      const shouldRefresh = await this.shouldRefreshShop();
+      
+      if (shouldRefresh) {
+        // Если нужно обновить, генерируем новый набор предметов
+        return await this.refreshShopItems();
+      }
+      
+      // Иначе, возвращаем текущий ассортимент магазина
+      const currentShopItems = await StorageService.getItem(SHOP_ITEMS_KEY);
+      
+      // Если ассортимент еще не был сгенерирован, делаем это
+      if (!currentShopItems || currentShopItems.length === 0) {
+        return await this.refreshShopItems();
+      }
+      
+      // Преобразуем данные в модели
+      return currentShopItems.map(data => new EquipmentModel(data));
+    } catch (error) {
+      console.error('Error getting shop items:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Проверяет, нужно ли обновить магазин (прошла ли полночь с момента последнего обновления)
+   * @returns {Promise<boolean>} - true, если магазин нужно обновить
+   */
+  async shouldRefreshShop() {
+    try {
+      const lastUpdateTime = await StorageService.getItem(SHOP_LAST_UPDATE_KEY);
+      
+      // Если никогда не обновлялся, то нужно обновить
+      if (!lastUpdateTime) {
+        return true;
+      }
+      
+      // Получаем текущую дату и последнюю дату обновления
+      const currentDate = new Date();
+      const lastUpdateDate = new Date(lastUpdateTime);
+      
+      // Сброс часов, минут и секунд для сравнения только дат
+      currentDate.setHours(0, 0, 0, 0);
+      lastUpdateDate.setHours(0, 0, 0, 0);
+      
+      // Если даты разные, значит прошла полночь
+      return currentDate.getTime() > lastUpdateDate.getTime();
+    } catch (error) {
+      console.error('Error checking shop refresh status:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Возвращает время до следующего обновления магазина в миллисекундах
+   * @returns {Promise<number>} - Время до следующего обновления в миллисекундах
+   */
+  async getTimeUntilNextRefresh() {
+    try {
+      const now = new Date();
+      const tomorrow = new Date(now);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      tomorrow.setHours(0, 0, 0, 0); // Полночь следующего дня
+      
+      return tomorrow.getTime() - now.getTime();
+    } catch (error) {
+      console.error('Error calculating next refresh time:', error);
+      return 24 * 60 * 60 * 1000; // 24 часа по умолчанию
+    }
+  }
+
+  /**
+   * Обновляет время последнего обновления магазина
+   */
+  async updateShopRefreshTime() {
+    try {
+      await StorageService.setItem(SHOP_LAST_UPDATE_KEY, Date.now());
+    } catch (error) {
+      console.error('Error updating shop refresh time:', error);
+    }
+  }
+
+  /**
+   * Генерирует новый ассортимент магазина из случайных предметов
+   * @returns {Promise<Array>} - Массив предметов для магазина
+   */
+  async refreshShopItems() {
+    try {
+      console.log('EquipmentService: Обновляем ассортимент магазина');
+      
+      // Получаем все доступные предметы
+      await this.initializeShopItems();
+      const allEquipment = await this.getAllEquipment();
       
       // Получаем инвентарь игрока
       const playerInventory = await this.getPlayerInventory();
       
       // Создаем множество ID предметов, которые уже есть у игрока
-      // Учитываем как обычные ID, так и originalId для предметов, которые были куплены ранее
       const playerItemIds = new Set();
       playerInventory.forEach(item => {
         playerItemIds.add(item.id);
@@ -417,11 +528,47 @@ class EquipmentService {
       });
       
       // Фильтруем предметы, которых еще нет в инвентаре игрока
-      const shopItems = allEquipment.filter(item => !playerItemIds.has(item.id));
+      const availableItems = allEquipment.filter(item => !playerItemIds.has(item.id));
+      
+      // Если доступных предметов недостаточно, добавляем новые из sampleEquipment
+      if (availableItems.length < SHOP_ITEMS_COUNT) {
+        // Находим предметы из sampleEquipment, которых еще нет в базе
+        const existingIds = new Set([
+          ...allEquipment.map(item => item.id),
+          ...playerInventory.map(item => item.originalId || item.id)
+        ]);
+        
+        const newItems = sampleEquipment.filter(item => !existingIds.has(item.id));
+        
+        // Если есть новые предметы, добавляем их в базу
+        for (const item of newItems) {
+          await this.saveEquipment(item);
+        }
+        
+        // Получаем обновленный список предметов
+        const updatedEquipment = await this.getAllEquipment();
+        const updatedAvailableItems = updatedEquipment.filter(item => !playerItemIds.has(item.id));
+        
+        if (updatedAvailableItems.length > 0) {
+          availableItems.push(...updatedAvailableItems.filter(item => 
+            !availableItems.some(existingItem => existingItem.id === item.id)
+          ));
+        }
+      }
+      
+      // Выбираем случайные предметы для магазина
+      const shuffledItems = [...availableItems].sort(() => 0.5 - Math.random());
+      const shopItems = shuffledItems.slice(0, Math.min(SHOP_ITEMS_COUNT, shuffledItems.length));
+      
+      // Сохраняем выбранные предметы как текущий ассортимент магазина
+      await StorageService.setItem(SHOP_ITEMS_KEY, shopItems);
+      
+      // Обновляем время последнего обновления
+      await this.updateShopRefreshTime();
       
       return shopItems;
     } catch (error) {
-      console.error('Error getting shop items:', error);
+      console.error('Error refreshing shop items:', error);
       return [];
     }
   }

@@ -105,10 +105,10 @@ export default function SettingsScreen({ navigation }) {
   const handleResetData = async () => {
     setIsResetting(true);
     try {
-      console.log('SettingsScreen: Начинаем сброс данных с опциями:', resetOptions);
+      console.log('SettingsScreen: Начинаем полный сброс данных');
       
-      // Используем функцию из контекста для сброса данных
-      const success = await resetProgress(resetOptions);
+      // Используем функцию из контекста для сброса всех данных
+      const success = await resetProgress();
       
       if (success) {
         console.log('SettingsScreen: Сброс данных выполнен успешно');
@@ -122,7 +122,7 @@ export default function SettingsScreen({ navigation }) {
         // Показываем уведомление об успешном сбросе
         Alert.alert(
           "Сброс выполнен",
-          "Выбранные данные были успешно сброшены",
+          "Данные были успешно сброшены",
           [{ 
             text: "OK",
             onPress: () => {
@@ -169,58 +169,14 @@ export default function SettingsScreen({ navigation }) {
         <View style={styles.warningContainer}>
           <Ionicons name="warning" size={36} color="#FF3B30" />
           <Text style={styles.warningText}>
-            Вы собираетесь сбросить данные приложения. Это действие необратимо!
+            Вы собираетесь сбросить все данные приложения. Это действие необратимо!
           </Text>
         </View>
         
-        <Text style={styles.optionsTitle}>Выберите данные для сброса:</Text>
-        
-        <View style={styles.optionsList}>
-          <TouchableOpacity 
-            style={styles.optionItem} 
-            onPress={() => toggleOption('resetProfile')}
-          >
-            <View style={[
-              styles.optionCheckbox, 
-              { backgroundColor: resetOptions.resetProfile ? '#4E66F1' : 'transparent' }
-            ]}>
-              {resetOptions.resetProfile && (
-                <Ionicons name="checkmark" size={18} color="#FFFFFF" />
-              )}
-            </View>
-            <Text style={styles.optionText}>Профиль пользователя</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={styles.optionItem} 
-            onPress={() => toggleOption('resetTasks')}
-          >
-            <View style={[
-              styles.optionCheckbox, 
-              { backgroundColor: resetOptions.resetTasks ? '#4E66F1' : 'transparent' }
-            ]}>
-              {resetOptions.resetTasks && (
-                <Ionicons name="checkmark" size={18} color="#FFFFFF" />
-              )}
-            </View>
-            <Text style={styles.optionText}>Все задачи</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={styles.optionItem} 
-            onPress={() => toggleOption('resetCategories')}
-          >
-            <View style={[
-              styles.optionCheckbox, 
-              { backgroundColor: resetOptions.resetCategories ? '#4E66F1' : 'transparent' }
-            ]}>
-              {resetOptions.resetCategories && (
-                <Ionicons name="checkmark" size={18} color="#FFFFFF" />
-              )}
-            </View>
-            <Text style={styles.optionText}>Категории</Text>
-          </TouchableOpacity>
-        </View>
+        <Text style={styles.warningDescription}>
+          Будут удалены все ваши задачи, прогресс, достижения, персонаж и настройки. 
+          После сброса приложение вернется к исходному состоянию.
+        </Text>
         
         <View style={styles.buttonContainer}>
           <TouchableOpacity 
@@ -234,13 +190,10 @@ export default function SettingsScreen({ navigation }) {
           <TouchableOpacity 
             style={styles.resetButton}
             onPress={handleResetData}
-            disabled={isResetting || 
-              !(resetOptions.resetProfile || 
-                resetOptions.resetTasks || 
-                resetOptions.resetCategories)}
+            disabled={isResetting}
           >
             <Text style={styles.resetButtonText}>
-              {isResetting ? 'Сброс...' : 'Сбросить данные'}
+              {isResetting ? 'Сброс...' : 'Сбросить все данные'}
             </Text>
           </TouchableOpacity>
         </View>
@@ -412,6 +365,13 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     lineHeight: 20,
   },
+  warningDescription: {
+    fontSize: 16,
+    color: '#333333',
+    marginBottom: 24,
+    textAlign: 'center',
+    lineHeight: 22,
+  },
   optionsTitle: {
     fontSize: 16,
     fontWeight: '600',
@@ -461,8 +421,9 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   resetButton: {
-    flex: 1,
+    flex: 1.2, // Увеличиваем ширину кнопки сброса относительно кнопки отмены
     paddingVertical: 12,
+    paddingHorizontal: 8, // Добавляем горизонтальные отступы
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#FF3B30',
@@ -471,6 +432,8 @@ const styles = StyleSheet.create({
   resetButtonText: {
     color: '#FFFFFF',
     fontWeight: '600',
+    fontSize: 15, // Уменьшаем размер шрифта
+    textAlign: 'center', // Центрируем текст
   },
   settingItem: {
     flexDirection: 'row',

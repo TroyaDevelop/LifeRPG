@@ -1,19 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert, ScrollView, Image } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Header, Button, Modal, LoadingIndicator, Avatar, Toast } from '../components';
 import { CurrencyBar } from '../components/Currency'; // Импортируем компонент валюты
 import { EquipmentService } from '../services';
 import { useAppContext } from '../context/AppContext';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-
-const EQUIPMENT_TYPES = {
-  head: 'Головные уборы',
-  body: 'Верхняя одежда',
-  legs: 'Штаны',
-  footwear: 'Обувь',
-  weapon: 'Оружие'
-};
+import { ALL_EQUIPMENT_SPRITES } from '../constants/EquipmentSprites';
+import { getItemIcon, DEFAULT_ITEM_ICONS } from '../constants/ItemIconSprites';
 
 // Словарь для перевода названий характеристик
 const STAT_NAMES = {
@@ -30,7 +24,7 @@ const ShopScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
   const [selectedItem, setSelectedItem] = useState(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
-  const [activeTab, setActiveTab] = useState('all');
+  const [timeUntilRefresh, setTimeUntilRefresh] = useState('');
   
   // Состояния для Toast-уведомлений
   const [toastVisible, setToastVisible] = useState(false);
@@ -145,98 +139,102 @@ const ShopScreen = ({ navigation }) => {
 
   // Получение названия типа снаряжения
   const getEquipmentTypeLabel = (type) => {
-    return EQUIPMENT_TYPES[type] || type;
+    switch (type) {
+      case 'head': return 'Головной убор';
+      case 'body': return 'Верхняя одежда';
+      case 'legs': return 'Штаны';
+      case 'footwear': return 'Обувь';
+      case 'weapon': return 'Оружие';
+      default: return type;
+    }
   };
 
-  // Фильтрация предметов в магазине по выбранному типу
-  const filteredItems = shopItems.filter(item => 
-    activeTab === 'all' || item.type === activeTab
-  );
+  // Функция для получения спрайта предмета по ID
+  const getItemSprite = (itemId) => {
+    if (ALL_EQUIPMENT_SPRITES[itemId] && ALL_EQUIPMENT_SPRITES[itemId].sprite) {
+      return ALL_EQUIPMENT_SPRITES[itemId].sprite;
+    }
+    return null;
+  };
+
+  // Функция для форматирования времени до следующего обновления (24:00:00)
+  const formatTimeUntilRefresh = (milliseconds) => {
+    const hours = Math.floor(milliseconds / (1000 * 60 * 60));
+    const minutes = Math.floor((milliseconds % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((milliseconds % (1000 * 60)) / 1000);
+    
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  };
+
+  // Обновление таймера
+  useEffect(() => {
+    const updateTimer = async () => {
+      const timeLeft = await equipmentService.getTimeUntilNextRefresh();
+      setTimeUntilRefresh(formatTimeUntilRefresh(timeLeft));
+    };
+    
+    // Обновляем таймер сразу при монтировании компонента
+    updateTimer();
+    
+    // Устанавливаем интервал для обновления таймера каждую секунду
+    const interval = setInterval(async () => {
+      updateTimer();
+    }, 1000);
+    
+    // Очищаем интервал при размонтировании компонента
+    return () => clearInterval(interval);
+  }, []);
 
   // Рендер элемента в сетке (в виде квадрата)
-  const renderItem = ({ item }) => (
-    <TouchableOpacity
-      style={styles.itemCard}
-      onPress={() => handleItemPress(item)}
-    >
-      <View style={styles.itemSquare}>
-        <View style={[
-          styles.itemImage, 
-          { backgroundColor: renderRarityColor(item.rarity) }
-        ]}>
-          <Ionicons name={getEquipmentTypeIcon(item.type)} size={32} color="#FFFFFF" />
-        </View>
-        
-        <Text style={styles.itemName} numberOfLines={1} ellipsizeMode="tail">{item.name}</Text>
-        
-        <View style={styles.itemFooter}>
-          <Text style={styles.itemType} numberOfLines={1}>{getEquipmentTypeLabel(item.type)}</Text>
-          
-          <CurrencyBar amount={item.price} compact={true} style={styles.compactCurrency} />
-        </View>
-
-        {item.level > 1 && (
-          <View style={styles.levelBadge}>
-            <Text style={styles.levelBadgeText}>{item.level}</Text>
-          </View>
-        )}
-        
-        {item.set && (
-          <View style={styles.setBadge}>
-            <Ionicons name="link-outline" size={12} color="#4E64EE" />
-          </View>
-        )}
-      </View>
-    </TouchableOpacity>
-  );
-  
-  // Рендер вкладок фильтрации
-  const renderTabs = () => (
-    <View style={styles.tabsContainer}>
-      <ScrollView 
-        horizontal 
-        showsHorizontalScrollIndicator={false} 
-        contentContainerStyle={styles.tabsContent}
+  const renderItem = ({ item }) => {
+    // Получаем иконку предмета
+    const itemIcon = getItemIcon(item.id);
+    
+    return (
+      <TouchableOpacity
+        style={styles.itemCard}
+        onPress={() => handleItemPress(item)}
       >
-        <TouchableOpacity 
-          style={[styles.tab, activeTab === 'all' && styles.activeTab]} 
-          onPress={() => setActiveTab('all')}
-        >
-          <Ionicons 
-            name="grid-outline" 
-            size={20} 
-            color={activeTab === 'all' ? '#4E64EE' : '#666666'} 
-          />
-          <Text style={[
-            styles.tabText, 
-            activeTab === 'all' && styles.activeTabText
+        <View style={styles.itemSquare}>
+          <View style={[
+            styles.itemImage, 
+            { borderColor: renderRarityColor(item.rarity) }
           ]}>
-            Все
-          </Text>
-        </TouchableOpacity>
-        
-        {Object.entries(EQUIPMENT_TYPES).map(([type, label]) => (
-          <TouchableOpacity 
-            key={type}
-            style={[styles.tab, activeTab === type && styles.activeTab]} 
-            onPress={() => setActiveTab(type)}
-          >
-            <Ionicons 
-              name={getEquipmentTypeIcon(type)} 
-              size={20} 
-              color={activeTab === type ? '#4E64EE' : '#666666'} 
-            />
-            <Text style={[
-              styles.tabText, 
-              activeTab === type && styles.activeTabText
-            ]}>
-              {label}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
-    </View>
-  );
+            {itemIcon ? (
+              <Image source={itemIcon} style={styles.itemSprite} resizeMode="contain" />
+            ) : (
+              // Используем спрайт по умолчанию для типа предмета или иконку
+              DEFAULT_ITEM_ICONS[item.type] ? (
+                <Image source={DEFAULT_ITEM_ICONS[item.type]} style={styles.itemSprite} resizeMode="contain" />
+              ) : (
+                <Ionicons name={getEquipmentTypeIcon(item.type)} size={32} color="#FFFFFF" />
+              )
+            )}
+          </View>
+          
+          <Text style={styles.itemName} numberOfLines={1} ellipsizeMode="tail">{item.name}</Text>
+          
+          <View style={styles.itemFooter}>
+            <Text style={styles.itemType} numberOfLines={1}>{getEquipmentTypeLabel(item.type)}</Text>
+            
+            <CurrencyBar amount={item.price} compact={true} style={styles.compactCurrency} />
+          </View>
+
+          {item.level > 1 && (
+            <View style={styles.levelBadge}>
+              <Text style={styles.levelBadgeText}>{item.level}</Text>
+            </View>
+          )}
+          
+          {item.set && (
+            <View style={styles.setBadge}>
+              <Ionicons name="link-outline" size={12} color="#4E64EE" />
+            </View>
+          )}
+        </View>
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <View style={styles.container}>
@@ -244,17 +242,19 @@ const ShopScreen = ({ navigation }) => {
       
       <View style={styles.currencyContainer}>
         <CurrencyBar amount={actus} compact={true} />
+        <View style={styles.refreshTimerContainer}>
+          <Ionicons name="time-outline" size={18} color="#4E64EE" />
+          <Text style={styles.refreshTimerText}>Новые товары через: {timeUntilRefresh}</Text>
+        </View>
       </View>
       
       {loading ? (
         <LoadingIndicator />
       ) : (
         <View style={styles.content}>
-          {renderTabs()}
-          
-          {filteredItems.length > 0 ? (
+          {shopItems.length > 0 ? (
             <FlatList
-              data={filteredItems}
+              data={shopItems}
               renderItem={renderItem}
               keyExtractor={item => item.id}
               contentContainerStyle={styles.list}
@@ -264,9 +264,7 @@ const ShopScreen = ({ navigation }) => {
           ) : (
             <View style={styles.emptyContainer}>
               <Text style={styles.emptyText}>
-                {activeTab === 'all' 
-                  ? 'В магазине пока нет доступных предметов' 
-                  : `Нет предметов типа "${getEquipmentTypeLabel(activeTab)}"`}
+                В магазине пока нет доступных предметов
               </Text>
             </View>
           )}
@@ -282,9 +280,26 @@ const ShopScreen = ({ navigation }) => {
           <View style={styles.modalContent}>
             <View style={[
               styles.itemImageLarge,
-              { backgroundColor: renderRarityColor(selectedItem.rarity) }
+              { borderColor: renderRarityColor(selectedItem.rarity) }
             ]}>
-              <Ionicons name={getEquipmentTypeIcon(selectedItem.type)} size={36} color="#FFFFFF" />
+              {getItemIcon(selectedItem.id) ? (
+                <Image 
+                  source={getItemIcon(selectedItem.id)} 
+                  style={styles.itemSpriteLarge} 
+                  resizeMode="contain" 
+                />
+              ) : (
+                // Используем спрайт по умолчанию для типа предмета или иконку
+                DEFAULT_ITEM_ICONS[selectedItem.type] ? (
+                  <Image 
+                    source={DEFAULT_ITEM_ICONS[selectedItem.type]} 
+                    style={styles.itemSpriteLarge} 
+                    resizeMode="contain" 
+                  />
+                ) : (
+                  <Ionicons name={getEquipmentTypeIcon(selectedItem.type)} size={36} color="#FFFFFF" />
+                )
+              )}
             </View>
             
             <View style={styles.rarityBadge}>
@@ -435,10 +450,13 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 12,
-    backgroundColor: '#E0E0E0',
+    backgroundColor: 'transparent',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 10,
+    borderWidth: 2,
+    borderColor: '#E0E0E0',
+    overflow: 'hidden',
   },
   itemName: {
     fontSize: 14,
@@ -510,11 +528,14 @@ const styles = StyleSheet.create({
   itemImageLarge: {
     width: 80,
     height: 80,
-    borderRadius: 40,
-    backgroundColor: '#E0E0E0',
+    borderRadius: 12,
+    backgroundColor: 'transparent',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 24,
+    borderWidth: 3,
+    borderColor: '#E0E0E0',
+    overflow: 'hidden',
   },
   rarityBadge: {
     position: 'absolute',
@@ -612,6 +633,29 @@ const styles = StyleSheet.create({
   },
   modalCurrency: {
     marginTop: 8,
+  },
+  refreshTimerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: 'auto',
+    backgroundColor: '#EFF3FF',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 16,
+  },
+  refreshTimerText: {
+    fontSize: 12,
+    color: '#4E64EE',
+    fontWeight: '500',
+    marginLeft: 4,
+  },
+  itemSprite: {
+    width: '100%',
+    height: '100%',
+  },
+  itemSpriteLarge: {
+    width: '85%',
+    height: '85%',
   },
 });
 

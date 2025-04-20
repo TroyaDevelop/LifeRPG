@@ -297,7 +297,7 @@ export class TaskService {
   static async resetDailyTasks() {
     try {
       const allTasks = await this.getAllTasks();
-      const dailyTasks = allTasks.filter(task => task.type === 'daily');
+      const dailyTasks = allTasks.filter(task => task.isDaily || task.type === 'daily');
       
       // Подсчет невыполненных задач для штрафа здоровья
       const missedTasks = dailyTasks.filter(task => !task.isCompleted);
@@ -315,6 +315,7 @@ export class TaskService {
         await this.updateTask(task.id, task);
       }
       
+      console.log(`TaskService: Сброшено ${dailyTasks.length} ежедневных задач`);
       return true;
     } catch (error) {
       console.error('Ошибка при сбросе ежедневных задач:', error);

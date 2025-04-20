@@ -334,29 +334,31 @@ export const AppProvider = ({ children }) => {
   };
 
   // Функция сброса прогресса
-  const resetProgress = async (options) => {
+  const resetProgress = async () => {
     try {
-      console.log('AppContext: Сброс прогресса с опциями:', JSON.stringify(options));
+      console.log('AppContext: Сброс прогресса');
       
-      // Используем сервис для сброса
-      const result = await ResetService.resetAllData(options);
+      // Используем сервис для сброса всех данных
+      const result = await ResetService.resetAllData();
       
       if (result) {
         console.log('AppContext: Сброс прогресса выполнен успешно');
         
         // Принудительно обновляем локальное состояние
-        if (options.resetCategories) {
-          console.log('AppContext: Сбрасываем состояние категорий');
-          setCategories([]);
-          
-          // Очищаем кэш категорий
-          try {
-            if (CategoryService.clearCache) {
-              await CategoryService.clearCache();
-            }
-          } catch (e) {
-            console.error('Ошибка при очистке кэша категорий:', e);
+        setCategories([]);
+        setTasks([]);
+        setArchivedTasks([]);
+        
+        // Очищаем кэши сервисов, если доступно
+        try {
+          if (CategoryService.clearCache) {
+            await CategoryService.clearCache();
           }
+          if (TaskService.invalidateCache) {
+            TaskService.invalidateCache();
+          }
+        } catch (e) {
+          console.error('Ошибка при очистке кэшей сервисов:', e);
         }
         
         // Обновляем остальные данные

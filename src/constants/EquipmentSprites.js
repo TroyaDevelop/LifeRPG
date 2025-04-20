@@ -43,30 +43,23 @@ export const HEAD_EQUIPMENT = {
 
 // Верхняя одежда (тело)
 export const BODY_EQUIPMENT = {
-  // Обычные предметы
-  equip_body_common: {
-    sprite: require('../../assets/sprites/equipment/body/farmer_set_body.png'),
-    name: 'Льняная рубашка',
-    rarity: 'common',
-    description: 'Обычная рубашка из льняной ткани.',
-  },
   // Редкие предметы
-  equip_body_rare: {
-    sprite: require('../../assets/sprites/equipment/body/farmer_set_body.png'),
-    name: 'Кольчуга стражника',
+  leather_armor_body1: {
+    sprite: require('../../assets/sprites/equipment/body/leather_body1.png'),
+    name: 'Проклепанный кожаный доспех',
     rarity: 'rare',
     description: 'Прочная и надежная кольчуга из качественной стали.',
   },
   // Эпические предметы
-  equip_body_epic: {
-    sprite: require('../../assets/sprites/equipment/body/farmer_set_body.png'),
-    name: 'Мантия архимага',
+  leather_armor_body2: {
+    sprite: require('../../assets/sprites/equipment/body/leather_body2.png'),
+    name: 'Кожаный доспех',
     rarity: 'epic',
     description: 'Мантия, сотканная из нитей, пропитанных магией.',
   },
   // Легендарные предметы
-  equip_body_legendary: {
-    sprite: require('../../assets/sprites/equipment/body/farmer_set_body.png'),
+  leather_armor_body3: {
+    sprite: require('../../assets/sprites/equipment/body/leather_body3.png'),
     name: 'Доспех героя',
     rarity: 'legendary',
     description: 'Легендарный доспех, выкованный из материала, добытого с упавшей звезды.',
@@ -83,33 +76,28 @@ export const BODY_EQUIPMENT = {
 
 // Штаны
 export const LEGS_EQUIPMENT = {
-  // Обычные предметы
-  equip_legs_common: {
-    sprite: require('../../assets/sprites/equipment/legs/farmer_set_legs.png'),
-    name: 'Штаны путешественника',
-    rarity: 'common',
-    description: 'Прочные штаны для длительных походов.',
-  },
   // Редкие предметы
-  equip_legs_rare: {
-    sprite: require('../../assets/sprites/equipment/legs/farmer_set_legs.png'),
-    name: 'Штаны стражника',
+  leather_armor_legs1: {
+    sprite: require('../../assets/sprites/equipment/legs/leather_legs1.png'),
+    name: 'Проклепанные кожаные штаны',
     rarity: 'rare',
     description: 'Прочные штаны с кожаными вставками для дополнительной защиты.',
+    set: 'Стражник'
   },
   // Эпические предметы
-  equip_legs_epic: {
-    sprite: require('../../assets/sprites/equipment/legs/farmer_set_legs.png'),
-    name: 'Штаны рыцаря',
+  leather_armor_legs2: {
+    sprite: require('../../assets/sprites/equipment/legs/leather_legs2.png'),
+    name: 'Кожаные штаны',
     rarity: 'epic',
     description: 'Закаленные в битвах латные поножи.',
   },
   // Легендарные предметы
-  equip_legs_legendary: {
-    sprite: require('../../assets/sprites/equipment/legs/farmer_set_legs.png'),
+  leather_armor_legs3: {
+    sprite: require('../../assets/sprites/equipment/legs/leather_legs3.png'),
     name: 'Поножи героя',
     rarity: 'legendary',
     description: 'Часть легендарного комплекта, дарует невероятную выносливость.',
+    set: 'Герой'
   },
   // Наборы
   farmer_set_legs: {
@@ -123,33 +111,27 @@ export const LEGS_EQUIPMENT = {
 
 // Обувь
 export const FOOTWEAR_EQUIPMENT = {
-  // Обычные предметы
-  equip_footwear_common: {
-    sprite: require('../../assets/sprites/equipment/footwear/farmer_set_footwear.png'),
-    name: 'Кожаные ботинки',
-    rarity: 'common',
-    description: 'Удобные ботинки для долгих путешествий.',
-  },
   // Редкие предметы
-  equip_footwear_rare: {
-    sprite: require('../../assets/sprites/equipment/footwear/farmer_set_footwear.png'),
-    name: 'Сапоги скорохода',
+  leather_armor_footwear1: {
+    sprite: require('../../assets/sprites/equipment/footwear/leather_footwear1.png'),
+    name: 'Проклепанные кожаные ботинки',
     rarity: 'rare',
     description: 'Легкие сапоги, которые даруют своему владельцу необычайную скорость.',
   },
   // Эпические предметы
-  equip_footwear_epic: {
-    sprite: require('../../assets/sprites/equipment/footwear/farmer_set_footwear.png'),
-    name: 'Сапоги семи лиг',
+  leather_armor_footwear2: {
+    sprite: require('../../assets/sprites/equipment/footwear/leather_footwear2.png'),
+    name: 'Кожаные ботинки',
     rarity: 'epic',
     description: 'Легендарные сапоги, позволяющие преодолевать огромные расстояния.',
   },
   // Легендарные предметы
-  equip_footwear_legendary: {
-    sprite: require('../../assets/sprites/equipment/footwear/farmer_set_footwear.png'),
-    name: 'Сапоги героя',
+  leather_armor_footwear3: {
+    sprite: require('../../assets/sprites/equipment/footwear/leather_footwear3.png'),
+    name: 'Качественные кожаные сапоги',
     rarity: 'legendary',
     description: 'Завершающая часть комплекта героя, позволяет двигаться молниеносно.',
+    set: 'Герой'
   },
   // Наборы
   farmer_set_footwear: {
@@ -179,22 +161,22 @@ export const WEAPON_EQUIPMENT = {
     description: 'Хорошо сбалансированное копье из высококачественной стали.',
   },
   // Эпические предметы
-  equip_weapon_epic: {
-    sprite: null, // Временно нет изображения
-    name: 'Рунный клинок',
+  pole: {
+    sprite: require("../../assets/sprites/equipment/weapons/pole.png"), // Временно нет изображения
+    name: 'Шест',
     rarity: 'epic',
     description: 'Древний меч с высеченными на лезвии рунами силы.',
   },
   // Легендарные предметы
-  equip_weapon_legendary: {
-    sprite: null, // Временно нет изображения
-    name: 'Экскалибур',
+    magic_staff: {
+    sprite: require("../../assets/sprites/equipment/weapons/staff.png"), // Временно нет изображения
+    name: 'Посох мага',
     rarity: 'legendary',
     description: 'Легендарный меч короля Артура. Как он оказался в вашем приложении - загадка.',
   },
   // Наборы
   farmer_set_weapon: {
-    sprite: null, // Временно нет изображения
+    sprite: require("../../assets/sprites/equipment/weapons/pitchfork.png"),
     name: 'Фермерские вилы',
     rarity: 'common',
     description: 'Полезный сельскохозяйственный инструмент.',

@@ -14,7 +14,8 @@ export const sampleEquipment = [
       willpower: 1
     },
     price: 3,
-    level: 1
+    level: 1,
+    set: 'Фермер'
   },
   {
     id: 'farmer_set_body',
@@ -27,7 +28,8 @@ export const sampleEquipment = [
       willpower: 1
     },
     price: 5,
-    level: 1
+    level: 1,
+    set: 'Фермер'
   },
   {
     id: 'farmer_set_legs',
@@ -39,7 +41,8 @@ export const sampleEquipment = [
       strength: 2
     },
     price: 5,
-    level: 1
+    level: 1,
+    set: 'Фермер'
   },
   {
     id: 'farmer_set_footwear',
@@ -52,8 +55,25 @@ export const sampleEquipment = [
       agility: 1
     },
     price: 100,
-    level: 1
+    level: 1,
+    set: 'Фермер'
   },
+
+  {
+    id: 'farmer_set_weapon',
+    name: 'Фермерские вилы',
+    type: 'weapon',
+    description: 'Ведьмаки их боятся.',
+    rarity: 'common',
+    stats: {
+      strength: 7,
+      intelligence: 5
+    },
+    price: 1,
+    level: 1,
+    set: 'Фермер'
+  },
+
   {
     id: 'wooden_bow',
     name: 'Деревянный лук',
@@ -67,23 +87,9 @@ export const sampleEquipment = [
     level: 1
   },
   
-  // Набор редкого снаряжения
   {
-    id: 'equip_head_rare',
-    name: 'Зачарованный капюшон',
-    type: 'head',
-    description: 'Капюшон, наполненный магией для усиления концентрации.',
-    rarity: 'rare',
-    stats: {
-      intelligence: 3,
-      willpower: 2
-    },
-    price: 350,
-    level: 5
-  },
-  {
-    id: 'equip_body_rare',
-    name: 'Кольчуга стражника',
+    id: 'leather_armor_body1',
+    name: 'Проклепанный кожаный доспех',
     type: 'body',
     description: 'Прочная и надежная кольчуга из качественной стали.',
     rarity: 'rare',
@@ -91,13 +97,12 @@ export const sampleEquipment = [
       strength: 5,
       willpower: 2
     },
-    price: 500,
-    level: 5,
-    set: 'Стражник'
+    price: 1,
+    level: 1,
   },
   {
-    id: 'equip_legs_rare',
-    name: 'Штаны стражника',
+    id: 'leather_armor_legs1',
+    name: 'Проклепанные кожаные штаны',
     type: 'legs',
     description: 'Прочные штаны с кожаными вставками для дополнительной защиты.',
     rarity: 'rare',
@@ -105,13 +110,13 @@ export const sampleEquipment = [
       strength: 3,
       willpower: 2
     },
-    price: 400,
-    level: 5,
+    price: 1,
+    level: 1,
     set: 'Стражник'
   },
   {
-    id: 'equip_footwear_rare',
-    name: 'Сапоги скорохода',
+    id: 'leather_armor_footwear1',
+    name: 'Проклепанные кожаные ботинки',
     type: 'footwear',
     description: 'Легкие сапоги, которые даруют своему владельцу необычайную скорость.',
     rarity: 'rare',
@@ -119,8 +124,8 @@ export const sampleEquipment = [
       agility: 5,
       luck: 3
     },
-    price: 450,
-    level: 5
+    price: 1,
+    level: 1
   },
   {
     id: 'spear',
@@ -136,25 +141,9 @@ export const sampleEquipment = [
     level: 1
   },
   
-  // Набор эпического снаряжения
   {
-    id: 'equip_head_epic',
-    name: 'Корона знаний',
-    type: 'head',
-    description: 'Древняя корона, наполненная мудростью поколений.',
-    rarity: 'epic',
-    stats: {
-      intelligence: 6,
-      willpower: 4,
-      luck: 2
-    },
-    price: 1200,
-    level: 10,
-    set: 'Мудрец'
-  },
-  {
-    id: 'equip_body_epic',
-    name: 'Мантия архимага',
+    id: 'leather_armor_body2',
+    name: 'Кожаный доспех',
     type: 'body',
     description: 'Мантия, сотканная из нитей, пропитанных магией.',
     rarity: 'epic',
@@ -163,13 +152,13 @@ export const sampleEquipment = [
       willpower: 3,
       luck: 4
     },
-    price: 1500,
-    level: 10,
+    price: 1,
+    level: 1,
     set: 'Мудрец'
   },
   {
-    id: 'equip_legs_epic',
-    name: 'Штаны рыцаря',
+    id: 'leather_armor_legs2',
+    name: 'Кожаные штаны',
     type: 'legs',
     description: 'Закаленные в битвах латные поножи.',
     rarity: 'epic',
@@ -177,12 +166,12 @@ export const sampleEquipment = [
       strength: 7,
       willpower: 4
     },
-    price: 1300,
-    level: 10
+    price: 1,
+    level: 1
   },
   {
-    id: 'equip_footwear_epic',
-    name: 'Сапоги семи лиг',
+    id: 'leather_armor_footwear2',
+    name: 'Кожаные ботинки',
     type: 'footwear',
     description: 'Легендарные сапоги, позволяющие преодолевать огромные расстояния.',
     rarity: 'epic',
@@ -191,22 +180,10 @@ export const sampleEquipment = [
       luck: 5,
       strength: 3
     },
-    price: 1400,
-    level: 10
+    price: 1,
+    level: 1
   },
-  {
-    id: 'equip_weapon_epic',
-    name: 'Рунный клинок',
-    type: 'weapon',
-    description: 'Древний меч с высеченными на лезвии рунами силы.',
-    rarity: 'epic',
-    stats: {
-      strength: 7,
-      intelligence: 5
-    },
-    price: 1600,
-    level: 10
-  },
+ 
   
   // Набор легендарного снаряжения
   {
@@ -220,11 +197,11 @@ export const sampleEquipment = [
       willpower: 8,
       luck: 5
     },
-    price: 3000,
-    level: 20
+    price: 1,
+    level: 1
   },
   {
-    id: 'equip_body_legendary',
+    id: 'leather_armor_body3',
     name: 'Доспех героя',
     type: 'body',
     description: 'Легендарный доспех, выкованный из материала, добытого с упавшей звезды.',
@@ -234,12 +211,12 @@ export const sampleEquipment = [
       willpower: 8,
       agility: 10
     },
-    price: 3500,
-    level: 20,
+    price: 1,
+    level: 1,
     set: 'Герой'
   },
   {
-    id: 'equip_legs_legendary',
+    id: 'leather_armor_legs3',
     name: 'Поножи героя',
     type: 'legs',
     description: 'Часть легендарного комплекта, дарует невероятную выносливость.',
@@ -249,13 +226,13 @@ export const sampleEquipment = [
       willpower: 12,
       agility: 5
     },
-    price: 3200,
-    level: 20,
+    price: 1,
+    level: 1,
     set: 'Герой'
   },
   {
-    id: 'equip_footwear_legendary',
-    name: 'Сапоги героя',
+    id: 'leather_armor_footwear3',
+    name: 'Качественные кожаные сапоги',
     type: 'footwear',
     description: 'Завершающая часть комплекта героя, позволяет двигаться молниеносно.',
     rarity: 'legendary',
@@ -264,13 +241,13 @@ export const sampleEquipment = [
       luck: 12,
       strength: 8
     },
-    price: 3100,
-    level: 20,
+    price: 1,
+    level: 1,
     set: 'Герой'
   },
   {
-    id: 'equip_weapon_legendary',
-    name: 'Экскалибур',
+    id: 'magic_staff',
+    name: 'Посох мага',
     type: 'weapon',
     description: 'Легендарный меч короля Артура. Как он оказался в вашем приложении - загадка.',
     rarity: 'legendary',
@@ -279,8 +256,22 @@ export const sampleEquipment = [
       intelligence: 10,
       luck: 8
     },
-    price: 5000,
-    level: 20,
-    set: 'Герой'
+    price: 1,
+    level: 1,
+  },
+
+  {
+    id: 'pole',
+    name: 'Шест',
+    type: 'weapon',
+    description: 'Боевой шест, который может быть использован как для атаки, так и для защиты.',
+    rarity: 'legendary',
+    stats: {
+      strength: 15,
+      intelligence: 10,
+      luck: 8
+    },
+    price: 1,
+    level: 1,
   }
 ];

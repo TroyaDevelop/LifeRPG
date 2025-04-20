@@ -6,6 +6,7 @@ import { EquipmentService } from '../services';
 import { useAppContext } from '../context/AppContext';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { EQUIPMENT_SETS, ALL_EQUIPMENT_SPRITES } from '../constants/EquipmentSprites';
+import { getItemIcon, DEFAULT_ITEM_ICONS } from '../constants/ItemIconSprites';
 
 const EQUIPMENT_TYPES = {
   head: 'Головные уборы',
@@ -152,56 +153,83 @@ const InventoryScreen = ({ navigation }) => {
     return EQUIPMENT_TYPES[type] || type;
   };
 
+  // Функция для получения спрайта предмета по ID
+  const getItemSprite = (itemId, originalId) => {
+    // Сначала проверяем по оригинальному ID, если он есть
+    if (originalId && ALL_EQUIPMENT_SPRITES[originalId] && ALL_EQUIPMENT_SPRITES[originalId].sprite) {
+      return ALL_EQUIPMENT_SPRITES[originalId].sprite;
+    }
+    // Затем проверяем по обычному ID
+    if (ALL_EQUIPMENT_SPRITES[itemId] && ALL_EQUIPMENT_SPRITES[itemId].sprite) {
+      return ALL_EQUIPMENT_SPRITES[itemId].sprite;
+    }
+    return null;
+  };
+
   const filteredEquipment = equipment.filter(item => 
     activeTab === 'all' || item.type === activeTab
   );
 
-  const renderItem = ({ item }) => (
-    <TouchableOpacity
-      style={[styles.itemCard, item.equipped && styles.equippedItem]}
-      onPress={() => handleItemPress(item)}
-    >
-      <View style={styles.itemSquare}>
-        <View style={[
-          styles.itemImage, 
-          { backgroundColor: renderRarityColor(item.rarity) }
-        ]}>
-          <Ionicons name={getEquipmentTypeIcon(item.type)} size={32} color="#FFFFFF" />
-        </View>
-        
-        <Text style={styles.itemName} numberOfLines={1} ellipsizeMode="tail">{item.name}</Text>
-        
-        <View style={styles.itemFooter}>
-          <Text style={styles.itemType} numberOfLines={1}>{getEquipmentTypeLabel(item.type)}</Text>
+  const renderItem = ({ item }) => {
+    // Получаем иконку предмета
+    const itemIcon = getItemIcon(item.id);
+    
+    return (
+      <TouchableOpacity
+        style={[styles.itemCard, item.equipped && styles.equippedItem]}
+        onPress={() => handleItemPress(item)}
+      >
+        <View style={styles.itemSquare}>
+          <View style={[
+            styles.itemImage, 
+            { borderColor: renderRarityColor(item.rarity) }
+          ]}>
+            {itemIcon ? (
+              <Image source={itemIcon} style={styles.itemSprite} resizeMode="contain" />
+            ) : (
+              // Используем спрайт по умолчанию для типа предмета или иконку
+              DEFAULT_ITEM_ICONS[item.type] ? (
+                <Image source={DEFAULT_ITEM_ICONS[item.type]} style={styles.itemSprite} resizeMode="contain" />
+              ) : (
+                <Ionicons name={getEquipmentTypeIcon(item.type)} size={32} color="#FFFFFF" />
+              )
+            )}
+          </View>
           
-          {/* Отображаем до 2-х статов в карточке */}
-          {Object.entries(item.stats || {}).slice(0, 1).map(([key, value]) => (
-            <Text key={key} style={styles.statPreview}>
-              +{value} {STAT_NAMES[key] || key}
-            </Text>
-          ))}
-        </View>
+          <Text style={styles.itemName} numberOfLines={1} ellipsizeMode="tail">{item.name}</Text>
+          
+          <View style={styles.itemFooter}>
+            <Text style={styles.itemType} numberOfLines={1}>{getEquipmentTypeLabel(item.type)}</Text>
+            
+            {/* Отображаем до 1-го стата в карточке */}
+            {Object.entries(item.stats || {}).slice(0, 1).map(([key, value]) => (
+              <Text key={key} style={styles.statPreview}>
+                +{value} {STAT_NAMES[key] || key}
+              </Text>
+            ))}
+          </View>
 
-        {item.equipped && (
-          <View style={styles.equippedBadge}>
-            <Ionicons name="checkmark-circle" size={16} color="#FFFFFF" />
-          </View>
-        )}
-        
-        {item.level > 1 && (
-          <View style={styles.levelBadge}>
-            <Text style={styles.levelBadgeText}>{item.level}</Text>
-          </View>
-        )}
-        
-        {item.set && (
-          <View style={styles.setBadge}>
-            <Ionicons name="link-outline" size={12} color="#4E64EE" />
-          </View>
-        )}
-      </View>
-    </TouchableOpacity>
-  );
+          {item.equipped && (
+            <View style={styles.equippedBadge}>
+              <Ionicons name="checkmark-circle" size={16} color="#FFFFFF" />
+            </View>
+          )}
+          
+          {item.level > 1 && (
+            <View style={styles.levelBadge}>
+              <Text style={styles.levelBadgeText}>{item.level}</Text>
+            </View>
+          )}
+          
+          {item.set && (
+            <View style={styles.setBadge}>
+              <Ionicons name="link-outline" size={12} color="#4E64EE" />
+            </View>
+          )}
+        </View>
+      </TouchableOpacity>
+    );
+  };
   
   // Функция для получения заголовка выбранной категории
   const getCategoryTitle = () => {
@@ -436,9 +464,26 @@ const InventoryScreen = ({ navigation }) => {
           <View style={styles.modalContent}>
             <View style={[
               styles.itemImageLarge,
-              { backgroundColor: renderRarityColor(selectedItem.rarity) }
+              { borderColor: renderRarityColor(selectedItem.rarity) }
             ]}>
-              <Ionicons name={getEquipmentTypeIcon(selectedItem.type)} size={36} color="#FFFFFF" />
+              {getItemIcon(selectedItem.id) ? (
+                <Image 
+                  source={getItemIcon(selectedItem.id)} 
+                  style={styles.itemSpriteLarge} 
+                  resizeMode="contain" 
+                />
+              ) : (
+                // Используем спрайт по умолчанию для типа предмета или иконку
+                DEFAULT_ITEM_ICONS[selectedItem.type] ? (
+                  <Image 
+                    source={DEFAULT_ITEM_ICONS[selectedItem.type]} 
+                    style={styles.itemSpriteLarge} 
+                    resizeMode="contain" 
+                  />
+                ) : (
+                  <Ionicons name={getEquipmentTypeIcon(selectedItem.type)} size={36} color="#FFFFFF" />
+                )
+              )}
             </View>
             
             <View style={styles.rarityBadge}>
@@ -769,10 +814,21 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 12,
-    backgroundColor: '#E0E0E0',
+    backgroundColor: 'transparent',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 10,
+    borderWidth: 2,
+    borderColor: '#E0E0E0',
+    overflow: 'hidden',
+  },
+  itemSprite: {
+    width: '100%',
+    height: '100%',
+  },
+  itemSpriteLarge: {
+    width: '85%',
+    height: '85%',
   },
   itemName: {
     fontSize: 14,
@@ -872,11 +928,18 @@ const styles = StyleSheet.create({
   itemImageLarge: {
     width: 80,
     height: 80,
-    borderRadius: 40,
-    backgroundColor: '#E0E0E0',
+    borderRadius: 12,
+    backgroundColor: 'transparent',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 24,
+    borderWidth: 3,
+    borderColor: '#E0E0E0',
+    overflow: 'hidden',
+  },
+  itemSpriteLarge: {
+    width: '85%',
+    height: '85%',
   },
   rarityBadge: {
     position: 'absolute',
