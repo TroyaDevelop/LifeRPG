@@ -4,6 +4,7 @@ import { TaskService } from './TaskService';
 import { AchievementService } from './AchievementService';
 import CategoryService from './CategoryService';
 import EquipmentService from './EquipmentService';
+import BossService from './BossService';
 
 // Ключи хранилища
 const TASKS_STORAGE_KEY = 'tasks'; // Правильный ключ для задач
@@ -14,6 +15,8 @@ const AVATAR_STORAGE_KEY = '@LifeRPG:avatar';
 const EQUIPMENT_STORAGE_KEY = 'liferpg_equipment';
 const SHOP_ITEMS_KEY = 'liferpg_shop_items';
 const SHOP_LAST_UPDATE_KEY = 'liferpg_shop_last_update';
+const BOSSES_STORAGE_KEY = 'bosses';
+const ACTIVE_BOSS_KEY = 'activeBoss';
 
 class ResetService {
   /**
@@ -70,17 +73,35 @@ class ResetService {
       const profileService = ProfileService.getInstance();
       resetPromises.push(profileService.resetProfile());
       
-      // 3. Сброс инвентаря и снаряжения
+      // 3. Сброс боссов - удаляем активного босса и все данные о боссах
+      console.log('ResetService: Сбрасываем данные о боссах');
+      resetPromises.push(
+        new Promise(async (resolve) => {
+          try {
+            // Удаляем активного босса
+            await AsyncStorage.removeItem(ACTIVE_BOSS_KEY);
+            // Удаляем все сохраненные боссы
+            await AsyncStorage.removeItem(BOSSES_STORAGE_KEY);
+            console.log('ResetService: Данные о боссах успешно удалены');
+            resolve(true);
+          } catch (error) {
+            console.error('ResetService: Ошибка при сбросе данных о боссах:', error);
+            resolve(false);
+          }
+        })
+      );
+      
+      // 4. Сброс инвентаря и снаряжения
       console.log('ResetService: Сбрасываем инвентарь и снаряжение');
       if (EquipmentService.resetAllEquipment) {
         resetPromises.push(EquipmentService.resetAllEquipment(true)); // Сбрасываем и инициализируем тестовыми данными
         
-        // 4. Сбрасываем данные магазина
+        // 5. Сбрасываем данные магазина
         console.log('ResetService: Сбрасываем данные магазина');
         resetPromises.push(AsyncStorage.removeItem(SHOP_ITEMS_KEY));
         resetPromises.push(AsyncStorage.removeItem(SHOP_LAST_UPDATE_KEY));
         
-        // 5. Обновляем магазин новыми предметами
+        // 6. Обновляем магазин новыми предметами
         const equipmentService = new EquipmentService();
         resetPromises.push(equipmentService.refreshShopItems());
       } else {
@@ -90,7 +111,7 @@ class ResetService {
         console.log('ResetService: Внимание! EquipmentService.resetAllEquipment не найден, используем прямое удаление');
       }
       
-      // 6. Сброс категорий
+      // 7. Сброс категорий
       console.log('ResetService: Сбрасываем категории');
       resetPromises.push(
         new Promise(async (resolve) => {
@@ -116,7 +137,7 @@ class ResetService {
         })
       );
       
-      // 7. Ждем завершения всех операций
+      // 8. Ждем завершения всех операций
       const results = await Promise.all(resetPromises);
       
       console.log('ResetService: Все операции сброса завершены с результатами:', results);
