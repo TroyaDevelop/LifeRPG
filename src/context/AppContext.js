@@ -118,7 +118,7 @@ export const AppProvider = ({ children }) => {
       setIsLoading(true);
       
       // Проверяем, нужно ли сбросить ежедневные задачи и восстановить энергию
-      await SchedulerService.checkAndResetDailyTasks();
+      await SchedulerService.checkAndPerformDailyReset();
       
       // Загружаем профиль с обновленными ресурсами
       await loadAllData();

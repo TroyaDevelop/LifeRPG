@@ -471,7 +471,6 @@ const HomeScreen = ({ navigation }) => {
         >
           <Text style={tabType === 'regular' ? styles.activeTabText : styles.tabText}>Обычные</Text>
         </TouchableOpacity>
-        
       </View>
 
       <FlatList

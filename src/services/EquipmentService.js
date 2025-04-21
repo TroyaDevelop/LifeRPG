@@ -572,6 +572,108 @@ class EquipmentService {
       return [];
     }
   }
+
+  /**
+   * Использует предмет из инвентаря игрока
+   * @param {string} itemId - ID предмета в инвентаре игрока
+   * @returns {Promise<Object>} - Результат использования предмета
+   */
+  async useItem(itemId) {
+    try {
+      const playerInventory = await this.getPlayerInventory();
+      const itemIndex = playerInventory.findIndex(item => item.id === itemId);
+      
+      if (itemIndex === -1) {
+        throw new Error('Предмет не найден в инвентаре: ' + itemId);
+      }
+      
+      const item = playerInventory[itemIndex];
+      let result = { success: false };
+
+      console.log('Использование предмета:', item);
+      
+      // Проверяем ID предмета на совпадение со свитками призыва
+      const isBossSummon = 
+        item.id.includes('boss_summon') || 
+        (item.originalId && item.originalId.includes('boss_summon')) ||
+        item.name.toLowerCase().includes('свиток призыва');
+      
+      // Проверяем ID предмета на совпадение с зельями здоровья
+      const isHealthPotion = 
+        item.id.includes('health_potion') || 
+        (item.originalId && item.originalId.includes('health_potion')) ||
+        item.name.toLowerCase().includes('зелье здоровья');
+      
+      // Проверяем ID предмета на совпадение с зельями энергии
+      const isEnergyPotion = 
+        item.id.includes('energy_potion') || 
+        (item.originalId && item.originalId.includes('energy_potion')) ||
+        item.name.toLowerCase().includes('зелье энергии');
+      
+      // Обработка различных типов предметов
+      if (item.type === 'consumable' || isBossSummon || isHealthPotion || isEnergyPotion) {
+        // Обработка разных подтипов расходников
+        if (item.subType === 'boss_summon' || isBossSummon) {
+          // Предмет призыва босса
+          const BossService = require('./BossService').default;
+          const bossTier = item.tier || 1;
+          const boss = await BossService.summonBossFromTemplate(bossTier - 1);
+          result = { 
+            success: true, 
+            message: `Призван босс ${boss.name}!`,
+            boss: boss,
+            consumed: true
+          };
+        } else if (item.subType === 'health_potion' || isHealthPotion) {
+          // Зелье здоровья
+          const ProfileService = require('./ProfileService').ProfileService;
+          const healAmount = item.healAmount || 20;
+          
+          await ProfileService.updateHealth(healAmount);
+          result = {
+            success: true,
+            message: `Восстановлено ${healAmount} здоровья!`,
+            consumed: true
+          };
+        } else if (item.subType === 'energy_potion' || isEnergyPotion) {
+          // Зелье энергии
+          const ProfileService = require('./ProfileService').ProfileService;
+          const energyAmount = item.energyAmount || 15;
+          
+          await ProfileService.updateEnergy(energyAmount);
+          result = {
+            success: true,
+            message: `Восстановлено ${energyAmount} энергии!`,
+            consumed: true
+          };
+        } else {
+          result = {
+            success: false,
+            message: 'Неизвестный тип расходуемого предмета',
+            consumed: false
+          };
+        }
+      } else {
+        result = {
+          success: false,
+          message: 'Этот предмет нельзя использовать',
+          consumed: false
+        };
+      }
+      
+      // Если предмет был использован и его нужно удалить
+      if (result.success && result.consumed) {
+        // Удаляем предмет из инвентаря
+        playerInventory.splice(itemIndex, 1);
+        await StorageService.setItem(PLAYER_INVENTORY_KEY, playerInventory);
+      }
+      
+      return result;
+    } catch (error) {
+      console.error('Error using item:', error);
+      throw error;
+    }
+  }
 }
 
 export default EquipmentService;

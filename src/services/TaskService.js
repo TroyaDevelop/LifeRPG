@@ -5,6 +5,7 @@ import { TaskModel } from '../models';
 import StorageService from './StorageService';
 import NotificationService from './NotificationService';
 import { ProfileService } from './ProfileService';
+import BossService from './BossService'; // Добавляем импорт BossService
 
 let tasksCache = null;
 let lastFetchTime = 0;
@@ -413,6 +414,13 @@ export class TaskService {
           await profileService.processDailyHealthUpdate(true, 0);
         }
       }
+
+      // Наносим урон активному боссу
+      let bossDamage = 0;
+      if (hasEnoughEnergy) {
+        bossDamage = BossService.calculateDamageForTask(task, profile);
+        await BossService.addDamageToActiveBoss(bossDamage);
+      }
       
       return {
         success: true,
@@ -422,7 +430,8 @@ export class TaskService {
         actusGained: hasEnoughEnergy ? actusReward : 0,
         energySpent,
         insufficientEnergy: !hasEnoughEnergy,
-        levelUp
+        levelUp,
+        bossDamage: hasEnoughEnergy ? bossDamage : 0 // Возвращаем нанесенный урон боссу
       };
     } catch (error) {
       console.error('Ошибка при выполнении задачи:', error);

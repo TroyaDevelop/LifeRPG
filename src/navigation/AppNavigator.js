@@ -19,6 +19,7 @@ import AvatarCustomizationScreen from '../screens/AvatarCustomizationScreen';
 import AboutScreen from '../screens/AboutScreen';
 import InventoryScreen from '../screens/InventoryScreen'; // Добавляем импорт экрана инвентаря
 import ShopScreen from '../screens/ShopScreen'; // Добавляем импорт экрана магазина
+import BossFightScreen from '../screens/BossFightScreen'; // Добавляем импорт экрана битвы с боссом
 
 const Stack = createNativeStackNavigator();
 
@@ -71,6 +72,11 @@ export default function AppNavigator() {
           name="Shop" 
           component={ShopScreen}
           /* Добавляем экран магазина */ 
+        />
+        <Stack.Screen 
+          name="BossFight" 
+          component={BossFightScreen}
+          /* Добавляем экран битвы с боссом */ 
         />
       </Stack.Navigator>
     </NavigationContainer>

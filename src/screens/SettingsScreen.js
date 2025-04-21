@@ -34,6 +34,13 @@ export default function SettingsScreen({ navigation }) {
       onPress: () => navigation.navigate('Shop')
     },
     {
+      id: 'bossFight',
+      title: 'Битва с боссом',
+      icon: 'skull-outline',
+      description: 'Сражайтесь с боссами, выполняя задачи',
+      onPress: () => navigation.navigate('BossFight')
+    },
+    {
       id: 'achievements',
       title: 'Достижения',
       icon: 'trophy-outline',

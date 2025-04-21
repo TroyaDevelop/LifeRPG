@@ -118,6 +118,65 @@ const InventoryScreen = ({ navigation }) => {
     }
   };
 
+  // Функция для использования предмета
+  const handleUseItem = async () => {
+    if (!selectedItem) return;
+    
+    // Проверяем ID предмета на совпадение со свитками призыва
+    const isBossSummon = 
+      selectedItem.id.includes('boss_summon') || 
+      (selectedItem.originalId && selectedItem.originalId.includes('boss_summon')) ||
+      selectedItem.name.toLowerCase().includes('свиток призыва');
+    
+    // Проверяем ID предмета на совпадение с зельями здоровья
+    const isHealthPotion = 
+      selectedItem.id.includes('health_potion') || 
+      (selectedItem.originalId && selectedItem.originalId.includes('health_potion')) ||
+      selectedItem.name.toLowerCase().includes('зелье здоровья');
+    
+    // Проверяем ID предмета на совпадение с зельями энергии
+    const isEnergyPotion = 
+      selectedItem.id.includes('energy_potion') || 
+      (selectedItem.originalId && selectedItem.originalId.includes('energy_potion')) ||
+      selectedItem.name.toLowerCase().includes('зелье энергии');
+    
+    // Проверяем, можно ли использовать предмет
+    const isUsable = selectedItem.usable || 
+                    selectedItem.type === 'consumable' || 
+                    isBossSummon || 
+                    isHealthPotion || 
+                    isEnergyPotion;
+    
+    if (!isUsable) {
+      console.log('Этот предмет нельзя использовать');
+      alert('Этот предмет нельзя использовать');
+      return;
+    }
+    
+    try {
+      console.log('Используем предмет:', selectedItem);
+      const result = await equipmentService.useItem(selectedItem.id);
+      setShowDetailsModal(false);
+      
+      // Обновляем инвентарь после использования предмета
+      fetchEquipment();
+      
+      // Отображаем результат использования
+      if (result.success) {
+        if (result.boss) {
+          // Если призвали босса, перенаправляем на экран битвы с боссом
+          navigation.navigate('BossFight');
+        }
+        alert(result.message || 'Предмет успешно использован');
+      } else {
+        alert(result.message || 'Не удалось использовать предмет');
+      }
+    } catch (error) {
+      console.error('Error using item:', error);
+      alert('Произошла ошибка при использовании предмета');
+    }
+  };
+
   const renderRarityColor = (rarity) => {
     switch (rarity) {
       case 'common': return '#A0A0A0';
@@ -574,10 +633,27 @@ const InventoryScreen = ({ navigation }) => {
             </View>
             
             <View style={styles.buttonContainer}>
-              {selectedItem.equipped ? (
-                <Button title="Снять" onPress={handleUnequipItem} type="secondary" />
+              {selectedItem.type === 'consumable' ? (
+                <Button 
+                  title="Использовать" 
+                  onPress={handleUseItem} 
+                  style={{ flex: 1, marginRight: 8 }}
+                />
               ) : (
-                <Button title="Экипировать" onPress={handleEquipItem} />
+                selectedItem.equipped ? (
+                  <Button 
+                    title="Снять" 
+                    onPress={handleUnequipItem} 
+                    type="secondary" 
+                    style={{ flex: 1 }}
+                  />
+                ) : (
+                  <Button 
+                    title="Экипировать" 
+                    onPress={handleEquipItem} 
+                    style={{ flex: 1 }}
+                  />
+                )
               )}
             </View>
           </View>

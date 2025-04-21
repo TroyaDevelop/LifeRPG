@@ -13,7 +13,7 @@ export const sampleEquipment = [
       intelligence: 1,
       willpower: 1
     },
-    price: 3,
+    price: 1,
     level: 1,
     set: 'Фермер'
   },
@@ -27,7 +27,7 @@ export const sampleEquipment = [
       strength: 1,
       willpower: 1
     },
-    price: 5,
+    price: 1,
     level: 1,
     set: 'Фермер'
   },
@@ -40,7 +40,7 @@ export const sampleEquipment = [
     stats: {
       strength: 2
     },
-    price: 5,
+    price: 1,
     level: 1,
     set: 'Фермер'
   },
@@ -54,7 +54,7 @@ export const sampleEquipment = [
       strength: 1,
       agility: 1
     },
-    price: 100,
+    price: 1,
     level: 1,
     set: 'Фермер'
   },
@@ -273,5 +273,74 @@ export const sampleEquipment = [
     },
     price: 1,
     level: 1,
-  }
+  },
+
+  // Предметы для призыва боссов
+  {
+    id: 'boss_summon_scroll_1',
+    name: 'Свиток призыва (I)',
+    type: 'consumable',
+    subType: 'boss_summon',
+    tier: 1,
+    description: 'Призывает базового босса 1 уровня для борьбы с ним.',
+    rarity: 'common',
+    price: 1,
+    level: 1,
+    imageUrl: null,
+    usable: true
+  },
+  {
+    id: 'boss_summon_scroll_2',
+    name: 'Свиток призыва (II)',
+    type: 'consumable',
+    subType: 'boss_summon',
+    tier: 2,
+    description: 'Призывает босса 2 уровня с повышенными характеристиками.',
+    rarity: 'uncommon',
+    price: 1,
+    level: 1,
+    imageUrl: null,
+    usable: true
+  },
+  {
+    id: 'boss_summon_scroll_3',
+    name: 'Свиток призыва (III)',
+    type: 'consumable',
+    subType: 'boss_summon',
+    tier: 3,
+    description: 'Призывает мощного босса 3 уровня для настоящих испытаний.',
+    rarity: 'rare',
+    price: 1,
+    level: 1,
+    imageUrl: null,
+    usable: true
+  },
+  
+  // Также добавим зелья для восстановления ресурсов
+  {
+    id: 'minor_health_potion',
+    name: 'Малое зелье здоровья',
+    type: 'consumable',
+    subType: 'health_potion',
+    description: 'Восстанавливает 20 единиц здоровья.',
+    rarity: 'common',
+    price: 30,
+    level: 1,
+    healAmount: 20,
+    imageUrl: null,
+    usable: true
+  },
+  {
+    id: 'minor_energy_potion',
+    name: 'Малое зелье энергии',
+    type: 'consumable',
+    subType: 'energy_potion',
+    description: 'Восстанавливает 15 единиц энергии.',
+    rarity: 'common',
+    price: 30,
+    level: 1,
+    energyAmount: 15,
+    imageUrl: null,
+    usable: true
+  },
 ];
