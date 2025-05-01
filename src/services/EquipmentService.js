@@ -10,8 +10,6 @@ const SHOP_ITEMS_KEY = 'liferpg_shop_items';
 const SHOP_ITEMS_COUNT = 8; // Количество товаров в магазине
 
 class EquipmentService {
-  // Удаляем конструктор, так как StorageService содержит статические методы
-  
   // Метод для загрузки оборудования при первом запуске (без начального инвентаря)
   async initializeWithSampleData() {
     try {
@@ -300,9 +298,8 @@ class EquipmentService {
       // Суммируем бонусы от характеристик предмета
       if (item.stats) {
         Object.entries(item.stats).forEach(([stat, value]) => {
-          // Учитываем множитель редкости предмета для бонусов
-          const bonusValue = value * (item.getRarityMultiplier ? item.getRarityMultiplier() : 1);
-          bonuses[stat] = (bonuses[stat] || 0) + bonusValue;
+          // Применяем характеристики напрямую, без учета множителя редкости
+          bonuses[stat] = (bonuses[stat] || 0) + value;
         });
       }
       
@@ -399,10 +396,12 @@ class EquipmentService {
       // Если товаров в магазине нет, добавляем данные из sampleEquipment
       if (allEquipment.length === 0) {
         console.log('EquipmentService: Инициализируем магазин товарами');
+        
         // Добавляем тестовые данные в базу предметов
         for (const item of sampleEquipment) {
           await this.saveEquipment(item);
         }
+        
         // Получаем обновленный список предметов
         allEquipment = await this.getAllEquipment();
       }
@@ -527,38 +526,61 @@ class EquipmentService {
         }
       });
       
-      // Фильтруем предметы, которых еще нет в инвентаре игрока
-      const availableItems = allEquipment.filter(item => !playerItemIds.has(item.id));
+      // Разделяем предметы на обычное снаряжение и свитки призыва
+      const summonScrolls = allEquipment.filter(item => 
+        item.type === 'consumable' && 
+        (item.subType === 'boss_summon' || item.name.toLowerCase().includes('свиток призыва'))
+      );
       
-      // Если доступных предметов недостаточно, добавляем новые из sampleEquipment
-      if (availableItems.length < SHOP_ITEMS_COUNT) {
-        // Находим предметы из sampleEquipment, которых еще нет в базе
+      const regularEquipment = allEquipment.filter(item =>
+        !(item.type === 'consumable' && 
+        (item.subType === 'boss_summon' || item.name.toLowerCase().includes('свиток призыва')))
+      );
+      
+      // Фильтруем предметы, которых еще нет в инвентаре игрока
+      const availableEquipment = regularEquipment.filter(item => !playerItemIds.has(item.id));
+      const availableScrolls = summonScrolls.filter(item => !playerItemIds.has(item.id));
+      
+      // Если доступных предметов снаряжения недостаточно, добавляем новые из sampleEquipment
+      if (availableEquipment.length < SHOP_ITEMS_COUNT) {
+        // Находим предметы из sampleEquipment, которые не являются свитками и которых еще нет в базе
         const existingIds = new Set([
           ...allEquipment.map(item => item.id),
           ...playerInventory.map(item => item.originalId || item.id)
         ]);
         
-        const newItems = sampleEquipment.filter(item => !existingIds.has(item.id));
+        const newItems = sampleEquipment.filter(item => 
+          !existingIds.has(item.id) && 
+          !(item.type === 'consumable' && 
+            (item.subType === 'boss_summon' || item.name.toLowerCase().includes('свиток призыва')))
+        );
         
         // Если есть новые предметы, добавляем их в базу
         for (const item of newItems) {
           await this.saveEquipment(item);
         }
         
-        // Получаем обновленный список предметов
+        // Получаем обновленный список снаряжения
         const updatedEquipment = await this.getAllEquipment();
-        const updatedAvailableItems = updatedEquipment.filter(item => !playerItemIds.has(item.id));
+        const updatedAvailableEquipment = updatedEquipment.filter(item => 
+          !playerItemIds.has(item.id) && 
+          !(item.type === 'consumable' &&
+            (item.subType === 'boss_summon' || item.name.toLowerCase().includes('свиток призыва')))
+        );
         
-        if (updatedAvailableItems.length > 0) {
-          availableItems.push(...updatedAvailableItems.filter(item => 
-            !availableItems.some(existingItem => existingItem.id === item.id)
+        if (updatedAvailableEquipment.length > 0) {
+          availableEquipment.push(...updatedAvailableEquipment.filter(item => 
+            !availableEquipment.some(existingItem => existingItem.id === item.id)
           ));
         }
       }
       
-      // Выбираем случайные предметы для магазина
-      const shuffledItems = [...availableItems].sort(() => 0.5 - Math.random());
-      const shopItems = shuffledItems.slice(0, Math.min(SHOP_ITEMS_COUNT, shuffledItems.length));
+      // Выбираем ровно 8 случайных предметов снаряжения для магазина
+      const shuffledEquipment = [...availableEquipment].sort(() => 0.5 - Math.random());
+      const shopEquipment = shuffledEquipment.slice(0, Math.min(SHOP_ITEMS_COUNT, shuffledEquipment.length));
+      
+      // Все свитки призыва всегда доступны
+      const shopItems = [...shopEquipment, ...availableScrolls];
       
       // Сохраняем выбранные предметы как текущий ассортимент магазина
       await StorageService.setItem(SHOP_ITEMS_KEY, shopItems);
@@ -598,80 +620,59 @@ class EquipmentService {
         (item.originalId && item.originalId.includes('boss_summon')) ||
         item.name.toLowerCase().includes('свиток призыва');
       
-      // Проверяем ID предмета на совпадение с зельями здоровья
-      const isHealthPotion = 
-        item.id.includes('health_potion') || 
-        (item.originalId && item.originalId.includes('health_potion')) ||
-        item.name.toLowerCase().includes('зелье здоровья');
-      
-      // Проверяем ID предмета на совпадение с зельями энергии
-      const isEnergyPotion = 
-        item.id.includes('energy_potion') || 
-        (item.originalId && item.originalId.includes('energy_potion')) ||
-        item.name.toLowerCase().includes('зелье энергии');
-      
       // Обработка различных типов предметов
-      if (item.type === 'consumable' || isBossSummon || isHealthPotion || isEnergyPotion) {
+      if (item.type === 'consumable' || isBossSummon) {
         // Обработка разных подтипов расходников
         if (item.subType === 'boss_summon' || isBossSummon) {
           // Предмет призыва босса
           const BossService = require('./BossService').default;
-          const bossTier = item.tier || 1;
-          const boss = await BossService.summonBossFromTemplate(bossTier - 1);
-          result = { 
-            success: true, 
-            message: `Призван босс ${boss.name}!`,
-            boss: boss,
-            consumed: true
-          };
-        } else if (item.subType === 'health_potion' || isHealthPotion) {
-          // Зелье здоровья
-          const ProfileService = require('./ProfileService').ProfileService;
-          const healAmount = item.healAmount || 20;
           
-          await ProfileService.updateHealth(healAmount);
-          result = {
-            success: true,
-            message: `Восстановлено ${healAmount} здоровья!`,
-            consumed: true
-          };
-        } else if (item.subType === 'energy_potion' || isEnergyPotion) {
-          // Зелье энергии
-          const ProfileService = require('./ProfileService').ProfileService;
-          const energyAmount = item.energyAmount || 15;
+          // Используем bossId свитка для призыва конкретного босса
+          let bossIdentifier = item.bossId;
           
-          await ProfileService.updateEnergy(energyAmount);
-          result = {
-            success: true,
-            message: `Восстановлено ${energyAmount} энергии!`,
-            consumed: true
-          };
-        } else {
-          result = {
-            success: false,
-            message: 'Неизвестный тип расходуемого предмета',
-            consumed: false
-          };
+          // Если bossId не указан, пытаемся определить уровень босса по редкости свитка
+          if (!bossIdentifier) {
+            console.log('EquipmentService: bossId не указан в свитке, используем редкость');
+            bossIdentifier = item.rarity || 'common';
+          }
+          
+          console.log(`EquipmentService: Призываем босса с идентификатором: ${bossIdentifier}`);
+          const boss = await BossService.summonBoss(bossIdentifier);
+          
+          if (boss) {
+            result = { 
+              success: true, 
+              type: 'boss_summon', 
+              message: `Вы призвали босса: ${boss.name}`, 
+              boss 
+            };
+            
+            // Удаляем использованный свиток из инвентаря
+            playerInventory.splice(itemIndex, 1);
+            await StorageService.setItem(PLAYER_INVENTORY_KEY, playerInventory);
+          } else {
+            result = { 
+              success: false, 
+              message: 'Не удалось призвать босса' 
+            };
+          }
         }
-      } else {
-        result = {
-          success: false,
-          message: 'Этот предмет нельзя использовать',
-          consumed: false
+        // Здесь могут быть обработчики других типов расходуемых предметов
+      } else if (item.type === 'equipment') {
+        // Логика использования экипировки, если она не consumable
+        result = { 
+          success: false, 
+          message: 'Этот предмет нельзя использовать напрямую' 
         };
-      }
-      
-      // Если предмет был использован и его нужно удалить
-      if (result.success && result.consumed) {
-        // Удаляем предмет из инвентаря
-        playerInventory.splice(itemIndex, 1);
-        await StorageService.setItem(PLAYER_INVENTORY_KEY, playerInventory);
       }
       
       return result;
     } catch (error) {
       console.error('Error using item:', error);
-      throw error;
+      return { 
+        success: false, 
+        message: 'Произошла ошибка при использовании предмета' 
+      };
     }
   }
 }

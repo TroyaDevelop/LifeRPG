@@ -36,6 +36,21 @@ const ShopScreen = ({ navigation }) => {
 
   const equipmentService = new EquipmentService();
 
+  // Разделение предметов на снаряжение и свитки призыва
+  const equipmentItems = useCallback(() => {
+    return shopItems.filter(item => 
+      !(item.type === 'consumable' && 
+        (item.subType === 'boss_summon' || item.name.toLowerCase().includes('свиток призыва')))
+    );
+  }, [shopItems]);
+
+  const summonScrolls = useCallback(() => {
+    return shopItems.filter(item => 
+      item.type === 'consumable' && 
+      (item.subType === 'boss_summon' || item.name.toLowerCase().includes('свиток призыва'))
+    );
+  }, [shopItems]);
+
   // Загрузка предметов, доступных в магазине
   const fetchShopItems = async () => {
     setLoading(true);
@@ -133,6 +148,9 @@ const ShopScreen = ({ navigation }) => {
       case 'legs': return 'walk-outline';
       case 'footwear': return 'footsteps-outline';
       case 'weapon': return 'flame-outline';
+      case 'consumable': 
+        // Для свитков призыва показываем специальную иконку
+        return 'book-outline';
       default: return 'cube-outline';
     }
   };
@@ -145,6 +163,9 @@ const ShopScreen = ({ navigation }) => {
       case 'legs': return 'Штаны';
       case 'footwear': return 'Обувь';
       case 'weapon': return 'Оружие';
+      case 'consumable': 
+        // Для свитков призыва показываем специальное название
+        return 'Свиток призыва';
       default: return type;
     }
   };
@@ -236,6 +257,14 @@ const ShopScreen = ({ navigation }) => {
     );
   };
 
+  // Рендер секции для свитков призыва
+  const renderSectionHeader = (title, icon) => (
+    <View style={styles.sectionHeader}>
+      <Ionicons name={icon} size={22} color="#4E64EE" style={styles.sectionHeaderIcon} />
+      <Text style={styles.sectionHeaderText}>{title}</Text>
+    </View>
+  );
+
   return (
     <View style={styles.container}>
       <Header title="Магазин снаряжения" hasBack={true} onBack={() => navigation.goBack()} />
@@ -251,16 +280,37 @@ const ShopScreen = ({ navigation }) => {
       {loading ? (
         <LoadingIndicator />
       ) : (
-        <View style={styles.content}>
+        <ScrollView style={styles.content}>
           {shopItems.length > 0 ? (
-            <FlatList
-              data={shopItems}
-              renderItem={renderItem}
-              keyExtractor={item => item.id}
-              contentContainerStyle={styles.list}
-              numColumns={2}
-              columnWrapperStyle={styles.columnWrapper}
-            />
+            <>
+              {/* Секция снаряжения */}
+              {equipmentItems().length > 0 && (
+                <View style={styles.section}>
+                  {renderSectionHeader('Снаряжение', 'shirt-outline')}
+                  <View style={styles.gridContainer}>
+                    {equipmentItems().map(item => (
+                      <View key={item.id} style={styles.gridItem}>
+                        {renderItem({item})}
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              )}
+              
+              {/* Секция свитков призыва */}
+              {summonScrolls().length > 0 && (
+                <View style={styles.section}>
+                  {renderSectionHeader('Свитки призыва боссов', 'book-outline')}
+                  <View style={styles.gridContainer}>
+                    {summonScrolls().map(item => (
+                      <View key={item.id} style={styles.gridItem}>
+                        {renderItem({item})}
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              )}
+            </>
           ) : (
             <View style={styles.emptyContainer}>
               <Text style={styles.emptyText}>
@@ -268,7 +318,10 @@ const ShopScreen = ({ navigation }) => {
               </Text>
             </View>
           )}
-        </View>
+          
+          {/* Добавляем немного отступа внизу для прокрутки */}
+          <View style={{height: 20}} />
+        </ScrollView>
       )}
 
       <Modal
@@ -394,6 +447,38 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
   },
+  section: {
+    marginBottom: 16,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E0E0E0',
+  },
+  sectionHeaderIcon: {
+    marginRight: 8,
+  },
+  sectionHeaderText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333333',
+  },
+  gridContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    paddingHorizontal: 4,
+    justifyContent: 'space-between',
+    backgroundColor: '#F7F9FC',
+    paddingTop: 8,
+  },
+  gridItem: {
+    width: '50%',
+    padding: 4,
+  },
   tabsContainer: {
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
@@ -424,9 +509,6 @@ const styles = StyleSheet.create({
     color: '#4E64EE',
     fontWeight: '500',
   },
-  list: {
-    padding: 8,
-  },
   itemCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
@@ -436,8 +518,6 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
     flex: 1,
-    margin: 6,
-    maxWidth: '48%',
   },
   itemSquare: {
     padding: 12,
@@ -502,16 +582,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  columnWrapper: {
-    justifyContent: 'space-between',
-    paddingHorizontal: 4,
-  },
   compactCurrency: {
     padding: 0,
     backgroundColor: 'transparent',
   },
   emptyContainer: {
-    flex: 1,
+    height: 200,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,

@@ -4,7 +4,7 @@ import EquipmentService from './EquipmentService';
 
 const PROFILE_STORAGE_KEY = '@LifeRPG:userProfile';
 
-export class ProfileService {
+class ProfileService {
   static instance = null;
 
   constructor() {
@@ -19,6 +19,19 @@ export class ProfileService {
       ProfileService.instance = new ProfileService();
     }
     return ProfileService.instance;
+  }
+
+  // Статические методы для совместимости с синтаксисом ProfileService.getProfile()
+  static async getProfile() {
+    return ProfileService.getInstance().getProfile();
+  }
+
+  static async saveProfile(profile) {
+    return ProfileService.getInstance().saveProfile(profile);
+  }
+
+  static async updateProfile(updateData) {
+    return ProfileService.getInstance().updateProfile(updateData);
   }
 
   /**
@@ -553,4 +566,6 @@ export class ProfileService {
   }
 }
 
+// Экспортируем двумя способами для совместимости
+export { ProfileService };
 export default ProfileService;
