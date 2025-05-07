@@ -38,6 +38,43 @@ export class UserProfile {
       reminderEnabled: true,
     };
   }
+  
+  // Геттеры для характеристик с учетом бонусов от снаряжения
+  get totalStrength() {
+    const equipBonus = this.equipmentBonuses?.stats?.strength || 0;
+    return this.strength + equipBonus;
+  }
+  
+  get totalIntelligence() {
+    const equipBonus = this.equipmentBonuses?.stats?.intelligence || 0;
+    return this.intelligence + equipBonus;
+  }
+  
+  get totalAgility() {
+    const equipBonus = this.equipmentBonuses?.stats?.agility || 0;
+    return this.agility + equipBonus;
+  }
+  
+  get totalWillpower() {
+    const equipBonus = this.equipmentBonuses?.stats?.willpower || 0;
+    return this.willpower + equipBonus;
+  }
+  
+  get totalLuck() {
+    const equipBonus = this.equipmentBonuses?.stats?.luck || 0;
+    return this.luck + equipBonus;
+  }
+  
+  // Получение всех характеристик с бонусами в виде объекта
+  getTotalStats() {
+    return {
+      strength: this.totalStrength,
+      intelligence: this.totalIntelligence,
+      agility: this.totalAgility,
+      willpower: this.totalWillpower,
+      luck: this.totalLuck
+    };
+  }
 
   // Метод для обновления здоровья
   updateHealth(delta) {

@@ -227,19 +227,88 @@ class BossService {
   // Расчет урона за выполнение задачи с учетом характеристик персонажа
   static calculateDamageForTask(task, profile) {
     // Базовый урон зависит от приоритета задачи
-    let baseDamage = 5; // Низкий приоритет
+    let baseDamage = 1; // Низкий приоритет (легкое задание)
     
     if (task.priority === 'medium') {
-      baseDamage = 10;
+      baseDamage = 2; // Среднее задание
     } else if (task.priority === 'high') {
-      baseDamage = 15;
+      baseDamage = 3; // Сложное задание
     }
     
-    // Множитель урона от уровня персонажа (каждые 5 уровней +10% к урону)
-    const levelMultiplier = 1 + (Math.floor(profile.level / 5) * 0.1);
+    // Проверяем наличие объекта profile, чтобы избежать ошибок
+    if (!profile) {
+      console.log('BossService: profile не определен при расчёте урона');
+      return baseDamage;
+    }
+
+    // Детальное логирование полученного профиля
+    console.log('BossService.calculateDamageForTask - полный профиль:', 
+      JSON.stringify({
+        id: profile.id,
+        level: profile.level,
+        strength: profile.strength,
+        intelligence: profile.intelligence,
+        agility: profile.agility,
+        willpower: profile.willpower,
+        luck: profile.luck,
+        hasStats: !!profile.stats,
+        equipmentBonuses: profile.equipmentBonuses
+      }, null, 2)
+    );
+    
+    // Используем методы для получения характеристик с учетом бонусов снаряжения
+    let strength = 0;
+    let intellect = 0;
+    
+    if (typeof profile.getTotalStats === 'function') {
+      // Используем новый метод, если он доступен
+      const totalStats = profile.getTotalStats();
+      strength = totalStats.strength;
+      intellect = totalStats.intelligence;
+      console.log('BossService: Использование getTotalStats для получения характеристик');
+    } else if (typeof profile.totalStrength === 'number' && typeof profile.totalIntelligence === 'number') {
+      // Используем геттеры, если они доступны
+      strength = profile.totalStrength;
+      intellect = profile.totalIntelligence;
+      console.log('BossService: Использование геттеров для получения характеристик');
+    } else {
+      // Если геттеры недоступны, пробуем получить значения напрямую
+      strength = profile.stats?.strength || profile.strength || 0;
+      // Пробуем различные варианты названия интеллекта
+      intellect = profile.stats?.intelligence || profile.stats?.intellect || profile.intelligence || profile.intellect || 0;
+      
+      // Добавляем бонусы от экипировки, если они есть
+      if (profile.equipmentBonuses?.stats) {
+        strength += profile.equipmentBonuses.stats.strength || 0;
+        intellect += profile.equipmentBonuses.stats.intelligence || 0;
+      }
+    }
+    
+    console.log(`BossService: Характеристики персонажа с учетом бонусов - Сила: ${strength}, Интеллект: ${intellect}`);
+    
+    // Бонус урона от силы персонажа (каждые 10 единиц силы дают +1 к базовому урону)
+    const strengthBonus = Math.floor(strength / 10);
+    
+    // Бонус урона от интеллекта персонажа (каждые 10 единиц интеллекта дают +1 к базовому урону)
+    const intellectBonus = Math.floor(intellect / 10);
+    
+    // Добавляем бонусы от силы и интеллекта
+    let totalDamage = baseDamage;
+    
+    if (strengthBonus > 0) {
+      totalDamage += strengthBonus;
+      console.log(`BossService: Добавлен бонус от силы: +${strengthBonus} урона`);
+    }
+    
+    if (intellectBonus > 0) {
+      totalDamage += intellectBonus;
+      console.log(`BossService: Добавлен бонус от интеллекта: +${intellectBonus} урона`);
+    }
+    
+    console.log(`BossService: Базовый урон ${baseDamage}, итоговый урон ${totalDamage}`);
     
     // Итоговый урон
-    return Math.round(baseDamage * levelMultiplier);
+    return totalDamage;
   }
 
   // Получение предзаготовленных шаблонов боссов из данных

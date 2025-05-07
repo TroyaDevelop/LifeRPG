@@ -32,6 +32,24 @@ const CharacterStats = ({ style }) => {
     luck: 'leaf-outline',
     setBonus: 'link-outline'
   };
+  
+  // Функция для расчета и получения информации о бонусе от характеристики
+  const getStatBonus = (statName, value) => {
+    switch(statName) {
+      case 'strength':
+        return `+${Math.floor(value / 10)} физ. урона`;
+      case 'intelligence':
+        return `+${Math.floor(value / 10)} маг. урона`;
+      case 'agility':
+        return `+${Math.floor(value / 15)}% крит. шанс`;
+      case 'willpower':
+        return `+${Math.floor(value / 10)} энергии`;
+      case 'luck':
+        return `+${Math.floor(value / 10)}% к находкам`;
+      default:
+        return '';
+    }
+  };
 
   // Загружаем характеристики персонажа с учетом бонусов от снаряжения
   useEffect(() => {
@@ -60,7 +78,8 @@ const CharacterStats = ({ style }) => {
   const statsArray = Object.entries(stats).map(([key, value]) => ({
     name: statNames[key] || key,
     value,
-    icon: statIcons[key] || 'stats-chart-outline'
+    icon: statIcons[key] || 'stats-chart-outline',
+    bonus: getStatBonus(key, value)
   }));
 
   return (
@@ -78,7 +97,12 @@ const CharacterStats = ({ style }) => {
                   <Ionicons name={stat.icon} size={18} color="#4E64EE" />
                 </View>
                 <Text style={styles.statName}>{stat.name}</Text>
-                <Text style={styles.statValue}>{stat.value}</Text>
+                <View style={styles.valueContainer}>
+                  <Text style={styles.statValue}>{stat.value}</Text>
+                  {stat.bonus && (
+                    <Text style={styles.statBonus}> ({stat.bonus})</Text>
+                  )}
+                </View>
               </View>
             ))}
           </View>
@@ -134,11 +158,19 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#666666',
   },
+  valueContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   statValue: {
     fontSize: 15,
     fontWeight: 'bold',
     color: '#333333',
-    marginLeft: 4,
+  },
+  statBonus: {
+    fontSize: 12,
+    color: '#4CAF50',
+    fontStyle: 'italic',
   },
   loadingText: {
     padding: 8,

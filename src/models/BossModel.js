@@ -17,6 +17,10 @@ export class BossModel {
     this.imageUrl = data.imageUrl || null;
     this.effects = data.effects || [];
     
+    // Новые свойства для разделения типов урона
+    this.physicalResistance = data.physicalResistance || 0; // Сопротивление физическому урону
+    this.magicResistance = data.magicResistance || 0; // Сопротивление магическому урону
+    
     // Награды за победу над боссом (расширенные)
     this.rewards = data.rewards || {
       experience: 100,
@@ -112,12 +116,38 @@ export class BossModel {
   addDamage(rawDamage, playerStats = {}) {
     // Базовый урон
     let damage = rawDamage;
+    let damageType = 'normal'; // по умолчанию обычный урон
     
-    // Применяем множитель от атаки персонажа, если она указана
-    if (playerStats.attack) {
-      // Формула: каждые 10 единиц атаки дают +5% к урону
+    // Проверяем, есть ли бонусы от снаряжения в playerStats
+    const strength = playerStats.strength || 
+                     (playerStats.equipmentBonuses?.stats?.strength || 0);
+    const intelligence = playerStats.intelligence || 
+                        (playerStats.equipmentBonuses?.stats?.intelligence || 0);
+    
+    console.log(`BossModel.addDamage: Применяемые характеристики - Сила: ${strength}, Интеллект: ${intelligence}`);
+    
+    // Определяем тип наносимого урона в зависимости от характеристик персонажа
+    if (strength > 0 || intelligence > 0) {
+      // Если сила больше интеллекта - физический урон, иначе - магический
+      damageType = strength >= intelligence ? 'physical' : 'magical';
+    }
+    
+    // Применяем множитель от атаки персонажа и характеристик
+    if (damageType === 'physical' && strength > 0) {
+      // Физическая атака зависит от силы
+      const strengthMultiplier = 1 + (strength / 200);
+      damage = Math.floor(damage * strengthMultiplier);
+      console.log(`BossModel.addDamage: Применяем множитель силы ${strengthMultiplier.toFixed(2)}, урон стал ${damage}`);
+    } else if (damageType === 'magical' && intelligence > 0) {
+      // Магическая атака зависит от интеллекта
+      const intelligenceMultiplier = 1 + (intelligence / 200);
+      damage = Math.floor(damage * intelligenceMultiplier);
+      console.log(`BossModel.addDamage: Применяем множитель интеллекта ${intelligenceMultiplier.toFixed(2)}, урон стал ${damage}`);
+    } else if (playerStats.attack) {
+      // Если тип не определен, используем общую атаку
       const attackMultiplier = 1 + (playerStats.attack / 200);
       damage = Math.floor(damage * attackMultiplier);
+      console.log(`BossModel.addDamage: Применяем множитель атаки ${attackMultiplier.toFixed(2)}, урон стал ${damage}`);
     }
     
     // Проверяем критический удар
@@ -134,6 +164,7 @@ export class BossModel {
         const critMultiplier = playerStats.critDamage || 1.5;
         damage = Math.floor(damage * critMultiplier);
         isCritical = true;
+        console.log(`BossModel.addDamage: Критический удар! Множитель ${critMultiplier}, урон стал ${damage}`);
       }
     }
     
@@ -149,10 +180,19 @@ export class BossModel {
     // Добавляем текущее накопленное сопротивление
     totalResistance += this.currentResistance;
     
+    // Применяем специфическое сопротивление в зависимости от типа урона
+    if (damageType === 'physical' && this.physicalResistance > 0) {
+      totalResistance += this.physicalResistance;
+    } else if (damageType === 'magical' && this.magicResistance > 0) {
+      totalResistance += this.magicResistance;
+    }
+    
     // Применяем сопротивление (максимум 75%)
     if (totalResistance > 0) {
       totalResistance = Math.min(75, totalResistance);
+      const damageBeforeResist = damage;
       damage = Math.floor(damage * (1 - totalResistance / 100));
+      console.log(`BossModel.addDamage: Применяем сопротивление ${totalResistance}%, урон ${damageBeforeResist} -> ${damage}`);
     }
     
     // Минимальный урон 1
@@ -168,9 +208,41 @@ export class BossModel {
       }
     }
     
+    // Сохраняем информацию о типе урона
+    const todayDate = new Date().toISOString().split('T')[0];
+    let todayDamage = this.damageHistory.find(entry => entry.date === todayDate);
+    
+    if (todayDamage) {
+      // Обновляем существующую запись
+      todayDamage.damage = (todayDamage.damage || 0) + damage;
+      if (damageType === 'physical') {
+        todayDamage.physicalDamage = (todayDamage.physicalDamage || 0) + damage;
+      } else if (damageType === 'magical') {
+        todayDamage.magicalDamage = (todayDamage.magicalDamage || 0) + damage;
+      }
+    } else {
+      // Создаем новую запись в истории
+      const newDamageEntry = {
+        date: todayDate,
+        damage: damage,
+        physicalDamage: 0,
+        magicalDamage: 0
+      };
+      
+      if (damageType === 'physical') {
+        newDamageEntry.physicalDamage = damage;
+      } else if (damageType === 'magical') {
+        newDamageEntry.magicalDamage = damage;
+      }
+      
+      this.damageHistory.push(newDamageEntry);
+    }
+    
     this.accumulatedDamage += damage;
+    console.log(`BossModel.addDamage: Итоговый урон ${damage}, тип: ${damageType}, накопленный урон: ${this.accumulatedDamage}`);
     return {
       damage,
+      damageType,
       isCritical,
       totalResistance
     };
@@ -279,7 +351,9 @@ export class BossModel {
       duration: this.duration,
       type: this.type,
       effects: this.effects,
-      currentResistance: this.currentResistance
+      currentResistance: this.currentResistance,
+      physicalResistance: this.physicalResistance,
+      magicResistance: this.magicResistance
     };
   }
 

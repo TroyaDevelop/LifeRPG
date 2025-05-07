@@ -32,7 +32,8 @@ const BossFightScreen = ({ navigation }) => {
         const sortedHistory = [...activeBoss.damageHistory].sort((a, b) => 
           new Date(b.date) - new Date(a.date)
         );
-        setDamageHistory(sortedHistory);
+        // Ограничиваем историю до 5 последних записей
+        setDamageHistory(sortedHistory.slice(0, 5));
       }
       
       // Используем экземпляр profileService
@@ -79,6 +80,24 @@ const BossFightScreen = ({ navigation }) => {
         )}
       </View>
       <Text style={styles.historyDamage}>{item.damage} урона</Text>
+      
+      {/* Отображение разделения на физический и магический урон */}
+      {(item.physicalDamage > 0 || item.magicalDamage > 0) && (
+        <View style={styles.damageTypesContainer}>
+          {item.physicalDamage > 0 && (
+            <View style={styles.damageTypeItem}>
+              <Ionicons name="barbell-outline" size={14} color="#FF5722" />
+              <Text style={styles.physicalDamageText}>{item.physicalDamage} физ.</Text>
+            </View>
+          )}
+          {item.magicalDamage > 0 && (
+            <View style={styles.damageTypeItem}>
+              <Ionicons name="bulb-outline" size={14} color="#2196F3" />
+              <Text style={styles.magicalDamageText}>{item.magicalDamage} маг.</Text>
+            </View>
+          )}
+        </View>
+      )}
     </View>
   );
 
@@ -192,31 +211,7 @@ const BossFightScreen = ({ navigation }) => {
           <Text style={styles.descriptionText}>{boss.description}</Text>
         </View>
         
-        {/* Секция влияния характеристик на бой */}
-        <View style={styles.statsCard}>
-          <Text style={styles.statsTitle}>Ваши боевые характеристики</Text>
-          
-          <View style={styles.statItem}>
-            <Ionicons name="fitness-outline" size={20} color="#F44336" />
-            <Text style={styles.statLabel}>Атака:</Text>
-            <Text style={styles.statValue}>{Math.floor((profile?.stats?.strength || 0) / 10)}</Text>
-            <Text style={styles.statInfo}>
-              (+{Math.floor((profile?.stats?.strength || 0) / 10)} урона)
-            </Text>
-          </View>
-          
-          <View style={styles.statItem}>
-            <Ionicons name="flash-outline" size={20} color="#FF9800" />
-            <Text style={styles.statLabel}>Шанс крита:</Text>
-            <Text style={styles.statValue}>{Math.floor((profile?.stats?.agility || 0) / 10)}%</Text>
-          </View>
-          
-          <View style={styles.statItem}>
-            <Ionicons name="trending-up-outline" size={20} color="#9C27B0" />
-            <Text style={styles.statLabel}>Крит. урон:</Text>
-            <Text style={styles.statValue}>x{(profile?.stats?.critDamage || 1.5).toFixed(1)}</Text>
-          </View>
-        </View>
+        {/* Удален блок боевых характеристик */}
         
         {/* Сопротивления босса (если есть) */}
         {hasBossEffects && (
@@ -244,13 +239,24 @@ const BossFightScreen = ({ navigation }) => {
         
         {/* Секция накопленного урона */}
         <View style={styles.currentDamageCard}>
-          <Text style={styles.currentDamageTitle}>Накопленный урон</Text>
+          <Text style={styles.currentDamageTitle}>Нанесено урона</Text>
           <View style={styles.currentDamageContainer}>
             <Ionicons name="flash" size={24} color="#F44336" />
             <Text style={styles.currentDamageValue}>{boss.accumulatedDamage || 0}</Text>
             <Text style={styles.currentDamageNote}>
               (применится в полночь)
             </Text>
+          </View>
+          {/* Разделение на физический и магический урон */}
+          <View style={styles.damageTypesContainer}>
+            <View style={styles.damageTypeItem}>
+              <Ionicons name="barbell-outline" size={18} color="#FF5722" />
+              <Text style={styles.physicalDamageText}>{boss.accumulatedPhysicalDamage || 0} физ.</Text>
+            </View>
+            <View style={styles.damageTypeItem}>
+              <Ionicons name="bulb-outline" size={18} color="#2196F3" />
+              <Text style={styles.magicalDamageText}>{boss.accumulatedMagicalDamage || 0} маг.</Text>
+            </View>
           </View>
         </View>
         
@@ -736,6 +742,31 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: 'bold',
     color: '#F44336',
+  },
+  damageTypesContainer: {
+    flexDirection: 'row',
+    marginTop: 4,
+  },
+  damageTypeItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 8,
+    backgroundColor: '#F5F5F5',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
+  physicalDamageText: {
+    fontSize: 12,
+    color: '#FF5722',
+    marginLeft: 4,
+    fontWeight: 'bold',
+  },
+  magicalDamageText: {
+    fontSize: 12,
+    color: '#2196F3',
+    marginLeft: 4,
+    fontWeight: 'bold',
   },
   noHistoryText: {
     fontSize: 14,

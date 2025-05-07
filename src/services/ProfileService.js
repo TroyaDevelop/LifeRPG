@@ -533,6 +533,19 @@ class ProfileService {
     try {
       const profile = await this.getProfile();
       
+      console.log('ProfileService.getPlayerStats - получен профиль:', 
+        JSON.stringify({
+          id: profile.id,
+          level: profile.level, 
+          strength: profile.strength,
+          intelligence: profile.intelligence,
+          agility: profile.agility,
+          willpower: profile.willpower,
+          luck: profile.luck,
+          equipmentBonuses: profile.equipmentBonuses
+        }, null, 2)
+      );
+      
       // Базовые характеристики
       const baseStats = {
         strength: profile.strength || 0,
@@ -542,8 +555,12 @@ class ProfileService {
         luck: profile.luck || 0
       };
       
+      console.log('ProfileService.getPlayerStats - базовые характеристики:', baseStats);
+      
       // Бонусы от снаряжения
       const equipmentBonuses = profile.equipmentBonuses && profile.equipmentBonuses.stats ? profile.equipmentBonuses.stats : {};
+      
+      console.log('ProfileService.getPlayerStats - бонусы от снаряжения:', equipmentBonuses);
       
       // Объединяем базовые характеристики и бонусы от снаряжения
       const totalStats = { ...baseStats };
@@ -557,7 +574,7 @@ class ProfileService {
         }
       });
       
-      console.log('Характеристики игрока:', totalStats);
+      console.log('ProfileService.getPlayerStats - итоговые характеристики:', totalStats);
       return totalStats;
     } catch (error) {
       console.error('Ошибка при получении характеристик игрока:', error);
