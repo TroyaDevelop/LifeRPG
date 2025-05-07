@@ -102,43 +102,63 @@ class BossService {
     if (!activeBoss) return null;
     
     // Получаем профиль пользователя для применения его характеристик
-    const profile = await ProfileService.getProfile();
+    const profileInstance = ProfileService.getInstance();
+    const profile = await profileInstance.getProfile();
     
-    // Статистика персонажа для расчета урона
-    const playerStats = {
-      attack: profile.stats?.attack || 0,
-      critChance: profile.stats?.critChance || 5, // Базовый шанс крита 5%
-      critDamage: profile.stats?.critDamage || 1.5, // Базовый множитель крита 1.5x
-    };
+    // Получаем полные характеристики персонажа с учетом бонусов снаряжения
+    let playerStats = {};
     
-    // Добавляем бонусы от экипировки
-    if (profile.equipment) {
-      const equipment = await EquipmentService.getAllEquipment();
-      const equippedItems = equipment.filter(item => item.equipped);
+    // Используем методы для получения характеристик с учетом бонусов снаряжения
+    if (typeof profile.getTotalStats === 'function') {
+      // Используем новый метод, если он доступен
+      playerStats = profile.getTotalStats();
+      console.log('BossService: Использование getTotalStats для получения характеристик');
+    } else if (typeof profile.totalStrength === 'number' && typeof profile.totalIntelligence === 'number') {
+      // Используем геттеры, если они доступны
+      playerStats = {
+        strength: profile.totalStrength,
+        intelligence: profile.totalIntelligence,
+        agility: profile.totalAgility || 0,
+        willpower: profile.totalWillpower || 0,
+        luck: profile.totalLuck || 0
+      };
+      console.log('BossService: Использование геттеров для получения характеристик');
+    } else {
+      // Базовые характеристики
+      playerStats = {
+        strength: profile.strength || 0,
+        intelligence: profile.intelligence || 0,
+        agility: profile.agility || 0,
+        willpower: profile.willpower || 0,
+        luck: profile.luck || 0
+      };
       
-      equippedItems.forEach(item => {
-        if (item.stats) {
-          // Атака
-          if (item.stats.attack) {
-            playerStats.attack += item.stats.attack;
-          }
-          
-          // Шанс крита
-          if (item.stats.critChance) {
-            playerStats.critChance += item.stats.critChance;
-          }
-          
-          // Множитель крита
-          if (item.stats.critDamage) {
-            playerStats.critDamage += item.stats.critDamage;
-          }
-        }
-      });
+      // Добавляем бонусы от экипировки, если они есть
+      if (profile.equipmentBonuses?.stats) {
+        playerStats.strength += profile.equipmentBonuses.stats.strength || 0;
+        playerStats.intelligence += profile.equipmentBonuses.stats.intelligence || 0;
+        playerStats.agility += profile.equipmentBonuses.stats.agility || 0;
+        playerStats.willpower += profile.equipmentBonuses.stats.willpower || 0;
+        playerStats.luck += profile.equipmentBonuses.stats.luck || 0;
+      }
     }
+    
+    // Добавляем параметры атаки
+    playerStats.attack = playerStats.attack || 0;
+    playerStats.critChance = playerStats.critChance || 5 + (playerStats.agility / 15); // Базовый шанс крита 5% + бонус от ловкости
+    playerStats.critDamage = playerStats.critDamage || 1.5; // Базовый множитель крита 1.5x
+    
+    console.log('BossService.addDamageToActiveBoss - характеристики персонажа:', 
+      JSON.stringify(playerStats, null, 2)
+    );
     
     // Добавляем урон боссу
     const damageResult = activeBoss.addDamage(rawDamage, playerStats);
     await this.updateBoss(activeBoss);
+    
+    console.log('BossService.addDamageToActiveBoss - результат урона:', 
+      JSON.stringify(damageResult, null, 2)
+    );
     
     return {
       boss: activeBoss,

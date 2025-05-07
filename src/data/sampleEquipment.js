@@ -10,7 +10,7 @@ export const sampleEquipment = [
     description: 'Защищает от солнца.',
     rarity: 'common',
     stats: {
-      intelligence: 1,
+      intelligence: 10,
       willpower: 1
     },
     price: 1,
@@ -25,7 +25,7 @@ export const sampleEquipment = [
     rarity: 'common',
     stats: {
       strength: 1,
-      willpower: 1
+      intelligence: 10,
     },
     price: 1,
     level: 1,
@@ -38,7 +38,8 @@ export const sampleEquipment = [
     description: 'Просторные штаны для удобства работы в поле.',
     rarity: 'common',
     stats: {
-      strength: 2
+      strength: 2,
+      intelligence: 10,
     },
     price: 1,
     level: 1,
@@ -52,6 +53,7 @@ export const sampleEquipment = [
     rarity: 'common',
     stats: {
       strength: 1,
+      intelligence: 10,
       agility: 1
     },
     price: 1,

@@ -247,17 +247,7 @@ const BossFightScreen = ({ navigation }) => {
               (применится в полночь)
             </Text>
           </View>
-          {/* Разделение на физический и магический урон */}
-          <View style={styles.damageTypesContainer}>
-            <View style={styles.damageTypeItem}>
-              <Ionicons name="barbell-outline" size={18} color="#FF5722" />
-              <Text style={styles.physicalDamageText}>{boss.accumulatedPhysicalDamage || 0} физ.</Text>
-            </View>
-            <View style={styles.damageTypeItem}>
-              <Ionicons name="bulb-outline" size={18} color="#2196F3" />
-              <Text style={styles.magicalDamageText}>{boss.accumulatedMagicalDamage || 0} маг.</Text>
-            </View>
-          </View>
+          {/* Удалено разделение на физический и магический урон, так как данные не отображаются корректно */}
         </View>
         
         {/* Секция истории урона */}
